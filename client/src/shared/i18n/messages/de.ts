@@ -68,8 +68,12 @@ export const de = {
   'errors.aiBusy': 'Der KI-Dienst ist ausgelastet. Bitte versuchen Sie es gleich noch einmal.',
   'errors.aiUnreadable': 'Aus diesem Satz konnte keine Buchung erstellt werden. Bitte formulieren Sie ihn um.',
   'errors.ruleFreeBudget':
-    'Diese Buchung benötigt {hours} h, aber Auftrag {orderId} hat nur noch {freePersonDays} PT frei.',
+    'Buchung abgelehnt: Auftrag {orderId} hat nur noch {freePersonDays} PT frei.',
   'errors.ruleAssignedOrder': 'Buchung abgelehnt: Sie sind dem Auftrag {orderId} nicht zugewiesen.',
+  'errors.ruleOverlap': 'Buchung abgelehnt: Überschneidung mit einer bestehenden Buchung ({startTime}–{endTime}).',
+  'errors.descriptionRequired': 'Buchung abgelehnt: Eine Beschreibung der Tätigkeit ist erforderlich.',
+  'errors.invalidDuration': 'Buchung abgelehnt: Die Dauer muss größer als null sein und zwischen Start- und Endzeit passen.',
+  'errors.invalidTimes': 'Buchung abgelehnt: Die Endzeit muss nach der Startzeit liegen.',
   'errors.fromServer': '{message}',
 } as const
 

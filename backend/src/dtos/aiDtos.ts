@@ -9,6 +9,8 @@ export type ParseBookingRequest = z.infer<typeof parseBookingRequestSchema>;
 
 export const bookingProposalSchema = z.object({
   date: z.string(),
+  startTime: z.string(),
+  endTime: z.string(),
   hours: z.number(),
   description: z.string(),
 });

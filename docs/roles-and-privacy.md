@@ -30,7 +30,7 @@
 
 | Data | Why we store it | Who needs it | How long we keep it |
 |---|---|---|---|
-| Daily hours per person (booking: date, duration, description, order, accounting object) | Work checking and legally required proof of work | Consultant (own), project lead (their orders) | 10 years per HGB §257, then anonymised |
+| Daily hours per person (booking: date, start and end time, duration, description, order, accounting object) | Work checking and legally required proof of work | Consultant (own), project lead (their orders) | 10 years per HGB §257, then anonymised |
 | Name and supplier of a consultant | Assignment of bookings and contact | Project lead; purchasing only at supplier level | Duration of the order, then retention above |
 | Approved vacation days of a consultant | Rule check: no bookings on vacation | Server (rule engine), project lead | Duration of the order |
 | Working-time totals per day (ArbZG check) | Legal compliance: 10 h day, 11 h rest | Server (rule engine); project lead as day view | 10 years per HGB §257 |

@@ -42,6 +42,9 @@ export const DEMO_USERS = [
   { id: "user-purchasing", name: "K. Vogel", role: "purchasing", consultantId: null },
 ];
 
+// Migration 004 gives these their start and end times.
+type DemoBooking = Omit<NewBooking, "startTime" | "endTime">;
+
 const FIRST_DEMO_DAY = "2026-08-17";
 
 function nextWeekdays(count: number): string[] {
@@ -58,7 +61,7 @@ function nextWeekdays(count: number): string[] {
 
 // 84 PT on the first order, as in story #9, and 19.5 of 20 PT on the second. All in the past,
 // with at most 8 h per person and day, so demo bookings for today never collide with them.
-export function buildDemoBookings(): NewBooking[] {
+export function buildDemoBookings(): DemoBooking[] {
   const fullDay = (orderId: string, consultantId: string, date: string, description: string) => ({
     orderId,
     consultantId,

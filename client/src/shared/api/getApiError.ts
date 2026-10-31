@@ -14,6 +14,7 @@ type ApiErrorBody = {
   rule?: string
   code?: string
   values?: MessageValues
+  details?: { path?: (string | number)[] }[]
 }
 
 export const FALLBACK_API_ERROR: ApiError = { key: 'errors.serverUnavailable' }
@@ -21,6 +22,15 @@ export const FALLBACK_API_ERROR: ApiError = { key: 'errors.serverUnavailable' }
 const RULE_MESSAGE_KEYS: Record<string, MessageKey> = {
   'free-budget': 'errors.ruleFreeBudget',
   'assigned-order': 'errors.ruleAssignedOrder',
+  'no-overlap': 'errors.ruleOverlap',
+}
+
+// Which input field the server's validation complained about first.
+const FIELD_MESSAGE_KEYS: Record<string, MessageKey> = {
+  description: 'errors.descriptionRequired',
+  hours: 'errors.invalidDuration',
+  startTime: 'errors.invalidTimes',
+  endTime: 'errors.invalidTimes',
 }
 
 const AI_ERROR_MESSAGE_KEYS: Record<string, MessageKey> = {
@@ -49,7 +59,8 @@ export function getApiError(error: unknown): ApiError {
     return { key: AI_ERROR_MESSAGE_KEYS[data.code] }
   }
   if (status === 400) {
-    return { key: 'errors.invalidInput' }
+    const invalidField = String(data?.details?.[0]?.path?.[0])
+    return { key: FIELD_MESSAGE_KEYS[invalidField] ?? 'errors.invalidInput' }
   }
   if (status === 404) {
     return { key: 'errors.orderNotFound' }

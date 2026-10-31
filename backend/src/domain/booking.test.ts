@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { assertAssignedToOrder, assertFitsFreeBudget, calculateBudget } from "./booking.ts";
+import { assertAssignedToOrder, assertFitsFreeBudget, assertNoOverlap, calculateBudget } from "./booking.ts";
 import { BusinessRuleError } from "./errors.ts";
 
 const order = { id: "4500012345", orderedPersonDays: 1 };
@@ -13,13 +13,46 @@ describe("free budget rule", () => {
     expect(() => assertFitsFreeBudget(order, 4, 4.5)).toThrow(BusinessRuleError);
   });
 
-  test("names the values the client needs to explain the rejection", () => {
+  test("names the free budget and the order, in the words of story #3", () => {
+    const orderWith2_5Free = { id: "4500012345", orderedPersonDays: 2.5 };
+
     try {
-      assertFitsFreeBudget(order, 4, 4.5);
+      assertFitsFreeBudget(orderWith2_5Free, 0, 24); // 3 PD
       throw new Error("expected a rejection");
     } catch (error) {
-      expect((error as BusinessRuleError).values).toEqual({ hours: 4.5, orderId: order.id, freePersonDays: 0.5 });
+      expect((error as BusinessRuleError).message).toBe("Booking rejected: only 2.5 PD left on order 4500012345.");
+      expect((error as BusinessRuleError).values).toEqual({ orderId: "4500012345", freePersonDays: 2.5 });
     }
+  });
+});
+
+describe("overlapping bookings rule", () => {
+  const morning = { startTime: "09:00", endTime: "12:00" };
+
+  test("accepts a booking that only touches another one", () => {
+    expect(() => assertNoOverlap([morning], { startTime: "12:00", endTime: "15:00" })).not.toThrow();
+    expect(() => assertNoOverlap([morning], { startTime: "07:00", endTime: "09:00" })).not.toThrow();
+  });
+
+  test("accepts a booking when the day is empty", () => {
+    expect(() => assertNoOverlap([], morning)).not.toThrow();
+  });
+
+  test("rejects a booking that overlaps the end of another one", () => {
+    expect(() => assertNoOverlap([morning], { startTime: "11:00", endTime: "13:00" })).toThrow(BusinessRuleError);
+  });
+
+  test("rejects a booking that overlaps the start of another one", () => {
+    expect(() => assertNoOverlap([morning], { startTime: "08:00", endTime: "09:30" })).toThrow(BusinessRuleError);
+  });
+
+  test("rejects a booking inside or around another one", () => {
+    expect(() => assertNoOverlap([morning], { startTime: "10:00", endTime: "11:00" })).toThrow(BusinessRuleError);
+    expect(() => assertNoOverlap([morning], { startTime: "08:00", endTime: "13:00" })).toThrow(BusinessRuleError);
+  });
+
+  test("uses the wording of story #5", () => {
+    expect(() => assertNoOverlap([morning], morning)).toThrow("Booking rejected: overlaps with an existing booking.");
   });
 });
 

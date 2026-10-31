@@ -47,7 +47,7 @@ cd backend && bun test
 cd client && bun test
 ```
 
-These tests need no database, so the 7 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
+These tests need no database, so the 9 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
 
 ## Demo users
 
@@ -59,7 +59,7 @@ There is no login yet, so the demo users below are stored but cannot sign in. Ch
 | Project lead | A. Weber | Tab *Projektleitung / Project lead* | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days. |
 | Purchasing | K. Vogel | Tab *Einkauf / Purchasing* | See the supplier overview with aggregated values only. These are sample values for now. |
 
-With the default `AI_MOCK=true`, the one-sentence booking returns a fixed proposal of 7 hours for today, whatever the sentence says.
+With the default `AI_MOCK=true`, the one-sentence booking returns a fixed proposal of 09:00–17:00 with 7 hours for today, whatever the sentence says. Confirming it a second time is rejected as an overlap, which shows that rule. To book other times, use the API as shown in the [backend README](backend/README.md).
 
 ## Evidence map
 
@@ -137,7 +137,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | Area | Built | Planned |
 |---|---|---|
 | Core flow | Choose an assigned order, book time on it, see the effect on its budget | Manual booking form, without the AI sentence |
-| Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders | Overlapping bookings, 10-hour day, 11-hour rest, vacation and public holidays, order period |
+| Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person | 10-hour day, 11-hour rest, vacation and public holidays, order period |
 | Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, demo users, with migrations | Proofs of work |
 | Roles | Role views in the client, written permission concept. Until sign-in exists, the assignment rule trusts the consultant ID in the request | Sign-in, permission checks on the server ([ADR-0002](docs/adr/0002-identity-and-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |
@@ -150,9 +150,68 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 - [Product vision](docs/product-vision.md): who it is for, core flow, what we leave out
 - [Domain model](docs/domain.md): glossary and ER diagram
 - [Roles and privacy](docs/roles-and-privacy.md): role matrix and personal data
-- Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md)
+- Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md) · [0012 Branching workflow](docs/adr/0012-branching-workflow.md)
 - [Mockup](docs/mockup/index.html) and its [visual direction](docs/mockup/README.md)
 - [AGENTS.md](AGENTS.md): instructions for AI coding agents
+
+## Branching workflow
+
+Every change moves through `feature/<short-name>` → `development` → `staging` → `main`. Never commit directly to `development`, `staging` or `main`. `main` is the version the jury runs, as it stands on Tuesday 3 Nov 2026 at 11:00, so anything not merged into it by then does not count. The reasons are in [ADR-0012](docs/adr/0012-branching-workflow.md).
+
+### 1. Start a feature branch
+
+Always start from the latest `development`. Use a short name, such as `feature/ten-hour-day`, and keep each branch to one story, task or fix.
+
+```bash
+git fetch origin
+git switch development
+git pull
+git switch -c feature/<short-name>
+```
+
+### 2. Commit your work
+
+Use one-line messages with no body, starting with `feat:`, `fix:`, `docs:` or `test:`. Make small commits, at least two per hackathon day across the team.
+
+```bash
+git add <files>
+git commit -m "feat: reject bookings above 10 hours per day"
+```
+
+### 3. Check it before you push
+
+From the repository root:
+
+```bash
+cd backend && bun run typecheck && bun test && cd ..
+cd client && bun test && bun run lint && bun run build && cd ..
+```
+
+If `development` has moved on since you started, bring those changes in and run the checks again:
+
+```bash
+git fetch origin
+git merge origin/development
+```
+
+### 4. Merge into `development`
+
+Push the branch, then open a pull request on GitHub from your branch into `development`. Another team member reviews it, then merges it with **Create a merge commit**.
+
+```bash
+git push -u origin feature/<short-name>
+```
+
+### 5. Promote to `staging`, then `main`
+
+Open each pull request on GitHub, and merge it with **Create a merge commit**. Promote at least once a day.
+
+| Pull request | Merge when |
+|---|---|
+| `development` → `staging` | All the checks in step 3 pass on `development` |
+| `staging` → `main` | Someone has followed this README's Setup, Run and Test sections from a fresh clone of `staging`, within 5 minutes |
+
+**Never use "Squash and merge".** It turns a day's commits into one, and the jury scores the Git history commit by commit.
 
 ## Team
 

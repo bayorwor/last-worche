@@ -1,4 +1,5 @@
 // What the services need from storage. Services depend on these types, not on MySQL.
+import type { NewActivity } from "../domain/activity.ts";
 import type { DayBooking, Order } from "../domain/booking.ts";
 import type { ProofOfWorkTotals } from "../domain/proofOfWork.ts";
 import type { OrderTotals } from "../domain/purchasing.ts";
@@ -41,6 +42,9 @@ export type BookingTransaction = {
   isMonthApproved(orderId: string, month: string): Promise<boolean>;
   countBookingsInMonth(orderId: string, month: string): Promise<number>;
   approveMonth(approval: MonthApproval): Promise<void>;
+  // Part of the transaction, so a rejected booking or approval is never logged.
+  recordActivity(activity: NewActivity): Promise<void>;
+  recordBookingCreated(booking: NewBooking, occurredAtMs: number): Promise<void>;
 };
 
 export type BookingRepository = {

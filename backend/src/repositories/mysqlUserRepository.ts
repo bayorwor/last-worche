@@ -55,6 +55,27 @@ export function createMysqlUserRepository(db: Pool): UserRepository {
       const [rows] = await db.query<UserRow[]>("SELECT id, name, email, role, consultant_id FROM users WHERE email = ?", [email]);
       return rows[0] ? toUser(rows[0]) : null;
     },
+    findUserById: async (userId) => {
+      const [rows] = await db.query<UserRow[]>("SELECT id, name, email, role, consultant_id FROM users WHERE id = ?", [userId]);
+      return rows[0] ? toUser(rows[0]) : null;
+    },
+    updateUserName: async (userId, name) => {
+      const connection = await db.getConnection();
+      try {
+        await connection.beginTransaction();
+        await connection.query("UPDATE users SET name = ? WHERE id = ?", [name, userId]);
+        await connection.query(
+          "UPDATE consultants SET name = ? WHERE id = (SELECT consultant_id FROM users WHERE id = ?)",
+          [name, userId],
+        );
+        await connection.commit();
+      } catch (error) {
+        await connection.rollback();
+        throw error;
+      } finally {
+        connection.release();
+      }
+    },
     saveSignInCode: async ({ userId, codeHash, createdAtMs, expiresAtMs }) => {
       await db.query(
         `REPLACE INTO sign_in_codes (user_id, code_hash, created_at_ms, expires_at_ms, attempts)

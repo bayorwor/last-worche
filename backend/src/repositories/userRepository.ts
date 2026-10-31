@@ -16,6 +16,9 @@ export type UserRepository = {
   listRoles(): Promise<Role[]>;
   listUsers(): Promise<User[]>;
   findUserByEmail(email: string): Promise<User | null>;
+  findUserById(userId: string): Promise<User | null>;
+  // Also renames the linked consultant, because project leads see that name on bookings.
+  updateUserName(userId: string, name: string): Promise<void>;
   // A user has at most one code: saving a new one replaces the old one and its attempts.
   saveSignInCode(code: NewSignInCode): Promise<void>;
   findSignInCode(userId: string): Promise<SignInCode | null>;

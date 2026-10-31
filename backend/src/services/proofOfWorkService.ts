@@ -37,6 +37,14 @@ export function createProofOfWorkService(repository: BookingRepository, now: () 
           await transaction.isMonthApproved(orderId, month),
         );
         await transaction.approveMonth({ orderId, month, approvedByUserId: user.id, approvedAtMs: now() });
+        await transaction.recordActivity({
+          type: "proof_approved",
+          actorUserId: user.id,
+          occurredAtMs: now(),
+          orderId,
+          period: month,
+          hours: null,
+        });
       });
 
       return listProofs(orderId);

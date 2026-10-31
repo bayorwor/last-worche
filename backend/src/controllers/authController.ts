@@ -1,6 +1,6 @@
 // HTTP layer for signing in.
 import type { Request, Response } from "express";
-import type { RequestCodeRequest, VerifyCodeRequest } from "../dtos/authDtos.ts";
+import type { RequestCodeRequest, UpdateProfileRequest, VerifyCodeRequest } from "../dtos/authDtos.ts";
 import { currentUser } from "../middlewares/authentication.ts";
 import type { AuthService } from "../services/authService.ts";
 
@@ -24,8 +24,13 @@ export function createAuthController(authService: AuthService) {
       res.json(await authService.verifyCode(email, code));
     },
 
-    getCurrentUser(req: Request, res: Response) {
-      res.json(currentUser(req));
+    async getCurrentUser(req: Request, res: Response) {
+      res.json(await authService.getProfile(currentUser(req).id));
+    },
+
+    async updateCurrentUser(req: Request, res: Response) {
+      const { name } = req.body as UpdateProfileRequest;
+      res.json(await authService.updateProfile(currentUser(req).id, name));
     },
   };
 }

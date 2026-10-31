@@ -11,6 +11,7 @@ import {
   type OrderSummary,
   type StoredBooking,
 } from "./bookingRepository.ts";
+import { insertActivity } from "./mysqlActivityRepository.ts";
 
 type OrderRow = RowDataPacket & { id: string; ordered_person_days: number };
 type TotalRow = RowDataPacket & { total: number };
@@ -97,6 +98,14 @@ function createTransaction(connection: PoolConnection): BookingTransaction {
       await connection.query(
         "INSERT INTO proofs_of_work (order_id, month, approved_by_user_id, approved_at_ms) VALUES (?, ?, ?, ?)",
         [orderId, month, approvedByUserId, approvedAtMs],
+      );
+    },
+    recordActivity: (activity) => insertActivity(connection, activity),
+    recordBookingCreated: async ({ consultantId, orderId, date, hours }, occurredAtMs) => {
+      await connection.query(
+        `INSERT INTO activity_log (type, actor_user_id, occurred_at_ms, order_id, period, hours)
+         SELECT 'booking_created', id, ?, ?, ?, ? FROM users WHERE consultant_id = ?`,
+        [occurredAtMs, orderId, date, hours, consultantId],
       );
     },
   };

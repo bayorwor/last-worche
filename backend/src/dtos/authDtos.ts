@@ -13,5 +13,11 @@ export const verifyCodeSchema = z.object({
   code: z.string().regex(/^\d{6}$/),
 });
 
+// Only the name. The email is how a person signs in, and an unknown field such as a role is dropped here.
+export const updateProfileSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+});
+
 export type RequestCodeRequest = z.infer<typeof requestCodeSchema>;
 export type VerifyCodeRequest = z.infer<typeof verifyCodeSchema>;
+export type UpdateProfileRequest = z.infer<typeof updateProfileSchema>;

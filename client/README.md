@@ -14,14 +14,14 @@ The Vite dev server needs Node.js 22.12 or newer alongside Bun.
 
 ## Mobile app
 
-The mobile app shows the same client, built with `VITE_API_BASE_URL` from `.env.mobile` because it has no Vite server to forward `/api`. To run it in the iOS simulator, start the database and backend, then:
+The mobile apps show the same client, built with `VITE_API_BASE_URL` from `.env.mobile` because they have no Vite server to forward `/api`. The steps for phone browsers, the iOS simulator, iPhones and Android are in the [testing guide](../docs/testing.md#3-start-the-product-on-your-platform).
 
 ```bash
-bun run mobile:sync   # build for mobile and copy into ios/ and android/
-bunx cap open ios     # opens Xcode: choose a simulator and press Run
+bun run dev --host    # also serves the client on your network, for phone browsers
+bun run mobile:sync   # build for the apps and copy into ios/ and android/
 ```
 
-Run `mobile:sync` after every client change. Using plain `bun run build` for the app makes every API call fail. On a real phone, set `.env.mobile` to this computer's network address. Android is not set up to reach the backend yet.
+Run `mobile:sync` after every client change. Using plain `bun run build` for the apps makes every API call fail. `server.androidScheme` and `server.cleartext` in `capacitor.config.ts` let Android call the local backend over plain `http`, which a production build must not do.
 
 ## Structure
 

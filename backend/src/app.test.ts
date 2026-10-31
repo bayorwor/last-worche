@@ -315,7 +315,7 @@ describe("calls from the mobile app", () => {
     });
 
   test("the iOS and Android apps may call the API with a session token", async () => {
-    for (const origin of ["capacitor://localhost", "https://localhost"]) {
+    for (const origin of ["capacitor://localhost", "http://localhost"]) {
       const response = await preflight(origin);
 
       expect(response.headers.get("access-control-allow-origin")).toBe(origin);

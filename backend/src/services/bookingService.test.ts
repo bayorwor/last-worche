@@ -5,6 +5,7 @@ import { createBookingService } from "./bookingService.ts";
 
 const ORDER_ID = "4500012345";
 const OTHER_ORDER_ID = "4500012346";
+const SECOND_ASSIGNED_ORDER_ID = "4500012347";
 
 function createService() {
   return createBookingService(
@@ -12,8 +13,13 @@ function createService() {
       [
         { id: ORDER_ID, orderedPersonDays: 140 },
         { id: OTHER_ORDER_ID, orderedPersonDays: 10 },
+        { id: SECOND_ASSIGNED_ORDER_ID, orderedPersonDays: 10 },
       ],
-      [{ consultantId: "consultant-1", orderId: ORDER_ID }],
+      [
+        { consultantId: "consultant-1", orderId: ORDER_ID },
+        { consultantId: "consultant-1", orderId: SECOND_ASSIGNED_ORDER_ID },
+        { consultantId: "consultant-2", orderId: ORDER_ID },
+      ],
     ),
   );
 }
@@ -22,6 +28,8 @@ const booking = {
   orderId: ORDER_ID,
   consultantId: "consultant-1",
   date: "2026-10-27",
+  startTime: "09:00",
+  endTime: "17:00",
   hours: 7,
   description: "Legacy data reconciliation",
 };
@@ -53,7 +61,36 @@ describe("bookingService", () => {
   test("lists only the orders a consultant is assigned to", async () => {
     const assignedOrders = await createService().listAssignedOrders("consultant-1");
 
-    expect(assignedOrders.map((order) => order.id)).toEqual([ORDER_ID]);
+    expect(assignedOrders.map((order) => order.id)).toEqual([ORDER_ID, SECOND_ASSIGNED_ORDER_ID]);
+  });
+
+  test("rejects an overlap with the same person's booking on another order, and stores nothing", async () => {
+    const service = createService();
+    await service.createBooking({ ...booking, startTime: "09:00", endTime: "12:00", hours: 3 });
+
+    const overlapping = { ...booking, orderId: SECOND_ASSIGNED_ORDER_ID, startTime: "11:00", endTime: "13:00", hours: 2 };
+
+    await expect(service.createBooking(overlapping)).rejects.toThrow(BusinessRuleError);
+    expect((await service.getOrderBudget(SECOND_ASSIGNED_ORDER_ID)).usedPersonDays).toBe(0);
+  });
+
+  test("accepts a booking that starts when the last one ended", async () => {
+    const service = createService();
+    await service.createBooking({ ...booking, startTime: "09:00", endTime: "12:00", hours: 3 });
+
+    await service.createBooking({ ...booking, startTime: "12:00", endTime: "15:00", hours: 3 });
+
+    expect((await service.getOrderBudget(ORDER_ID)).usedPersonDays).toBe(0.75);
+  });
+
+  test("accepts the same hours on another day, or for another person", async () => {
+    const service = createService();
+    await service.createBooking(booking);
+
+    await service.createBooking({ ...booking, date: "2026-10-28" });
+    await service.createBooking({ ...booking, consultantId: "consultant-2" });
+
+    expect((await service.getOrderBudget(ORDER_ID)).usedPersonDays).toBe(2.625);
   });
 
   test("rejects a booking on an unknown order", async () => {

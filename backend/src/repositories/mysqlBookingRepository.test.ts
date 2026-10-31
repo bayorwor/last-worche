@@ -11,7 +11,14 @@ import { NEAR_LIMIT_ORDER_ID, SEED_ORDER_ID } from "./seedData.ts";
 const databaseUrl = process.env.TEST_DATABASE_URL;
 
 describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
-  const booking = { orderId: SEED_ORDER_ID, consultantId: "consultant-1", date: "2026-10-27", description: "Work" };
+  const booking = {
+    orderId: SEED_ORDER_ID,
+    consultantId: "consultant-1",
+    date: "2026-10-27",
+    startTime: "09:00",
+    endTime: "17:00",
+    description: "Work",
+  };
   let db: Pool;
   let service: BookingService;
 
@@ -45,6 +52,25 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
     expect((await service.getOrderBudget(SEED_ORDER_ID)).usedPersonDays).toBe(0);
   });
 
+  test("one person booking the same hours on two orders at the same moment gets only one", async () => {
+    const attempts = [SEED_ORDER_ID, NEAR_LIMIT_ORDER_ID].map((orderId) =>
+      service.createBooking({ ...booking, orderId, hours: 7 }),
+    );
+
+    const results = await Promise.allSettled(attempts);
+
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+  });
+
+  test("stores and reads back start and end times", async () => {
+    await service.createBooking({ ...booking, startTime: "09:30", endTime: "12:00", hours: 2.5 });
+
+    await expect(service.createBooking({ ...booking, startTime: "11:59", endTime: "13:00", hours: 1 })).rejects.toThrow(
+      BusinessRuleError,
+    );
+    await service.createBooking({ ...booking, startTime: "12:00", endTime: "13:00", hours: 1 });
+  });
+
   test("rejects a consultant not assigned to the order", async () => {
     const unassigned = { ...booking, orderId: NEAR_LIMIT_ORDER_ID, consultantId: "consultant-2", hours: 1 };
 
@@ -58,7 +84,10 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
   });
 
   test("bookings at the same moment cannot exceed the free budget together", async () => {
-    const attempts = Array.from({ length: 5 }, () => service.createBooking({ ...booking, hours: 500 }));
+    // One day each, so only the budget can stop them.
+    const attempts = Array.from({ length: 5 }, (_, day) =>
+      service.createBooking({ ...booking, date: `2026-10-0${day + 1}`, hours: 500 }),
+    );
 
     const results = await Promise.allSettled(attempts);
 

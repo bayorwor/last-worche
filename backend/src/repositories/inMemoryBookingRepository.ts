@@ -27,6 +27,11 @@ export function createInMemoryBookingRepository(orders: Order[], assignments: In
         isConsultantAssigned: async (consultantId, orderId) =>
           assignments.some((a) => a.consultantId === consultantId && a.orderId === orderId),
         sumBookedHours,
+        lockConsultant: async () => {},
+        findBookingTimesOnDate: async (consultantId, date) =>
+          bookings
+            .filter((booking) => booking.consultantId === consultantId && booking.date === date)
+            .map(({ startTime, endTime }) => ({ startTime, endTime })),
         saveBooking: async (booking: NewBooking) => {
           const stored = { id: bookings.length + 1, ...booking };
           bookings.push(stored);

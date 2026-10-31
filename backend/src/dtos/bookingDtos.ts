@@ -1,14 +1,33 @@
 // API DTOs: the shape of booking data as it crosses HTTP. Kept apart from domain and database types.
 import { z } from "zod";
 
-export const createBookingRequestSchema = z.object({
-  orderId: z.string().min(1),
-  // Sample only: taken from the request until sign-in exists, then it must come from the session.
-  consultantId: z.string().min(1),
-  date: z.iso.date(),
-  hours: z.number().positive().multipleOf(0.01), // the database stores two decimals
-  description: z.string().min(1),
-});
+const timeOfDay = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Booking rejected: times must look like 09:00.");
+
+function minutesOfDay(time: string) {
+  const [hours = 0, minutes = 0] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+export const createBookingRequestSchema = z
+  .object({
+    orderId: z.string().min(1),
+    // Sample only: taken from the request until sign-in exists, then it must come from the session.
+    consultantId: z.string().min(1),
+    date: z.iso.date(),
+    startTime: timeOfDay,
+    endTime: timeOfDay,
+    // Can be shorter than start to end, because breaks are not worked. The database stores two decimals.
+    hours: z.number().positive("Booking rejected: the duration must be more than zero.").multipleOf(0.01),
+    description: z.string().trim().min(1, "Booking rejected: a description of what was done is required."),
+  })
+  .refine(({ startTime, endTime }) => minutesOfDay(endTime) > minutesOfDay(startTime), {
+    message: "Booking rejected: the end time must be after the start time.",
+    path: ["endTime"],
+  })
+  .refine(({ startTime, endTime, hours }) => hours * 60 <= minutesOfDay(endTime) - minutesOfDay(startTime), {
+    message: "Booking rejected: the duration does not fit between the start and end time.",
+    path: ["hours"],
+  });
 
 export type CreateBookingRequest = z.infer<typeof createBookingRequestSchema>;
 

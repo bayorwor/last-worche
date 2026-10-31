@@ -42,7 +42,7 @@ src/
 
 ```bash
 curl -X POST localhost:3000/api/bookings -H 'Content-Type: application/json' \
-  -d '{"orderId":"4500012345","consultantId":"consultant-1","date":"2026-10-27","hours":7,"description":"Legacy data reconciliation"}'
+  -d '{"orderId":"4500012345","consultantId":"consultant-1","date":"2026-10-27","startTime":"09:00","endTime":"17:00","hours":7,"description":"Legacy data reconciliation"}'
 
 curl localhost:3000/api/orders/4500012345/budget
 
@@ -50,7 +50,7 @@ curl localhost:3000/api/consultants/consultant-2/orders
 
 # rejected with 422: consultant-2 is not assigned to this order
 curl -X POST localhost:3000/api/bookings -H 'Content-Type: application/json' \
-  -d '{"orderId":"4500012346","consultantId":"consultant-2","date":"2026-10-27","hours":1,"description":"Report review"}'
+  -d '{"orderId":"4500012346","consultantId":"consultant-2","date":"2026-10-27","startTime":"09:00","endTime":"10:00","hours":1,"description":"Report review"}'
 
 curl -X POST localhost:3000/api/ai/parse-booking -H 'Content-Type: application/json' \
   -d '{"sentence":"9 bis 5 am Kundenportal, 1 h Mittag"}'

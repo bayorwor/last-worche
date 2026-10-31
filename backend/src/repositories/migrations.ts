@@ -110,4 +110,13 @@ export const MIGRATIONS: Migration[] = [
       ]);
     },
   },
+  {
+    // Overlaps and rest periods need clock times. Existing bookings get a start of 09:00.
+    name: "004-booking-times",
+    async run(db) {
+      await db.query("ALTER TABLE bookings ADD COLUMN start_time TIME NULL, ADD COLUMN end_time TIME NULL");
+      await db.query("UPDATE bookings SET start_time = '09:00:00', end_time = ADDTIME('09:00:00', SEC_TO_TIME(hours * 3600))");
+      await db.query("ALTER TABLE bookings MODIFY start_time TIME NOT NULL, MODIFY end_time TIME NOT NULL");
+    },
+  },
 ];

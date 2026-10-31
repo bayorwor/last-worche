@@ -69,7 +69,11 @@ export const en: Record<MessageKey, string> = {
   'errors.aiBusy': 'The AI service is busy. Please try again in a moment.',
   'errors.aiUnreadable': 'The sentence could not be turned into a booking. Please rephrase it.',
   'errors.ruleFreeBudget':
-    'This booking needs {hours} h, but order {orderId} only has {freePersonDays} PD free.',
+    'Booking rejected: only {freePersonDays} PD left on order {orderId}.',
   'errors.ruleAssignedOrder': 'Booking rejected: you are not assigned to order {orderId}.',
+  'errors.ruleOverlap': 'Booking rejected: overlaps with an existing booking ({startTime}–{endTime}).',
+  'errors.descriptionRequired': 'Booking rejected: a description of what was done is required.',
+  'errors.invalidDuration': 'Booking rejected: the duration must be more than zero and fit between the start and end time.',
+  'errors.invalidTimes': 'Booking rejected: the end time must be after the start time.',
   'errors.fromServer': '{message}',
 }

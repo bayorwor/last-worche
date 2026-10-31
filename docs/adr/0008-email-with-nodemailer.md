@@ -1,6 +1,6 @@
 # 0008 · Email with nodemailer
 
-- **Status:** accepted for the tool, the features are future scope, outside the Sprint One goal (#16)
+- **Status:** accepted for the tool. Sign-in codes are its first use ([ADR-0014](0014-email-code-sign-in.md)), and the features listed below are future scope, outside the Sprint One goal (#16)
 - **Date:** 2026-10-31
 - **Deciders:** Team lastWorche
 

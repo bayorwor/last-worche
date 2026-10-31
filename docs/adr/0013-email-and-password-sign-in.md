@@ -1,6 +1,6 @@
 # 0013 · Email and password sign-in
 
-- **Status:** accepted, replaces the demo sign-in without a password in [ADR-0002](0002-identity-and-sign-in.md)
+- **Status:** the passwords are replaced by [ADR-0014](0014-email-code-sign-in.md). Roles and users in the database still apply, and this replaced the demo sign-in in [ADR-0002](0002-identity-and-sign-in.md)
 - **Date:** 2026-10-31
 - **Deciders:** Team lastWorche
 

@@ -49,11 +49,17 @@ cd backend && bun test
 cd client && bun test
 ```
 
-These tests need no database, so the 13 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
+These tests need no database, so the 21 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
 
 ## Demo users
 
-Open <http://localhost:5173> and sign in with an email below. **All test users share the password `lastWorche-Test-2026`.** You can type them, or choose one under *Testzugänge / Test accounts* on the sign-in screen, which fills in the form. To change user, choose *Abmelden / Sign out* at the top of the page. Labels are shown as German / English. All users are fictional.
+Open <http://localhost:5173> and sign in with no password:
+
+1. Enter an email below, or choose one under *Testzugänge / Test accounts*, then choose *Code senden / Send code*.
+2. Enter the 6-digit code. With the default `MAIL_MOCK=true` no email is sent, so the screen shows the code in a *Testmodus / Test mode* box, and *Code verwenden / Use code* enters it for you.
+3. You land on the dashboard of that user's role.
+
+To change user, choose *Abmelden / Sign out* at the top of the page. Labels are shown as German / English. All users are fictional.
 
 | Role | Name | Email | What to try |
 |---|---|---|---|
@@ -115,8 +121,9 @@ flowchart LR
 | Method and path | Purpose | Errors |
 |---|---|---|
 | `GET /api/auth/roles` | All roles, with names and descriptions in German and English | |
-| `GET /api/auth/test-accounts` | The seeded test accounts and their shared password | `404` when switched off |
-| `POST /api/auth/sign-in` | Check an email and password, and receive a signed session token | `400` invalid email, `401` wrong email or password |
+| `GET /api/auth/test-accounts` | The seeded test accounts | `404` when switched off |
+| `POST /api/auth/request-code` | Email a 6-digit code. Answers the same for an unknown email. With `MAIL_MOCK=true`, the answer also contains the code | `400` invalid email |
+| `POST /api/auth/verify-code` | Check the code, and receive a signed session token | `400` invalid input, `401` wrong or expired code |
 | `GET /api/auth/me` | Who the session belongs to | `401` no valid session |
 | `GET /api/orders` | Orders as ID and title, for all roles: a consultant sees their assigned orders, a project lead the orders they lead, purchasing all orders | `401` no session |
 | `GET /api/consultants/:consultantId/bookings` | A consultant's own 10 latest bookings, for the consultant role | `401`, `403` another consultant |
@@ -135,11 +142,11 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | `DATABASE_URL` | `mysql://lastworche:lastworche@localhost:3306/lastworche` | MySQL connection, matching `backend/setup-database.sql`. For local development only. |
 | `CORS_ORIGINS` | `capacitor://localhost,https://localhost` | Web addresses allowed to call the API. The defaults are the iOS and Android apps |
 | `JWT_SECRET` | a value for local development only | Signs session tokens |
-| `TEST_ACCOUNTS_ENABLED` | `true` | `true` lists the test accounts and their password on the sign-in screen. Use `false` on any shared server |
+| `TEST_ACCOUNTS_ENABLED` | `true` | `true` lists the test accounts on the sign-in screen. Use `false` on any shared server |
 | `AI_MOCK` | `true` | `true` returns a fixed AI proposal, `false` calls OpenRouter |
 | `OPENROUTER_API_KEY` | not set | Only needed with `AI_MOCK=false` |
 | `OPENROUTER_MODEL` | `openrouter/auto` | Model to use. `openrouter/auto` lets OpenRouter pick one per request. |
-| `MAIL_MOCK` | `true` | `true` writes emails to the server log, `false` sends them |
+| `MAIL_MOCK` | `true` | `true` sends no email and shows sign-in codes on the screen, which lets anyone sign in as anyone. `false` sends them, and is required on any shared server |
 | `MAIL_FROM` | `lastWorche <no-reply@lastworche.example>` | Sender of emails |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | not set, port `587` | Mail server, only needed with `MAIL_MOCK=false` |
 | `TEST_DATABASE_URL` | not set | Optional MySQL connection for the database tests |
@@ -152,18 +159,18 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | Core flow | Choose an assigned order, book time on it, see the effect on its budget | Manual booking form, without the AI sentence |
 | Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person; 10-hour day; 11-hour rest | Vacation and public holidays, order period |
 | Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, roles, users, with migrations | Proofs of work |
-| Roles | Sign-in with email and password, roles and users stored in the database, one view per role, server-side role checks on every route and row-level scope | Password reset, limits on sign-in attempts, single sign-on per customer ([ADR-0002](docs/adr/0002-identity-and-sign-in.md), [ADR-0013](docs/adr/0013-email-and-password-sign-in.md)) |
+| Roles | Sign-in with a 6-digit code by email, roles and users stored in the database, one view per role, server-side role checks on every route and row-level scope | Limits per network address, single sign-on per customer ([ADR-0002](docs/adr/0002-identity-and-sign-in.md), [ADR-0014](docs/adr/0014-email-code-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |
 | Purchasing | Screen with sample values | Aggregated supplier endpoint |
-| Languages | Client screens and server errors in German and English | Emails, which need a stored language per user |
-| Email | Sending service with a mock switch, not used by any feature | After Sprint One: budget warnings, proof of work, rejected bookings, the single sign-on process ([ADR-0008](docs/adr/0008-email-with-nodemailer.md)) |
+| Languages | Client screens, server errors and sign-in emails in German and English | Other emails, which need a stored language per user |
+| Email | Sign-in codes, with a mock switch. Real sending is not tested yet | After Sprint One: budget warnings, proof of work, rejected bookings, the single sign-on process ([ADR-0008](docs/adr/0008-email-with-nodemailer.md)) |
 
 ## Documentation
 
 - [Product vision](docs/product-vision.md): who it is for, core flow, what we leave out
 - [Domain model](docs/domain.md): glossary and ER diagram
 - [Roles and privacy](docs/roles-and-privacy.md): role matrix and personal data
-- Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md) · [0012 Branching workflow](docs/adr/0012-branching-workflow.md) · [0013 Email and password sign-in](docs/adr/0013-email-and-password-sign-in.md)
+- Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md) · [0012 Branching workflow](docs/adr/0012-branching-workflow.md) · [0013 Email and password sign-in](docs/adr/0013-email-and-password-sign-in.md) (replaced) · [0014 Sign-in with a code by email](docs/adr/0014-email-code-sign-in.md)
 - [Mockup](docs/mockup/index.html) and its [visual direction](docs/mockup/README.md)
 - [Brand assets](docs/brand/README.md): logo files and where each is used
 - [AGENTS.md](AGENTS.md): instructions for AI coding agents

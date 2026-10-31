@@ -1,6 +1,6 @@
 # 0002 · Identity and sign-in
 
-- **Status:** the demo part is replaced by [ADR-0013](0013-email-and-password-sign-in.md), proposed for production
+- **Status:** the demo part is replaced by [ADR-0014](0014-email-code-sign-in.md), proposed for production
 - **Date:** 2026-10-31
 - **Deciders:** Team lastWorche
 

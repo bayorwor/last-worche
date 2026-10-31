@@ -1,6 +1,6 @@
 # Roles, permissions and data privacy
 
-> Filled in on Friday, 30 Oct 2026 (task #17). See [guide 2.4](guide.md#24-roles-and-privacy). Full points are possible with this concept alone. Implementation is optional.
+> Filled in on Friday, 30 Oct 2026 (task #17). See [guide 2.4](https://github.com/DanielStuewe/article26-hackathon-2026/blob/main/docs/guide.md#24-roles-and-privacy). Full points are possible with this concept alone. Implementation is optional.
 
 ## Roles
 
@@ -49,4 +49,4 @@ All permission checks run **server-side**, in the domain/API layer, before any w
 - Row-level restriction: a consultant's query scope is limited to their own bookings; a project lead's to the orders they lead. There is no endpoint that returns single bookings to purchasing — aggregates only.
 - Writes pass the rule engine in the same server-side validation step as the permission check, so a manipulated client cannot bypass either.
 
-Status: **concept complete** (this document); implementation optional and scheduled for Sunday.
+Status: **concept complete** (this document); implementation optional and scheduled for Sunday. **The checks above are not built yet.** Today the client only offers role views through tabs, the server does not check roles, and the consultant ID comes from the request. Sign-in is decided in [ADR-0002](adr/0002-identity-and-sign-in.md).

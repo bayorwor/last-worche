@@ -1,6 +1,6 @@
 # Domain model
 
-> Filled in on Friday, 30 Oct 2026 (task #18). See [guide 2.3](guide.md#23-model-the-domain).
+> Filled in on Friday, 30 Oct 2026 (task #18). See [guide 2.3](https://github.com/DanielStuewe/article26-hackathon-2026/blob/main/docs/guide.md#23-model-the-domain).
 
 ## Glossary
 
@@ -33,6 +33,10 @@ erDiagram
     ORDER ||--o{ INVOICE : "is billed by (later)"
     CONSULTANT ||--o{ VACATION_DAY : "has approved (later)"
 ```
+
+## Implementation status
+
+`(now)` marks what the current stage is meant to contain. So far, the code stores **orders** and **bookings**, in [database.ts](../backend/src/repositories/database.ts). A booking holds a consultant ID without a consultant table, and has no accounting object yet. Suppliers, consultants, accounting objects and assignments are still to be built.
 
 ## Notes
 

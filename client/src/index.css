@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+/* Design tokens from docs/mockup/index.html: paper white, ink, signal red. */
+@theme {
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --color-paper: #f4f3ef;
+  --color-panel: #ffffff;
+  --color-ink: #16181d;
+  --color-muted: #5d6066;
+  --color-line: #deddd6;
+  --color-neutral-soft: #efefea;
+
+  --color-signal: #e3000f;
+  --color-signal-strong: #c4000d; /* darker, so small text on signal-soft stays readable */
+  --color-signal-soft: #fbe9ea;
+  --color-success: #187b4b;
+  --color-success-soft: #eaf4ee;
+}
+
+@layer base {
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ink;
+  }
+}

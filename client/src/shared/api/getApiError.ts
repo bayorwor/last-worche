@@ -23,6 +23,7 @@ const RULE_MESSAGE_KEYS: Record<string, MessageKey> = {
   'free-budget': 'errors.ruleFreeBudget',
   'assigned-order': 'errors.ruleAssignedOrder',
   'no-overlap': 'errors.ruleOverlap',
+  'daily-limit': 'errors.ruleDailyLimit',
 }
 
 // Which input field the server's validation complained about first.

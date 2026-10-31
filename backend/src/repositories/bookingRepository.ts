@@ -1,5 +1,5 @@
 // What the services need from storage. Services depend on these types, not on MySQL.
-import type { Order, TimeRange } from "../domain/booking.ts";
+import type { DayBooking, Order } from "../domain/booking.ts";
 
 export type NewBooking = {
   orderId: string;
@@ -23,7 +23,7 @@ export type BookingTransaction = {
   // Locks the consultant until the transaction ends, so two bookings of one person on different
   // orders cannot both pass a check of that person's day. The order lock does not cover this.
   lockConsultant(consultantId: string): Promise<void>;
-  findBookingTimesOnDate(consultantId: string, date: string): Promise<TimeRange[]>;
+  findBookingsOnDate(consultantId: string, date: string): Promise<DayBooking[]>;
   saveBooking(booking: NewBooking): Promise<StoredBooking>;
 };
 

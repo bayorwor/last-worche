@@ -93,6 +93,19 @@ describe("bookingService", () => {
     expect((await service.getOrderBudget(ORDER_ID)).usedPersonDays).toBe(2.625);
   });
 
+  test("counts the 10-hour day across all of a person's orders, and stores nothing when rejected", async () => {
+    const service = createService();
+    await service.createBooking({ ...booking, startTime: "08:00", endTime: "16:30", hours: 8.5 });
+
+    const tooLong = { ...booking, orderId: SECOND_ASSIGNED_ORDER_ID, startTime: "17:00", endTime: "19:00", hours: 2 };
+
+    await expect(service.createBooking(tooLong)).rejects.toThrow(BusinessRuleError);
+    expect((await service.getOrderBudget(SECOND_ASSIGNED_ORDER_ID)).usedPersonDays).toBe(0);
+
+    await service.createBooking({ ...tooLong, endTime: "18:30", hours: 1.5 });
+    expect((await service.getOrderBudget(SECOND_ASSIGNED_ORDER_ID)).usedPersonDays).toBe(0.1875);
+  });
+
   test("rejects a booking on an unknown order", async () => {
     const service = createService();
 

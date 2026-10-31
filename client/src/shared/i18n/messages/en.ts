@@ -72,6 +72,7 @@ export const en: Record<MessageKey, string> = {
     'Booking rejected: only {freePersonDays} PD left on order {orderId}.',
   'errors.ruleAssignedOrder': 'Booking rejected: you are not assigned to order {orderId}.',
   'errors.ruleOverlap': 'Booking rejected: overlaps with an existing booking ({startTime}–{endTime}).',
+  'errors.ruleDailyLimit': 'Booking rejected: more than {maxHours} h per day is not allowed (ArbZG §3).',
   'errors.descriptionRequired': 'Booking rejected: a description of what was done is required.',
   'errors.invalidDuration': 'Booking rejected: the duration must be more than zero and fit between the start and end time.',
   'errors.invalidTimes': 'Booking rejected: the end time must be after the start time.',

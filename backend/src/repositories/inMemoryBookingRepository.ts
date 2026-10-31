@@ -28,10 +28,10 @@ export function createInMemoryBookingRepository(orders: Order[], assignments: In
           assignments.some((a) => a.consultantId === consultantId && a.orderId === orderId),
         sumBookedHours,
         lockConsultant: async () => {},
-        findBookingTimesOnDate: async (consultantId, date) =>
+        findBookingsOnDate: async (consultantId, date) =>
           bookings
             .filter((booking) => booking.consultantId === consultantId && booking.date === date)
-            .map(({ startTime, endTime }) => ({ startTime, endTime })),
+            .map(({ startTime, endTime, hours }) => ({ startTime, endTime, hours })),
         saveBooking: async (booking: NewBooking) => {
           const stored = { id: bookings.length + 1, ...booking };
           bookings.push(stored);

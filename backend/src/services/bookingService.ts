@@ -1,5 +1,5 @@
 // Use cases for bookings: loads data, applies the domain rules, stores the result.
-import { assertAssignedToOrder, assertFitsFreeBudget, assertNoOverlap, calculateBudget } from "../domain/booking.ts";
+import { assertAssignedToOrder, assertFitsFreeBudget, assertNoOverlap, assertWithinDailyLimit, calculateBudget } from "../domain/booking.ts";
 import { NotFoundError } from "../domain/errors.ts";
 import type { CreateBookingRequest, OrderBudgetResponse } from "../dtos/bookingDtos.ts";
 import type { BookingRepository } from "../repositories/bookingRepository.ts";
@@ -21,7 +21,10 @@ export function createBookingService(repository: BookingRepository) {
 
         assertAssignedToOrder(await transaction.isConsultantAssigned(request.consultantId, order.id), order);
         assertFitsFreeBudget(order, await transaction.sumBookedHours(order.id), request.hours);
-        assertNoOverlap(await transaction.findBookingTimesOnDate(request.consultantId, request.date), request);
+
+        const bookingsOnDay = await transaction.findBookingsOnDate(request.consultantId, request.date);
+        assertNoOverlap(bookingsOnDay, request);
+        assertWithinDailyLimit(bookingsOnDay, request.hours);
 
         return transaction.saveBooking(request);
       });

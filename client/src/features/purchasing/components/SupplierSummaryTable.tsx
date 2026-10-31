@@ -1,9 +1,9 @@
 import { DataTable } from '../../../shared/components/DataTable.tsx'
-import { StatusChip } from '../../../shared/components/StatusChip.tsx'
 import { useTranslation } from '../../../shared/i18n/languageContext.ts'
-import type { SupplierSummary } from '../sampleSupplierSummaries.ts'
+import type { SupplierOverview } from '../purchasingTypes.ts'
+import { FollowUpStatusChip } from './FollowUpStatusChip.tsx'
 
-export function SupplierSummaryTable({ suppliers }: { suppliers: SupplierSummary[] }) {
+export function SupplierSummaryTable({ suppliers }: { suppliers: SupplierOverview[] }) {
   const { t, formatPersonDays } = useTranslation()
 
   return (
@@ -18,16 +18,12 @@ export function SupplierSummaryTable({ suppliers }: { suppliers: SupplierSummary
     >
       {suppliers.map((supplier) => (
         <tr key={supplier.supplierName}>
-          <td className="font-bold">{supplier.supplierName}</td>
+          <td className="font-bold whitespace-nowrap">{supplier.supplierName}</td>
           <td>{supplier.orderCount}</td>
-          <td>{formatPersonDays(supplier.usedPersonDays)}</td>
-          <td>{formatPersonDays(supplier.freePersonDays)}</td>
+          <td className="whitespace-nowrap">{formatPersonDays(supplier.usedPersonDays)}</td>
+          <td className="whitespace-nowrap">{formatPersonDays(supplier.freePersonDays)}</td>
           <td>
-            {supplier.needsFollowUpOrder ? (
-              <StatusChip tone="signal">{t('purchasing.followUpNeeded')}</StatusChip>
-            ) : (
-              <StatusChip tone="success">{t('purchasing.onTrack')}</StatusChip>
-            )}
+            <FollowUpStatusChip needsFollowUpOrder={supplier.needsFollowUpOrder} />
           </td>
         </tr>
       ))}

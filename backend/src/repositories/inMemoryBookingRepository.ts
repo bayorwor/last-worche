@@ -3,7 +3,7 @@ import type { Order } from "../domain/booking.ts";
 import { RECENT_BOOKINGS_LIMIT, type BookingRepository, type NewBooking, type StoredBooking } from "./bookingRepository.ts";
 
 export type InMemoryAssignment = { consultantId: string; orderId: string };
-export type InMemoryOrder = Order & { projectLeadId?: string };
+export type InMemoryOrder = Order & { projectLeadId?: string; supplierId?: string; supplierName?: string };
 
 function newestFirst(first: StoredBooking, second: StoredBooking) {
   return `${second.date} ${second.startTime}`.localeCompare(`${first.date} ${first.startTime}`);
@@ -23,6 +23,17 @@ export function createInMemoryBookingRepository(orders: InMemoryOrder[], assignm
 
   return {
     listOrders: async () => orders.map(toSummary),
+    listOrderTotals: async () =>
+      Promise.all(
+        orders.map(async (order) => ({
+          orderId: order.id,
+          title: `Order ${order.id}`,
+          orderedPersonDays: order.orderedPersonDays,
+          supplierId: order.supplierId ?? "supplier-1",
+          supplierName: order.supplierName ?? "Supplier",
+          bookedHours: await sumBookedHours(order.id),
+        })),
+      ),
     listOrdersLedBy: async (userId) => orders.filter((order) => order.projectLeadId === userId).map(toSummary),
     isConsultantAssigned,
     isOrderLedBy: async (userId, orderId) => orders.some((order) => order.id === orderId && order.projectLeadId === userId),

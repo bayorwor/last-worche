@@ -65,7 +65,7 @@ To change user, choose *Abmelden / Sign out* at the top of the page. Labels are 
 |---|---|---|---|
 | Consultant | L. Hoffmann | `l.hoffmann@consultis.example` | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, choose *Vorschlag prüfen / Check proposal*, then *Buchung bestätigen / Confirm booking*. To see a rejection, choose order 4500012346 first: it has too little budget left. |
 | Project lead | A. Weber | `a.weber@client.example` | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days, and the booking appears in the list below it. |
-| Purchasing | K. Vogel | `k.vogel@client.example` | See the supplier overview with aggregated values only. These are sample values for now. |
+| Purchasing | K. Vogel | `k.vogel@client.example` | See totals per supplier and order, with no person or single booking. Order 4500012346 shows *Nachtrag nötig / Follow-up order needed*. |
 | Consultant | M. Krüger | `m.krueger@consultis.example` | Assigned to one order only, so only that one can be chosen. |
 | Consultant | S. Tanriver | `s.tanriver@nordlicht.example` | Works for another supplier, on orders 4500012346 and 4500012347. |
 | Project lead | J. Schneider | `j.schneider@client.example` | Leads only order 4500012347, and cannot see A. Weber's orders. |
@@ -127,6 +127,7 @@ flowchart LR
 | `GET /api/auth/me` | Who the session belongs to | `401` no valid session |
 | `GET /api/orders` | Orders as ID and title, for all roles: a consultant sees their assigned orders, a project lead the orders they lead, purchasing all orders | `401` no session |
 | `GET /api/consultants/:consultantId/bookings` | A consultant's own 10 latest bookings, for the consultant role | `401`, `403` another consultant |
+| `GET /api/purchasing/supplier-overview` | Totals per supplier and order, with nothing about a person, for the purchasing role | `401`, `403` other roles |
 | `GET /api/orders/:orderId/bookings` | The 10 latest single bookings of an order, for the project lead of that order | `401`, `403` other roles or orders, `404` unknown order |
 | `POST /api/bookings` | Check the rules, then store a booking, for the consultant role. The consultant comes from the session | `401`, `403` other roles, `400` invalid input, `404` unknown order, `422` rule violated, with `rule` and `values` so the client can explain it in either language |
 | `GET /api/orders/:orderId/budget` | Ordered, used and free person-days, for all roles within their orders | `401`, `403` an order outside your scope, `404` unknown order |
@@ -161,7 +162,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, roles, users, with migrations | Proofs of work |
 | Roles | Sign-in with a 6-digit code by email, roles and users stored in the database, one view per role, server-side role checks on every route and row-level scope | Limits per network address, single sign-on per customer ([ADR-0002](docs/adr/0002-identity-and-sign-in.md), [ADR-0014](docs/adr/0014-email-code-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |
-| Purchasing | Screen with sample values | Aggregated supplier endpoint |
+| Purchasing | Totals per supplier and order from the database, with no personal data | Framework agreements |
 | Languages | Client screens, server errors and sign-in emails in German and English | Other emails, which need a stored language per user |
 | Email | Sign-in codes, with a mock switch. Real sending is not tested yet | After Sprint One: budget warnings, proof of work, rejected bookings, the single sign-on process ([ADR-0008](docs/adr/0008-email-with-nodemailer.md)) |
 

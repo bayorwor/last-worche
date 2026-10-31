@@ -91,6 +91,13 @@ export const SECOND_LEAD_ORDER = {
 
 export const SECOND_LEAD_ORDER_CONSULTANT_ID = "consultant-3";
 
+// Which supplier each order was given to.
+export const ORDER_SUPPLIERS = [
+  { orderId: SEED_ORDER_ID, supplierId: "supplier-1" },
+  { orderId: NEAR_LIMIT_ORDER_ID, supplierId: "supplier-2" },
+  { orderId: SECOND_LEAD_ORDER_ID, supplierId: "supplier-2" },
+];
+
 // One working week, right after this consultant's bookings on the near-limit order.
 export const SECOND_LEAD_ORDER_DAYS = ["2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18"];
 

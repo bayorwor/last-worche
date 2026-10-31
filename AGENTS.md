@@ -34,5 +34,6 @@ Read these before proposing anything substantial: [product vision](docs/product-
 - Track: working code
 - Stack: TypeScript, Bun, Express, MySQL, React, Vite, Redux Toolkit, Tailwind CSS, OpenRouter, nodemailer ([ADRs](docs/adr/))
 - Install, run and test: see the [README](README.md)
+- Teammates test on the `staging` branch, also on phones: see [which branch to test](README.md#for-teammates-which-branch-to-test) and [test on a phone](README.md#test-on-a-phone)
 - Single test: `cd backend && bun test path/to/file.test.ts`, or `bun test -t "part of the test name"`
 - Structure: [backend README](backend/README.md) and [client README](client/README.md)

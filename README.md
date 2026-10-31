@@ -83,6 +83,112 @@ To change user, choose *Abmelden / Sign out* at the top of the page. Labels are 
 
 With the default `AI_MOCK=true`, the one-sentence booking returns a fixed proposal of 09:00–17:00 with 7 hours for today, whatever the sentence says. Confirming it a second time is rejected as an overlap, which shows that rule. To book other times, use the API as shown in the [backend README](backend/README.md).
 
+## For teammates: which branch to test
+
+**Test on `staging`.** It holds the next version of the product. Only use the others for the reasons below.
+
+| Branch | What it is | Who uses it |
+|---|---|---|
+| **`staging`** | The next candidate for `main` | **Teammates testing the product** |
+| `main` | The version the jury runs | Only for the final run check before the deadline |
+| `development` | The latest merged work, which may still be rough | Developers checking that merges work together |
+| `feature/<short-name>` | One change, not merged yet | Whoever reviews that pull request |
+
+To switch to it, from the repository root:
+
+```bash
+git fetch origin
+git switch staging
+git pull
+cd backend && bun install --frozen-lockfile && cd ..
+cd client && bun install --frozen-lockfile && cd ..
+```
+
+Then start the apps as under [Run](#run), or on a phone as under [Test on a phone](#test-on-a-phone). The backend updates your database by itself when it starts.
+
+- **Found a bug?** Report it with the branch, the test user and the steps. Fix it on a new `feature/` branch from `development`, never on `staging` itself.
+- **Going back to an older branch?** An older version may not match your updated database. If the backend or a screen fails, reset the database as described under [Run](#run).
+
+## Test on a phone
+
+Start with the phone browser: it needs nothing installed on the phone, and works on iPhone and Android. Use the apps only when you need to test the mobile app itself. Do these steps on the branch you are testing, with [MySQL set up](#setup) on your computer.
+
+| Way to test | Needs | Status |
+|---|---|---|
+| [Phone browser](#phone-browser-any-phone) | The phone and computer on the same Wi-Fi | Tested in a mobile browser mode on a computer, not yet on a physical phone |
+| [iOS simulator app](#ios-simulator-app) | A Mac with Xcode | Tested |
+| [iPhone app](#iphone-app) | A Mac with Xcode, an Apple ID and a cable | Network build tested in the simulator, not yet on a physical iPhone |
+| [Android app](#android-app) | Android Studio and **Java 21** | **Not yet run:** the build needs Java 21, which the first test machine did not have |
+
+Signing in works the same everywhere. With the default `MAIL_MOCK=true`, the screen shows the code, as described under [Demo users](#demo-users).
+
+### Phone browser (any phone)
+
+Start each in its own terminal, from the repository root:
+
+```bash
+cd backend && bun run start
+```
+
+```bash
+cd client && bun run dev --host
+```
+
+Vite prints a `Network` address, such as `http://192.168.1.20:5173/`. Open that address in the phone's browser. If nothing loads, check that both are on the same Wi-Fi, and that your computer's firewall allows incoming connections. Some company and guest networks block this, so try a phone hotspot.
+
+### iOS simulator app
+
+```bash
+cd backend && bun run start
+```
+
+```bash
+cd client
+bun run mobile:sync
+bunx cap open ios
+```
+
+In Xcode, choose an iPhone simulator and press **Run**. The first launch after the simulator starts can show a white screen for about 10 seconds. The backend must be running on the same computer.
+
+### iPhone app
+
+`localhost` on a phone means the phone itself, so build the app with your computer's address. The phone and computer must be on the same Wi-Fi. On a Mac, `ipconfig getifaddr en0` prints the address. Use it below in place of `192.168.1.20`:
+
+```bash
+cd client
+VITE_API_BASE_URL=http://192.168.1.20:3000/api bun run mobile:sync
+bunx cap open ios
+```
+
+1. In Xcode, select the **App** target, then **Signing & Capabilities**, and choose your **Team**.
+2. If Xcode rejects the bundle identifier, change `com.example.app` to something unique. Do not commit that change.
+3. Connect the iPhone, choose it as the destination, and press **Run**.
+4. If the iPhone says the developer is not trusted, allow it in **Settings → General → VPN & Device Management**.
+
+If your computer's address changes, repeat these steps. When you are done, run `bun run mobile:sync` again to go back to the `localhost` address.
+
+### Android app
+
+Install **Java 21**, and in Android Studio choose it under **Settings → Build Tools → Gradle → Gradle JDK**. With an older version, the build fails with `invalid source release: 21`.
+
+```bash
+cd client
+bun run mobile:sync
+bunx cap open android
+```
+
+Choose an emulator or a phone connected by cable, and press **Run**. Then let the device reach your computer's backend through the cable connection, which also works for the emulator:
+
+```bash
+adb reverse tcp:3000 tcp:3000
+```
+
+Run that again whenever the device reconnects. If your `backend/.env` is older than this section, set `CORS_ORIGINS` as in `backend/.env.example`, or the app cannot reach the API.
+
+### After pulling new changes
+
+The apps hold a copy of the client, so they do not update by themselves. Run `bun run mobile:sync` in `client/` and press **Run** again. The phone browser updates by itself.
+
 ## Evidence map
 
 Where the technical jury finds the evidence for each [technical criterion](https://github.com/DanielStuewe/article26-hackathon-2026/blob/main/docs/scoring.md).
@@ -154,7 +260,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 |---|---|---|
 | `PORT` | `3000` | API port. The Vite dev server expects `3000`. |
 | `DATABASE_URL` | `mysql://lastworche:lastworche@localhost:3306/lastworche` | MySQL connection, matching `backend/setup-database.sql`. For local development only. |
-| `CORS_ORIGINS` | `capacitor://localhost,https://localhost` | Web addresses allowed to call the API. The defaults are the iOS and Android apps |
+| `CORS_ORIGINS` | `capacitor://localhost,http://localhost` | Web addresses allowed to call the API. The defaults are the iOS and Android apps |
 | `JWT_SECRET` | a value for local development only | Signs session tokens |
 | `TEST_ACCOUNTS_ENABLED` | `true` | `true` lists the test accounts on the sign-in screen. Use `false` on any shared server |
 | `AI_MOCK` | `true` | `true` returns a fixed AI proposal, `false` calls OpenRouter |
@@ -164,7 +270,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | `MAIL_FROM` | `lastWorche <no-reply@lastworche.example>` | Sender of emails |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | not set, port `587` | Mail server, only needed with `MAIL_MOCK=false` |
 | `TEST_DATABASE_URL` | not set | Optional MySQL connection for the database tests |
-| `VITE_API_BASE_URL` | `/api`, or the address in [client/.env.mobile](client/.env.mobile) for the mobile app | Client: base URL of the API |
+| `VITE_API_BASE_URL` | `/api`, or the address in [client/.env.mobile](client/.env.mobile) for the mobile apps. Set it yourself for a [physical iPhone](#iphone-app) | Client: base URL of the API |
 
 ## Status
 
@@ -176,6 +282,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | Roles | Sign-in with a 6-digit code by email, roles and users stored in the database, one view per role, server-side role checks on every route and row-level scope | Limits per network address, single sign-on per customer ([ADR-0002](docs/adr/0002-identity-and-sign-in.md), [ADR-0014](docs/adr/0014-email-code-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |
 | Proof of work | A project lead approves a month per order, which locks it | Passing approved hours on to finance |
+| Mobile | Responsive screens in a phone browser, iOS app in the simulator | The apps on physical phones, Android ([Test on a phone](#test-on-a-phone)) |
 | Purchasing | Totals per supplier and order from the database, with no personal data | Framework agreements |
 | Languages | Client screens, server errors and sign-in emails in German and English | Other emails, which need a stored language per user |
 | Email | Sign-in codes, with a mock switch. Real sending is not tested yet | After Sprint One: budget warnings, proof of work, rejected bookings, the single sign-on process ([ADR-0008](docs/adr/0008-email-with-nodemailer.md)) |

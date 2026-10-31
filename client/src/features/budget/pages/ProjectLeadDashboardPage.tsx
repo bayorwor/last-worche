@@ -17,6 +17,7 @@ export default function ProjectLeadDashboardPage() {
   const { orders, budgetsByOrderId, bookingsByOrderId, proofsByOrderId, approvalStatus, status, error } = useAppSelector((state) => state.budget)
   const [chosenOrderId, setChosenOrderId] = useState<string | null>(null)
   const selectedOrderId = chosenOrderId ?? orders[0]?.id
+  const selectedOrder = orders.find((order) => order.id === selectedOrderId)
   const selectedBudget = selectedOrderId ? budgetsByOrderId[selectedOrderId] : undefined
   const selectedBookings = selectedOrderId ? bookingsByOrderId[selectedOrderId] : undefined
   const selectedProofs = selectedOrderId ? proofsByOrderId[selectedOrderId] : undefined
@@ -46,7 +47,11 @@ export default function ProjectLeadDashboardPage() {
 
   return (
     <>
-      <PageTitle>{t('budget.pageTitle')}</PageTitle>
+      <PageTitle>
+        {selectedOrder
+          ? t('budget.pageTitleForOrder', { orderId: selectedOrder.id, title: selectedOrder.title })
+          : t('budget.pageTitle')}
+      </PageTitle>
       {selectedOrderId && (
         <OrderSelect
           id="budget-order"

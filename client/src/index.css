@@ -15,9 +15,9 @@
   --color-brand-strong: #8f1a2c;
   --color-brand-soft: #f9eef0;
 
-  --color-signal: #e3000f;
-  --color-signal-strong: #c4000d; /* darker, so small text on signal-soft stays readable */
-  --color-signal-soft: #fbe9ea;
+  --color-signal: #ae2036; /* warnings and rejections use the logo's crimson too, so there is one red */
+  --color-signal-strong: #8f1a2c; /* darker, so small text on signal-soft stays readable */
+  --color-signal-soft: #f9eef0;
   --color-success: #187b4b;
   --color-success-soft: #eaf4ee;
 }

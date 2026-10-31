@@ -2,8 +2,15 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { FALLBACK_API_ERROR, getApiError, type ApiError } from '../../shared/api/getApiError.ts'
 import type { RequestStatus } from '../../shared/api/requestStatus.ts'
 import { clearSessionToken, readSessionToken, saveSessionToken } from '../../shared/api/sessionToken.ts'
-import { requestCurrentUser, requestDemoUsers, requestSignIn } from './authApi.ts'
-import type { DemoUser, SessionUser } from './authTypes.ts'
+import type { Language } from '../../shared/i18n/languages.ts'
+import {
+  requestCodeVerification,
+  requestCurrentUser,
+  requestRoles,
+  requestSignInCode,
+  requestTestAccounts,
+} from './authApi.ts'
+import type { RequestCodeResponse, Role, SessionUser, TestAccount } from './authTypes.ts'
 
 // 'checking' means a token was found and the server has not yet confirmed it.
 type SessionStatus = 'checking' | 'signedIn' | 'signedOut'
@@ -11,37 +18,50 @@ type SessionStatus = 'checking' | 'signedIn' | 'signedOut'
 type AuthState = {
   sessionStatus: SessionStatus
   user: SessionUser | null
-  demoUsers: DemoUser[]
-  demoUsersStatus: RequestStatus
-  signInStatus: RequestStatus
+  roles: Role[]
+  testAccounts: TestAccount[]
+  // Set once a code was requested, which moves the sign-in screen on to entering the code.
+  codeEmail: string | null
+  testCode: string | null
+  codeRequestStatus: RequestStatus
+  verificationStatus: RequestStatus
   error: ApiError | null
 }
 
 const initialState: AuthState = {
   sessionStatus: readSessionToken() ? 'checking' : 'signedOut',
   user: null,
-  demoUsers: [],
-  demoUsersStatus: 'idle',
-  signInStatus: 'idle',
+  roles: [],
+  testAccounts: [],
+  codeEmail: null,
+  testCode: null,
+  codeRequestStatus: 'idle',
+  verificationStatus: 'idle',
   error: null,
 }
 
-export const fetchDemoUsers = createAsyncThunk<DemoUser[], void, { rejectValue: ApiError }>(
-  'auth/fetchDemoUsers',
-  async (_, { rejectWithValue }) => {
-    try {
-      return await requestDemoUsers()
-    } catch (error) {
-      return rejectWithValue(getApiError(error))
-    }
-  },
-)
+export const fetchRoles = createAsyncThunk<Role[], void>('auth/fetchRoles', () => requestRoles())
 
-export const signIn = createAsyncThunk<SessionUser, string, { rejectValue: ApiError }>(
-  'auth/signIn',
-  async (userId, { rejectWithValue }) => {
+// The list is optional, so a failure just leaves it out. It fails on purpose when switched off on the server.
+export const fetchTestAccounts = createAsyncThunk<TestAccount[], void>('auth/fetchTestAccounts', () => requestTestAccounts())
+
+export const requestCode = createAsyncThunk<
+  RequestCodeResponse,
+  { email: string; language: Language },
+  { rejectValue: ApiError }
+>('auth/requestCode', async ({ email, language }, { rejectWithValue }) => {
+  try {
+    return await requestSignInCode(email, language)
+  } catch (error) {
+    return rejectWithValue(getApiError(error))
+  }
+})
+
+export const verifyCode = createAsyncThunk<SessionUser, { email: string; code: string }, { rejectValue: ApiError }>(
+  'auth/verifyCode',
+  async ({ email, code }, { rejectWithValue }) => {
     try {
-      const { token, user } = await requestSignIn(userId)
+      const { token, user } = await requestCodeVerification(email, code)
       saveSessionToken(token)
       return user
     } catch (error) {
@@ -63,38 +83,55 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    codeEntryLeft(state) {
+      state.codeEmail = null
+      state.testCode = null
+      state.error = null
+    },
     signedOut(state) {
       state.sessionStatus = 'signedOut'
       state.user = null
-      state.signInStatus = 'idle'
+      state.codeEmail = null
+      state.testCode = null
+      state.codeRequestStatus = 'idle'
+      state.verificationStatus = 'idle'
       state.error = null
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchDemoUsers.pending, (state) => {
-        state.demoUsersStatus = 'loading'
+      .addCase(fetchRoles.fulfilled, (state, action) => {
+        state.roles = action.payload
+      })
+      .addCase(fetchTestAccounts.fulfilled, (state, action) => {
+        state.testAccounts = action.payload
+      })
+      .addCase(requestCode.pending, (state) => {
+        state.codeRequestStatus = 'loading'
         state.error = null
       })
-      .addCase(fetchDemoUsers.fulfilled, (state, action) => {
-        state.demoUsersStatus = 'succeeded'
-        state.demoUsers = action.payload
+      .addCase(requestCode.fulfilled, (state, action) => {
+        state.codeRequestStatus = 'succeeded'
+        state.codeEmail = action.meta.arg.email
+        state.testCode = action.payload.testCode ?? null
       })
-      .addCase(fetchDemoUsers.rejected, (state, action) => {
-        state.demoUsersStatus = 'failed'
+      .addCase(requestCode.rejected, (state, action) => {
+        state.codeRequestStatus = 'failed'
         state.error = action.payload ?? FALLBACK_API_ERROR
       })
-      .addCase(signIn.pending, (state) => {
-        state.signInStatus = 'loading'
+      .addCase(verifyCode.pending, (state) => {
+        state.verificationStatus = 'loading'
         state.error = null
       })
-      .addCase(signIn.fulfilled, (state, action) => {
-        state.signInStatus = 'succeeded'
+      .addCase(verifyCode.fulfilled, (state, action) => {
+        state.verificationStatus = 'succeeded'
         state.sessionStatus = 'signedIn'
         state.user = action.payload
+        state.codeEmail = null
+        state.testCode = null
       })
-      .addCase(signIn.rejected, (state, action) => {
-        state.signInStatus = 'failed'
+      .addCase(verifyCode.rejected, (state, action) => {
+        state.verificationStatus = 'failed'
         state.error = action.payload ?? FALLBACK_API_ERROR
       })
       .addCase(restoreSession.fulfilled, (state, action) => {
@@ -108,5 +145,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { signedOut } = authSlice.actions
+export const { codeEntryLeft, signedOut } = authSlice.actions
 export const authReducer = authSlice.reducer

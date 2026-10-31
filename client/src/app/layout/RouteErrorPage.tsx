@@ -7,7 +7,7 @@ export function RouteErrorPage() {
   const { t } = useTranslation()
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-xl p-6 pt-[max(1.5rem,env(safe-area-inset-top))]">
       <StatusMessage tone="error">{t('routeError.message')}</StatusMessage>
       <Button className="mt-4" onClick={() => window.location.reload()}>
         {t('routeError.reload')}

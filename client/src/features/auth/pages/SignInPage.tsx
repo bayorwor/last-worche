@@ -1,45 +1,65 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/storeHooks.ts'
-import { Button } from '../../../shared/components/Button.tsx'
-import { PageLoader } from '../../../shared/components/PageLoader.tsx'
-import { PageTitle } from '../../../shared/components/PageTitle.tsx'
-import { Panel } from '../../../shared/components/Panel.tsx'
-import { StatusMessage } from '../../../shared/components/StatusMessage.tsx'
+import { LanguageSwitcher } from '../../../shared/components/LanguageSwitcher.tsx'
 import { useTranslation } from '../../../shared/i18n/languageContext.ts'
-import { fetchDemoUsers, signIn } from '../authSlice.ts'
-import { DemoUserList } from '../components/DemoUserList.tsx'
+import { codeEntryLeft, fetchTestAccounts, requestCode, verifyCode } from '../authSlice.ts'
+import { CodeStep } from '../components/CodeStep.tsx'
+import { EmailStep } from '../components/EmailStep.tsx'
+import { SignInBrandPanel } from '../components/SignInBrandPanel.tsx'
+import { TestAccountList } from '../components/TestAccountList.tsx'
 
 export default function SignInPage() {
   const dispatch = useAppDispatch()
-  const { t } = useTranslation()
-  const { demoUsers, demoUsersStatus, signInStatus, error } = useAppSelector((state) => state.auth)
+  const { language } = useTranslation()
+  const { testAccounts, codeEmail, testCode, codeRequestStatus, verificationStatus, error } = useAppSelector(
+    (state) => state.auth,
+  )
+  const [email, setEmail] = useState('')
 
   useEffect(() => {
-    dispatch(fetchDemoUsers())
+    dispatch(fetchTestAccounts())
   }, [dispatch])
 
+  async function verify(code: string) {
+    const result = await dispatch(verifyCode({ email: codeEmail ?? email, code }))
+    return verifyCode.fulfilled.match(result)
+  }
+
   return (
-    <div className="mx-auto max-w-xl">
-      <PageTitle>{t('signIn.pageTitle')}</PageTitle>
-      <Panel title={t('signIn.panelTitle')}>
-        <p className="mb-4 text-sm text-muted">{t('signIn.noPassword')}</p>
-        {demoUsersStatus === 'loading' && demoUsers.length === 0 && <PageLoader />}
-        <DemoUserList
-          users={demoUsers}
-          isSigningIn={signInStatus === 'loading'}
-          onSelect={(userId) => dispatch(signIn(userId))}
-        />
-        {error && (
-          <div className="mt-4">
-            <StatusMessage tone="error">{t(error.key, error.values)}</StatusMessage>
-            {demoUsers.length === 0 && (
-              <Button className="mt-3" onClick={() => dispatch(fetchDemoUsers())}>
-                {t('common.retry')}
-              </Button>
-            )}
-          </div>
-        )}
-      </Panel>
+    <div className="min-h-dvh lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+      <SignInBrandPanel />
+      <main className="px-6 pt-5 pb-[calc(2.5rem+env(safe-area-inset-bottom))] lg:px-12 lg:py-8">
+        <div className="flex justify-end">
+          <LanguageSwitcher />
+        </div>
+        <div className="mx-auto mt-4 max-w-md lg:mt-10">
+          {codeEmail ? (
+            <CodeStep
+              email={codeEmail}
+              testCode={testCode}
+              isVerifying={verificationStatus === 'loading'}
+              isResending={codeRequestStatus === 'loading'}
+              error={error}
+              onVerify={verify}
+              onResend={() => dispatch(requestCode({ email: codeEmail, language }))}
+              onChangeEmail={() => dispatch(codeEntryLeft())}
+            />
+          ) : (
+            <>
+              <EmailStep
+                email={email}
+                isSubmitting={codeRequestStatus === 'loading'}
+                error={error}
+                onChange={setEmail}
+                onSubmit={() => dispatch(requestCode({ email: email.trim(), language }))}
+              />
+              {testAccounts.length > 0 && (
+                <TestAccountList accounts={testAccounts} selectedEmail={email} onSelect={setEmail} />
+              )}
+            </>
+          )}
+        </div>
+      </main>
     </div>
   )
 }

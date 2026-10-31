@@ -1,5 +1,6 @@
 // Builds the Express app and connects the layers:
 // routes -> controllers -> services -> domain, with services using repositories for storage.
+import cors from "cors";
 import express from "express";
 import morgan from "morgan";
 import { env } from "./config/dotenv.ts";
@@ -14,6 +15,7 @@ import { createAiRoutes } from "./routes/aiRoutes.ts";
 import { createAuthRoutes } from "./routes/authRoutes.ts";
 import { createBookingRoutes } from "./routes/bookingRoutes.ts";
 import { createAuthService } from "./services/authService.ts";
+import { sendEmail } from "./services/emailService.ts";
 import { createBookingService } from "./services/bookingService.ts";
 
 type AppDependencies = {
@@ -23,11 +25,17 @@ type AppDependencies = {
 
 export function createApp({ bookingRepository, userRepository }: AppDependencies) {
   const bookingService = createBookingService(bookingRepository);
-  const authService = createAuthService(userRepository, env.JWT_SECRET);
+  const authService = createAuthService(userRepository, {
+    sessionSecret: env.JWT_SECRET,
+    showCodes: env.MAIL_MOCK,
+    testAccountsEnabled: env.TEST_ACCOUNTS_ENABLED,
+    sendEmail,
+  });
   const guards = createAuthGuards(authService);
 
   const app = express();
   app.use(morgan("dev", { skip: () => process.env.NODE_ENV === "test" }));
+  app.use(cors({ origin: env.CORS_ORIGINS }));
   app.use(express.json());
 
   app.use("/api/auth", createAuthRoutes(createAuthController(authService), guards));

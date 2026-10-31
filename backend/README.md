@@ -1,6 +1,6 @@
 # backend
 
-lastWorche API, running on Bun, Express and MySQL. No API key or mail server is needed: `AI_MOCK=true` returns a fixed AI proposal, and `MAIL_MOCK=true` writes emails to the log.
+lastWorche API, running on Bun, Express and MySQL. No API key or mail server is needed: `AI_MOCK=true` returns a fixed AI proposal, and `MAIL_MOCK=true` sends no email and shows sign-in codes on the screen.
 
 MySQL must be installed and running. To create the database and user once, run this from the repository root: `mysql -u root -p < backend/setup-database.sql`.
 
@@ -41,9 +41,13 @@ src/
 ## Try it
 
 ```bash
-# Sign in as the demo consultant. The other demo users are user-project-lead and user-purchasing.
-TOKEN=$(curl -s -X POST localhost:3000/api/auth/sign-in -H 'Content-Type: application/json' \
-  -d '{"userId":"user-consultant"}' | sed -E 's/.*"token":"([^"]+)".*/\1/')
+# Sign in as a test user: ask for a code, then confirm it. With MAIL_MOCK=true, the answer contains the code.
+# The README lists all test users.
+CODE=$(curl -s -X POST localhost:3000/api/auth/request-code -H 'Content-Type: application/json' \
+  -d '{"email":"l.hoffmann@consultis.example"}' | sed -E 's/.*"testCode":"([0-9]+)".*/\1/')
+
+TOKEN=$(curl -s -X POST localhost:3000/api/auth/verify-code -H 'Content-Type: application/json' \
+  -d "{\"email\":\"l.hoffmann@consultis.example\",\"code\":\"$CODE\"}" | sed -E 's/.*"token":"([^"]+)".*/\1/')
 
 curl -X POST localhost:3000/api/bookings -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"orderId":"4500012345","date":"2026-10-27","startTime":"09:00","endTime":"17:00","hours":7,"description":"Legacy data reconciliation"}'

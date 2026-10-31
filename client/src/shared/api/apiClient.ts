@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { assertJsonResponse } from './assertJsonResponse.ts'
 import { readSessionToken } from './sessionToken.ts'
 
 export const apiClient = axios.create({
@@ -11,4 +12,9 @@ apiClient.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
+})
+
+apiClient.interceptors.response.use((response) => {
+  assertJsonResponse(response.headers['content-type'])
+  return response
 })

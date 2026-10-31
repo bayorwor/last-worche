@@ -12,6 +12,17 @@ bun test        # unit tests
 
 The Vite dev server needs Node.js 22.12 or newer alongside Bun.
 
+## Mobile app
+
+The mobile app shows the same client, built with `VITE_API_BASE_URL` from `.env.mobile` because it has no Vite server to forward `/api`. To run it in the iOS simulator, start the database and backend, then:
+
+```bash
+bun run mobile:sync   # build for mobile and copy into ios/ and android/
+bunx cap open ios     # opens Xcode: choose a simulator and press Run
+```
+
+Run `mobile:sync` after every client change. Using plain `bun run build` for the app makes every API call fail. On a real phone, set `.env.mobile` to this computer's network address. Android is not set up to reach the backend yet.
+
 ## Structure
 
 ```

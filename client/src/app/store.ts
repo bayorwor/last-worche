@@ -4,7 +4,7 @@ import { authReducer, signedOut } from '../features/auth/authSlice.ts'
 import { bookingsReducer } from '../features/bookings/bookingsSlice.ts'
 import { budgetReducer } from '../features/budget/budgetSlice.ts'
 import { apiClient } from '../shared/api/apiClient.ts'
-import { clearSessionToken } from '../shared/api/sessionToken.ts'
+import { clearSessionToken, readSessionToken } from '../shared/api/sessionToken.ts'
 
 const appReducer = combineReducers({
   auth: authReducer,
@@ -18,9 +18,10 @@ const rootReducer: typeof appReducer = (state, action) =>
 
 export const store = configureStore({ reducer: rootReducer })
 
-// The server answers 401 when a session has ended, for example after 8 hours.
+// The server answers 401 when a session has ended, for example after 8 hours. Without a session,
+// a 401 is just a wrong sign-in code, which the sign-in screen explains itself.
 apiClient.interceptors.response.use(undefined, (error) => {
-  if (axios.isAxiosError(error) && error.response?.status === 401) {
+  if (axios.isAxiosError(error) && error.response?.status === 401 && readSessionToken()) {
     clearSessionToken()
     store.dispatch(signedOut())
   }

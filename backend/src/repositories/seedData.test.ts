@@ -1,6 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import { HOURS_PER_PERSON_DAY } from "../domain/booking.ts";
-import { ASSIGNMENTS, buildDemoBookings, NEAR_LIMIT_ORDER_ID, ORDERS, SEED_ORDER_ID } from "./seedData.ts";
+import {
+  ASSIGNMENTS,
+  buildDemoBookings,
+  CONSULTANTS,
+  NEAR_LIMIT_ORDER_ID,
+  ORDERS,
+  ROLES,
+  SEED_ORDER_ID,
+  TEST_USERS,
+} from "./seedData.ts";
 
 const bookings = buildDemoBookings();
 
@@ -36,5 +45,24 @@ describe("demo bookings", () => {
     }
 
     expect(Math.max(...hoursPerPersonAndDay.values())).toBeLessThanOrEqual(10);
+  });
+});
+
+describe("test users", () => {
+  test("cover every role", () => {
+    expect(new Set(TEST_USERS.map((user) => user.role))).toEqual(new Set(ROLES.map((role) => role.id)));
+  });
+
+  test("have unique, lowercase, fictional email addresses", () => {
+    const emails = TEST_USERS.map((user) => user.email);
+
+    expect(new Set(emails).size).toBe(emails.length);
+    expect(emails.every((email) => email === email.toLowerCase() && email.endsWith(".example"))).toBe(true);
+  });
+
+  test("include a sign-in for every consultant who has bookings", () => {
+    const signedInConsultants = TEST_USERS.map((user) => user.consultantId);
+
+    expect(CONSULTANTS.every((consultant) => signedInConsultants.includes(consultant.id))).toBe(true);
   });
 });

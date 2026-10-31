@@ -100,7 +100,7 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
   test("reads back recent bookings with the consultant's name, newest first", async () => {
     await service.createBooking({ ...booking, date: "2026-10-26", hours: 7 });
     await service.createBooking({ ...booking, date: "2026-10-27", hours: 7 });
-    const lead = { id: DEMO_PROJECT_LEAD_ID, name: "A. Weber", role: "project_lead" as const, consultantId: null };
+    const lead = { id: DEMO_PROJECT_LEAD_ID, name: "A. Weber", email: "a.weber@client.example", role: "project_lead" as const, consultantId: null };
 
     const bookings = await service.listOrderBookingsFor(lead, SEED_ORDER_ID);
 
@@ -119,7 +119,13 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
   test("a consultant's list holds only their own bookings", async () => {
     await service.createBooking({ ...booking, hours: 7 });
     await service.createBooking({ ...booking, consultantId: "consultant-2", hours: 7 });
-    const consultant = { id: "user-consultant", name: "L. Hoffmann", role: "consultant" as const, consultantId: "consultant-1" };
+    const consultant = {
+      id: "user-consultant",
+      name: "L. Hoffmann",
+      email: "l.hoffmann@consultis.example",
+      role: "consultant" as const,
+      consultantId: "consultant-1",
+    };
 
     const bookings = await service.listConsultantBookingsFor(consultant, "consultant-1");
 

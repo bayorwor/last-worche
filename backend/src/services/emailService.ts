@@ -1,5 +1,4 @@
-// Sends email through nodemailer. No feature uses this yet, because there are no user records
-// with addresses. See docs/adr/0008-email-with-nodemailer.md.
+// Sends email through nodemailer. See docs/adr/0008-email-with-nodemailer.md. The sign-in codes are its first use.
 import { env } from "../config/dotenv.ts";
 import { getMailTransporter } from "../config/mailer.ts";
 

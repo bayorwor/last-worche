@@ -13,6 +13,10 @@ export type NewBooking = {
 
 export type StoredBooking = NewBooking & { id: number };
 
+export type OrderBooking = StoredBooking & { consultantName: string };
+
+export const RECENT_BOOKINGS_LIMIT = 10;
+
 export type OrderSummary = { id: string; title: string };
 
 export type BookingTransaction = {
@@ -30,6 +34,11 @@ export type BookingTransaction = {
 export type BookingRepository = {
   listOrders(): Promise<OrderSummary[]>;
   listAssignedOrders(consultantId: string): Promise<OrderSummary[]>;
+  listOrdersLedBy(userId: string): Promise<OrderSummary[]>;
+  isConsultantAssigned(consultantId: string, orderId: string): Promise<boolean>;
+  isOrderLedBy(userId: string, orderId: string): Promise<boolean>;
+  listRecentBookingsOfConsultant(consultantId: string): Promise<StoredBooking[]>;
+  listRecentBookingsOfOrder(orderId: string): Promise<OrderBooking[]>;
   findOrder(orderId: string): Promise<Order | null>;
   sumBookedHours(orderId: string): Promise<number>;
   // Commits if `work` succeeds and rolls everything back if it throws.

@@ -6,7 +6,7 @@ import { BusinessRuleError } from "../domain/errors.ts";
 import { createBookingService, type BookingService } from "../services/bookingService.ts";
 import { openDatabase } from "./database.ts";
 import { createMysqlBookingRepository } from "./mysqlBookingRepository.ts";
-import { NEAR_LIMIT_ORDER_ID, SEED_ORDER_ID } from "./seedData.ts";
+import { DEMO_PROJECT_LEAD_ID, NEAR_LIMIT_ORDER_ID, SEED_ORDER_ID } from "./seedData.ts";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 
@@ -95,6 +95,35 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
     const unassigned = { ...booking, orderId: NEAR_LIMIT_ORDER_ID, consultantId: "consultant-2", hours: 1 };
 
     await expect(service.createBooking(unassigned)).rejects.toThrow(BusinessRuleError);
+  });
+
+  test("reads back recent bookings with the consultant's name, newest first", async () => {
+    await service.createBooking({ ...booking, date: "2026-10-26", hours: 7 });
+    await service.createBooking({ ...booking, date: "2026-10-27", hours: 7 });
+    const lead = { id: DEMO_PROJECT_LEAD_ID, name: "A. Weber", role: "project_lead" as const, consultantId: null };
+
+    const bookings = await service.listOrderBookingsFor(lead, SEED_ORDER_ID);
+
+    expect(bookings[0]).toMatchObject({
+      orderId: SEED_ORDER_ID,
+      consultantId: "consultant-1",
+      consultantName: "L. Hoffmann",
+      date: "2026-10-27",
+      startTime: "09:00",
+      endTime: "17:00",
+      hours: 7,
+    });
+    expect(bookings.map(({ date }) => date)).toEqual(["2026-10-27", "2026-10-26"]);
+  });
+
+  test("a consultant's list holds only their own bookings", async () => {
+    await service.createBooking({ ...booking, hours: 7 });
+    await service.createBooking({ ...booking, consultantId: "consultant-2", hours: 7 });
+    const consultant = { id: "user-consultant", name: "L. Hoffmann", role: "consultant" as const, consultantId: "consultant-1" };
+
+    const bookings = await service.listConsultantBookingsFor(consultant, "consultant-1");
+
+    expect(bookings.map(({ consultantId }) => consultantId)).toEqual(["consultant-1"]);
   });
 
   test("lists only the orders a consultant is assigned to", async () => {

@@ -17,7 +17,15 @@ export function createBookingController(bookingService: BookingService) {
     },
 
     async getOrderBudget(req: Request<{ orderId: string }>, res: Response) {
-      res.json(await bookingService.getOrderBudget(req.params.orderId));
+      res.json(await bookingService.getOrderBudgetFor(currentUser(req), req.params.orderId));
+    },
+
+    async listOrderBookings(req: Request<{ orderId: string }>, res: Response) {
+      res.json(await bookingService.listOrderBookingsFor(currentUser(req), req.params.orderId));
+    },
+
+    async listConsultantBookings(req: Request<{ consultantId: string }>, res: Response) {
+      res.json(await bookingService.listConsultantBookingsFor(currentUser(req), req.params.consultantId));
     },
   };
 }

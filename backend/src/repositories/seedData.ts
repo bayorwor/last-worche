@@ -5,6 +5,7 @@ export const SEED_ORDER_ID = "4500012345";
 export const NEAR_LIMIT_ORDER_ID = "4500012346"; // only 0.5 PT free, to show the free-budget rule rejecting a booking
 
 export const DEMO_CONSULTANT_ID = "consultant-1";
+export const DEMO_PROJECT_LEAD_ID = "user-project-lead";
 
 export const ACCOUNTING_OBJECTS = [
   { id: "CC-4711", name: "IT applications" },
@@ -38,7 +39,7 @@ export const ASSIGNMENTS = [
 // One per role. They have no password yet, because sign-in does not exist (ADR-0002).
 export const DEMO_USERS = [
   { id: "user-consultant", name: "L. Hoffmann", role: "consultant", consultantId: DEMO_CONSULTANT_ID },
-  { id: "user-project-lead", name: "A. Weber", role: "project_lead", consultantId: null },
+  { id: DEMO_PROJECT_LEAD_ID, name: "A. Weber", role: "project_lead", consultantId: null },
   { id: "user-purchasing", name: "K. Vogel", role: "purchasing", consultantId: null },
 ];
 

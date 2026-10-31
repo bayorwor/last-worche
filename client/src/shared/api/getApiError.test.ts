@@ -29,6 +29,11 @@ describe('getApiError', () => {
     })
   })
 
+  test('explains a missing session and a missing permission', () => {
+    expect(getApiError(failedRequest(401, {}))).toEqual({ key: 'errors.sessionEnded' })
+    expect(getApiError(failedRequest(403, {}))).toEqual({ key: 'errors.forbidden' })
+  })
+
   test('tells the AI errors apart by their code', () => {
     expect(getApiError(failedRequest(503, { code: 'ai-busy' }))).toEqual({ key: 'errors.aiBusy' })
   })

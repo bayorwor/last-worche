@@ -22,6 +22,6 @@ The client is a large company that wants single sign-on with its own identity pr
 ## Consequences
 
 - The domain and permission checks only see a user and a role, so replacing the demo sign-in does not change them.
-- **Not built yet.** Today the client only switches views with tabs, and `consultantId` comes from the request body, so anyone can book as anyone. Sign-in and the checks in [roles-and-privacy.md](../roles-and-privacy.md) must come next.
+- **Built for the demo:** the sign-in screen lists the seeded demo users, and choosing one starts a session with no password. The token lasts 8 hours and is kept in the browser's `localStorage`, so a script injected into the page could read it. That is acceptable for sample data, not for production.
 - Demo users must never reach a production deployment.
 - The single sign-on process uses email through nodemailer ([ADR-0008](0008-email-with-nodemailer.md)), for example to invite a consultant to sign in for the first time. The sign-in itself and its security stay with the identity provider, so these emails never carry passwords.

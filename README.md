@@ -51,13 +51,13 @@ These tests need no database, so the 11 tests against real MySQL are reported as
 
 ## Demo users
 
-There is no login yet, so the demo users below are stored but cannot sign in. Choose a role with the tabs at the top of the page. Labels are shown as German / English.
+Open <http://localhost:5173> and choose a user on the sign-in screen. No password is needed in the demo. To change user, choose *Abmelden / Sign out* at the top of the page. Labels are shown as German / English.
 
-| Role | Demo user | Sign in with | What to try |
-|---|---|---|---|
-| Consultant | L. Hoffmann | Tab *Berater / Consultant* | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, choose *Vorschlag prüfen / Check proposal*, then *Buchung bestätigen / Confirm booking*. To see a rejection, choose order 4500012346 first: it has too little budget left. |
-| Project lead | A. Weber | Tab *Projektleitung / Project lead* | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days. |
-| Purchasing | K. Vogel | Tab *Einkauf / Purchasing* | See the supplier overview with aggregated values only. These are sample values for now. |
+| Role | Demo user to choose | What to try |
+|---|---|---|
+| Consultant | L. Hoffmann | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, choose *Vorschlag prüfen / Check proposal*, then *Buchung bestätigen / Confirm booking*. To see a rejection, choose order 4500012346 first: it has too little budget left. |
+| Project lead | A. Weber | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days. |
+| Purchasing | K. Vogel | See the supplier overview with aggregated values only. These are sample values for now. |
 
 With the default `AI_MOCK=true`, the one-sentence booking returns a fixed proposal of 09:00–17:00 with 7 hours for today, whatever the sentence says. Confirming it a second time is rejected as an overlap, which shows that rule. To book other times, use the API as shown in the [backend README](backend/README.md).
 
@@ -109,8 +109,10 @@ flowchart LR
 
 | Method and path | Purpose | Errors |
 |---|---|---|
-| `GET /api/orders` | All orders, as ID and title | |
-| `GET /api/consultants/:consultantId/orders` | Only the orders this consultant is assigned to | |
+| `GET /api/auth/demo-users` | The demo users to choose from | |
+| `POST /api/auth/sign-in` | Start a session for a demo user, and receive a signed token | `401` unknown user |
+| `GET /api/auth/me` | Who the session belongs to | `401` no valid session |
+| `GET /api/orders` | Orders as ID and title. A consultant sees only their assigned orders | `401` |
 | `POST /api/bookings` | Check the rules, then store a booking | `400` invalid input, `404` unknown order, `422` rule violated, with `rule` and `values` so the client can explain it in either language |
 | `GET /api/orders/:orderId/budget` | Ordered, used and free person-days | `404` unknown order |
 | `POST /api/ai/parse-booking` | Turn one sentence into a booking proposal, without storing it | `400` invalid input, `503` AI service unavailable, with a `code` |
@@ -123,6 +125,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 |---|---|---|
 | `PORT` | `3000` | API port. The Vite dev server expects `3000`. |
 | `DATABASE_URL` | `mysql://lastworche:lastworche@localhost:3306/lastworche` | MySQL connection, matching `backend/setup-database.sql`. For local development only. |
+| `JWT_SECRET` | a value for local development only | Signs session tokens |
 | `AI_MOCK` | `true` | `true` returns a fixed AI proposal, `false` calls OpenRouter |
 | `OPENROUTER_API_KEY` | not set | Only needed with `AI_MOCK=false` |
 | `OPENROUTER_MODEL` | `openrouter/auto` | Model to use. `openrouter/auto` lets OpenRouter pick one per request. |
@@ -139,7 +142,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | Core flow | Choose an assigned order, book time on it, see the effect on its budget | Manual booking form, without the AI sentence |
 | Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person; 10-hour day; 11-hour rest | Vacation and public holidays, order period |
 | Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, demo users, with migrations | Proofs of work |
-| Roles | Role views in the client, written permission concept. Until sign-in exists, the assignment rule trusts the consultant ID in the request | Sign-in, permission checks on the server ([ADR-0002](docs/adr/0002-identity-and-sign-in.md)) |
+| Roles | Demo sign-in with a signed session, one view per role, written permission concept. The consultant ID comes from the session | Permission checks on all routes ([ADR-0002](docs/adr/0002-identity-and-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |
 | Purchasing | Screen with sample values | Aggregated supplier endpoint |
 | Languages | Client screens and server errors in German and English | Emails, which need a stored language per user |

@@ -38,4 +38,4 @@ src/
 - **Naming:** components are `PascalCase.tsx` and named after what they show (`BookingProposalCard`), pages end in `Page`, other files are `camelCase.ts`, and event props start with `on`.
 - **Language:** code is in English. Text on screen is in German and English, and never written directly in a component: add it to `shared/i18n/messages/de.ts` and `en.ts`, then show it with `t('key')` from `useTranslation()`. The build fails if a language misses a key. Numbers, dates and units use the formatters from `useTranslation()`. See [ADR-0009](../docs/adr/0009-languages-and-location-default.md).
 - **Tests:** test files are skipped by the type check, because `bun:test` has no types in the client.
-- **Permissions:** the role navigation only switches the view. The server decides who may see what.
+- **Permissions:** the guards in `app/layout/RouteGuards.tsx` only choose which screen to show. The server decides who may see what.

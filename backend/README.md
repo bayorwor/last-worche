@@ -28,7 +28,7 @@ server.ts            entry point: connects to the database, starts listening
 src/
   app.ts             creates the Express app and connects the layers
   routes/            maps URLs to controllers
-  middlewares/       request validation, central error handling
+  middlewares/       sign-in and role checks, request validation, central error handling
   controllers/       HTTP only: read the request, call a service, write the response
   dtos/              shape of data crossing HTTP
   services/          use cases, the OpenRouter call and email sending
@@ -41,17 +41,21 @@ src/
 ## Try it
 
 ```bash
-curl -X POST localhost:3000/api/bookings -H 'Content-Type: application/json' \
-  -d '{"orderId":"4500012345","consultantId":"consultant-1","date":"2026-10-27","startTime":"09:00","endTime":"17:00","hours":7,"description":"Legacy data reconciliation"}'
+# Sign in as the demo consultant. The other demo users are user-project-lead and user-purchasing.
+TOKEN=$(curl -s -X POST localhost:3000/api/auth/sign-in -H 'Content-Type: application/json' \
+  -d '{"userId":"user-consultant"}' | sed -E 's/.*"token":"([^"]+)".*/\1/')
+
+curl -X POST localhost:3000/api/bookings -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"orderId":"4500012345","date":"2026-10-27","startTime":"09:00","endTime":"17:00","hours":7,"description":"Legacy data reconciliation"}'
 
 curl localhost:3000/api/orders/4500012345/budget
 
-curl localhost:3000/api/consultants/consultant-2/orders
+curl localhost:3000/api/orders -H "Authorization: Bearer $TOKEN"
 
-# rejected with 422: consultant-2 is not assigned to this order
+# rejected with 401: no session
 curl -X POST localhost:3000/api/bookings -H 'Content-Type: application/json' \
-  -d '{"orderId":"4500012346","consultantId":"consultant-2","date":"2026-10-27","startTime":"09:00","endTime":"10:00","hours":1,"description":"Report review"}'
+  -d '{"orderId":"4500012346","date":"2026-10-27","startTime":"09:00","endTime":"10:00","hours":1,"description":"Report review"}'
 
-curl -X POST localhost:3000/api/ai/parse-booking -H 'Content-Type: application/json' \
+curl -X POST localhost:3000/api/ai/parse-booking -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"sentence":"9 bis 5 am Kundenportal, 1 h Mittag"}'
 ```

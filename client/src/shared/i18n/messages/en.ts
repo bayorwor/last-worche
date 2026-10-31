@@ -6,13 +6,19 @@ export const en: Record<MessageKey, string> = {
   'header.tagline': 'Every hour in view.',
   'header.demoNotice': 'Demo · fictional data',
 
-  'nav.label': 'Role view',
-  'nav.consultant.title': 'Consultant',
-  'nav.consultant.subtitle': 'Supplier side · book time',
-  'nav.projectLead.title': 'Project lead',
-  'nav.projectLead.subtitle': 'Client side · review & steer',
-  'nav.purchasing.title': 'Purchasing',
-  'nav.purchasing.subtitle': 'Client side · totals only',
+  'role.consultant.title': 'Consultant',
+  'role.consultant.subtitle': 'Supplier side · book time',
+  'role.projectLead.title': 'Project lead',
+  'role.projectLead.subtitle': 'Client side · review & steer',
+  'role.purchasing.title': 'Purchasing',
+  'role.purchasing.subtitle': 'Client side · totals only',
+
+  'signIn.pageTitle': 'Sign in',
+  'signIn.panelTitle': 'Choose a demo user',
+  'signIn.noPassword': 'No password is needed in this demo.',
+
+  'session.signedInAs': 'Signed in as',
+  'session.signOut': 'Sign out',
 
   'common.loading': 'Loading …',
   'common.retry': 'Try again',
@@ -63,6 +69,8 @@ export const en: Record<MessageKey, string> = {
   'purchasing.onTrack': 'On track',
 
   'errors.serverUnavailable': 'The server cannot be reached right now. Please try again.',
+  'errors.sessionEnded': 'Your session has ended. Please sign in again.',
+  'errors.forbidden': 'You do not have permission to do this.',
   'errors.invalidInput': 'This input is not valid. Please check it.',
   'errors.orderNotFound': 'This order does not exist.',
   'errors.aiUnavailable': 'The AI service is unavailable. Please try again later.',

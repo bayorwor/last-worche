@@ -65,6 +65,12 @@ export function getApiError(error: unknown): ApiError {
     const invalidField = String(data?.details?.[0]?.path?.[0])
     return { key: FIELD_MESSAGE_KEYS[invalidField] ?? 'errors.invalidInput' }
   }
+  if (status === 401) {
+    return { key: 'errors.sessionEnded' }
+  }
+  if (status === 403) {
+    return { key: 'errors.forbidden' }
+  }
   if (status === 404) {
     return { key: 'errors.orderNotFound' }
   }

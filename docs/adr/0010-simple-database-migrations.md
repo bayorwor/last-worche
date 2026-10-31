@@ -21,6 +21,6 @@ We choose **our own list** in `backend/src/repositories/migrations.ts`. At start
 ## Consequences
 
 - A migration that has been committed must never be edited. Each change is a new migration at the end of the list.
-- MySQL cannot undo table changes in a transaction, so a migration that fails halfway may leave the database partly changed. In development, `docker compose down -v` starts again from a clean database.
+- MySQL cannot undo table changes in a transaction, so a migration that fails halfway may leave the database partly changed. In development, deleting and recreating the database starts again cleanly, as the README describes.
 - A database from before this decision fails to upgrade if it has bookings for consultants who are not in the sample data. It needs the same reset.
 - Migrations assume one backend starts at a time. Running several instances, as in [ADR-0003](0003-operation-and-scaling.md), needs a lock or a separate migration step.

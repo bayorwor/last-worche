@@ -1,6 +1,6 @@
 # 0006 · MySQL database
 
-- **Status:** accepted, replaces the database choice in [ADR-0001](0001-technology-stack.md). The consequence about migrations is replaced by [ADR-0010](0010-simple-database-migrations.md)
+- **Status:** accepted, replaces the database choice in [ADR-0001](0001-technology-stack.md). The consequence about migrations is replaced by [ADR-0010](0010-simple-database-migrations.md), and the use of Docker Compose by [ADR-0011](0011-mysql-without-docker.md)
 - **Date:** 2026-10-31
 - **Deciders:** Team lastWorche
 
@@ -16,7 +16,7 @@ ADR-0001 chose SQLite because it needs no server. The team has since decided on 
 
 ## Decision
 
-We choose **MySQL 8.4**, accessed with `mysql2`, and started by [compose.yaml](../../compose.yaml). A booking's budget check and insert share one transaction that locks the order (`SELECT … FOR UPDATE`), so simultaneous bookings cannot overspend together.
+We choose **MySQL 8.4**, accessed with `mysql2`, and started by a Compose file. A booking's budget check and insert share one transaction that locks the order (`SELECT … FOR UPDATE`), so simultaneous bookings cannot overspend together.
 
 ## Consequences
 

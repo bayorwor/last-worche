@@ -25,4 +25,4 @@ Each instance uses its own MySQL database ([ADR-0006](0006-mysql-database.md)), 
 - Tenant separation needs no extra code, and a customer's data can be exported or deleted as a whole.
 - We must automate updates and monitoring across instances, and automate backups for the 10-year retention.
 - Rolling out schema changes across instances needs a migration tool, which we do not have yet.
-- **Not built yet.** There is no container image for the application. The Compose file starts only the database.
+- **Not built yet.** There is no container image for the application.

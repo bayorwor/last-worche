@@ -2,7 +2,7 @@
 
 lastWorche API, running on Bun, Express and MySQL. No API key or mail server is needed: `AI_MOCK=true` returns a fixed AI proposal, and `MAIL_MOCK=true` writes emails to the log.
 
-Start the database first, from the repository root: `docker compose up -d --wait`.
+MySQL must be installed and running. To create the database and user once, run this from the repository root: `mysql -u root -p < backend/setup-database.sql`.
 
 ```bash
 bun install

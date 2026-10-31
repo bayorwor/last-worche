@@ -10,16 +10,16 @@ Built for the Article26 Hackathon 2026, on the working code track.
 |---|---|---|---|
 | [Bun](https://bun.com) | 1.4.x | `bun --version` | Installing packages, running the backend and tests |
 | [Node.js](https://nodejs.org) | 22.12 or newer | `node --version` | Running the Vite dev server |
-| [Docker](https://www.docker.com/products/docker-desktop/) with Compose, running | Compose v2 | `docker compose version` | Running the MySQL database |
+| [MySQL](https://dev.mysql.com/downloads/mysql/), installed and running | 8.4 or newer | `mysql --version` | The database |
 
-Ports `3000` (API), `3306` (MySQL) and `5173` (web app) must be free. No paid account or API key is needed.
+MySQL must listen on port `3306`, and ports `3000` (API) and `5173` (web app) must be free. No paid account or API key is needed.
 
 ## Setup
 
-From the repository root. The first run downloads the MySQL image.
+From the repository root. The first command asks for your MySQL root password, and creates the `lastworche` database and user.
 
 ```bash
-docker compose up -d --wait
+mysql -u root -p < backend/setup-database.sql
 cd backend && bun install --frozen-lockfile && cp .env.example .env && cd ..
 cd client && bun install --frozen-lockfile && cd ..
 ```
@@ -38,7 +38,7 @@ cd client && bun run dev      # web app on http://localhost:5173
 
 Open <http://localhost:5173>. The app starts in German if your device's time zone is in Germany, Austria, Switzerland or Liechtenstein or your browser's first language is German, and in English otherwise. Switch with *DE / EN* in the header; your choice is remembered. On first start, the backend creates its tables in MySQL and adds sample data: two orders, three consultants and their bookings. Order 4500012345 has 84 of 140 person-days used, and order 4500012346 has only 0.5 of 20 free. Data survives a restart.
 
-To stop the database, run `docker compose down`. Add `-v` to delete its data as well; the sample data then returns on the next start. If you ran an earlier version and the backend fails while applying a database migration, this also resets it.
+To delete all data, run `mysql -u root -p -e "DROP DATABASE lastworche"`, then the first Setup command again; the sample data returns on the next backend start. If you ran an earlier version and the backend fails while applying a database migration, this also resets it.
 
 ## Test
 
@@ -70,9 +70,9 @@ Where the technical jury finds the evidence for each [technical criterion](https
 | 1 · Persistence and data model | Schema in [migrations.ts](backend/src/repositories/migrations.ts), sample data in [seedData.ts](backend/src/repositories/seedData.ts), queries in [mysqlBookingRepository.ts](backend/src/repositories/mysqlBookingRepository.ts), [ER diagram](docs/domain.md) |
 | 2 · Business rules and unit tests | Rules in [booking.ts](backend/src/domain/booking.ts), tests in [booking.test.ts](backend/src/domain/booking.test.ts) and [bookingService.test.ts](backend/src/services/bookingService.test.ts), simultaneous bookings in [mysqlBookingRepository.test.ts](backend/src/repositories/mysqlBookingRepository.test.ts) |
 | 3 · Roles, permissions and privacy | [Permission concept](docs/roles-and-privacy.md), role views in the [mockup](docs/mockup/index.html) and in [client/src/features](client/src/features) |
-| 4 · Architecture and engineering | **A** · structure in [backend/src](backend/src) and [client/src](client/src) · **B** · [ADRs](docs/adr/) · **C** · Git history · **E** (database only) · [compose.yaml](compose.yaml) · **F** · [mockup](docs/mockup/index.html) |
+| 4 · Architecture and engineering | **A** · structure in [backend/src](backend/src) and [client/src](client/src) · **B** · [ADRs](docs/adr/) · **C** · Git history · **F** · [mockup](docs/mockup/index.html) |
 
-Building block D (API documentation) is not delivered: the API is described below, but not in a machine-readable form. For block E, the Compose file starts only the database, not the backend or client.
+Building block D (API documentation) is not delivered: the API is described below, but not in a machine-readable form. Building block E (containers) is not delivered, as decided in [ADR-0011](docs/adr/0011-mysql-without-docker.md).
 
 ## Tech stack
 
@@ -80,7 +80,7 @@ Building block D (API documentation) is not delivered: the API is described belo
 |---|---|---|
 | Language | TypeScript | [ADR-0001](docs/adr/0001-technology-stack.md) |
 | Backend | Bun, Express 5, Zod | [ADR-0001](docs/adr/0001-technology-stack.md) |
-| Database | MySQL 8.4 (`mysql2`), started with Docker Compose | [ADR-0006](docs/adr/0006-mysql-database.md) |
+| Database | MySQL 8.4 or newer (`mysql2`), installed on the machine | [ADR-0006](docs/adr/0006-mysql-database.md), [ADR-0011](docs/adr/0011-mysql-without-docker.md) |
 | Frontend | React 19, Vite, React Router, Redux Toolkit, axios, Tailwind CSS 4 | [ADR-0001](docs/adr/0001-technology-stack.md) |
 | Languages | German and English, default from the device's time zone | [ADR-0009](docs/adr/0009-languages-and-location-default.md) |
 | Tests and lint | `bun test`, oxlint | [ADR-0001](docs/adr/0001-technology-stack.md) |
@@ -122,7 +122,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | Variable | Default | Meaning |
 |---|---|---|
 | `PORT` | `3000` | API port. The Vite dev server expects `3000`. |
-| `DATABASE_URL` | `mysql://lastworche:lastworche@localhost:3306/lastworche` | MySQL connection, matching `compose.yaml`. For local development only. |
+| `DATABASE_URL` | `mysql://lastworche:lastworche@localhost:3306/lastworche` | MySQL connection, matching `backend/setup-database.sql`. For local development only. |
 | `AI_MOCK` | `true` | `true` returns a fixed AI proposal, `false` calls OpenRouter |
 | `OPENROUTER_API_KEY` | not set | Only needed with `AI_MOCK=false` |
 | `OPENROUTER_MODEL` | `openrouter/auto` | Model to use. `openrouter/auto` lets OpenRouter pick one per request. |
@@ -150,7 +150,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 - [Product vision](docs/product-vision.md): who it is for, core flow, what we leave out
 - [Domain model](docs/domain.md): glossary and ER diagram
 - [Roles and privacy](docs/roles-and-privacy.md): role matrix and personal data
-- Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md)
+- Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md)
 - [Mockup](docs/mockup/index.html) and its [visual direction](docs/mockup/README.md)
 - [AGENTS.md](AGENTS.md): instructions for AI coding agents
 

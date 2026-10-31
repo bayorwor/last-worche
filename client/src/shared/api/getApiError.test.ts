@@ -7,12 +7,19 @@ function failedRequest(status: number, data: unknown) {
 
 describe('getApiError', () => {
   test('passes on the values of a rejected business rule', () => {
-    const values = { hours: 9, orderId: '4500012345', freePersonDays: 0.5 }
+    const values = { orderId: '4500012345', freePersonDays: 0.5 }
 
     expect(getApiError(failedRequest(422, { rule: 'free-budget', values }))).toEqual({
       key: 'errors.ruleFreeBudget',
       values,
     })
+  })
+
+  test('explains which input was invalid', () => {
+    const invalidDescription = { details: [{ path: ['description'] }] }
+
+    expect(getApiError(failedRequest(400, invalidDescription))).toEqual({ key: 'errors.descriptionRequired' })
+    expect(getApiError(failedRequest(400, {}))).toEqual({ key: 'errors.invalidInput' })
   })
 
   test('shows the server text for a rule without a translation', () => {

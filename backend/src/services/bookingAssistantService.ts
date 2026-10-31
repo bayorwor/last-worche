@@ -25,7 +25,7 @@ export async function parseBookingSentence(
   today = new Date().toISOString().slice(0, 10),
 ): Promise<BookingProposal> {
   if (env.AI_MOCK) {
-    return { date: today, hours: 7, description: sentence };
+    return { date: today, startTime: "09:00", endTime: "17:00", hours: 7, description: sentence };
   }
 
   const response = await callOpenRouter(sentence, today);

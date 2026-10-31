@@ -11,7 +11,7 @@
 | Accounting object | Client-side cost object (cost centre or project element) that hours are booked against. |
 | Consultant | An external person employed by a supplier who books working time on orders. |
 | Supplier | The company that delivers consultants and records their working time (e.g. Consultis GmbH). |
-| Booking | One entry of working time: date, duration, description, consultant, order and accounting object. Created by a consultant, checked server-side against the business rules before it is stored, and immutable once its proof of work is approved. |
+| Booking | One entry of working time: date, start and end time, duration, description, consultant, order and accounting object. Created by a consultant, checked server-side against the business rules before it is stored, and immutable once its proof of work is approved. |
 | Free budget | Ordered person-days minus the sum of stored bookings of the order. A booking that would exceed it is rejected. |
 | Business rules | Server-side checks before storing a booking: free budget, no overlapping bookings of one person, max 10 h per day and 11 h rest (ArbZG), no bookings on approved vacation or public holidays, booking date inside the order period. |
 | Forecast | The projected week in which an order's budget is exhausted, computed from the current booking pace including vacations, public holidays and shutdowns. |

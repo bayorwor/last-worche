@@ -1,5 +1,7 @@
 export type BookingProposal = {
   date: string
+  startTime: string
+  endTime: string
   hours: number
   description: string
 }

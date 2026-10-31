@@ -10,23 +10,31 @@ import {
   confirmBookingProposal,
   fetchAssignedOrders,
   fetchBookingProposal,
+  fetchOwnBookings,
   proposalDiscarded,
 } from '../bookingsSlice.ts'
 import { BookingProposalCard } from '../components/BookingProposalCard.tsx'
 import { BookingSentenceForm } from '../components/BookingSentenceForm.tsx'
-import { ConfirmedBookingsTable } from '../components/ConfirmedBookingsTable.tsx'
+import { OwnBookingsTable } from '../components/OwnBookingsTable.tsx'
 
 export default function ConsultantBookingPage() {
   const dispatch = useAppDispatch()
   const { t } = useTranslation()
-  const { assignedOrders, assignedOrdersStatus, proposal, confirmedBookings, proposalStatus, confirmationStatus, error } =
+  const { assignedOrders, assignedOrdersStatus, proposal, ownBookings, proposalStatus, confirmationStatus, error } =
     useAppSelector((state) => state.bookings)
+  const consultantId = useAppSelector((state) => state.auth.user?.consultantId)
   const [chosenOrderId, setChosenOrderId] = useState<string | null>(null)
   const selectedOrderId = chosenOrderId ?? assignedOrders[0]?.id
 
   useEffect(() => {
     dispatch(fetchAssignedOrders())
   }, [dispatch])
+
+  useEffect(() => {
+    if (consultantId) {
+      dispatch(fetchOwnBookings(consultantId))
+    }
+  }, [dispatch, consultantId])
 
   return (
     <>
@@ -70,10 +78,10 @@ export default function ConsultantBookingPage() {
           )}
         </Panel>
         <Panel
-          title={t('bookings.sessionPanelTitle')}
+          title={t('bookings.ownPanelTitle')}
           aside={<StatusChip tone="neutral">{t('bookings.ownBookingsOnly')}</StatusChip>}
         >
-          <ConfirmedBookingsTable bookings={confirmedBookings} />
+          <OwnBookingsTable bookings={ownBookings} />
         </Panel>
       </div>
     </>

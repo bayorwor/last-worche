@@ -6,9 +6,8 @@ const timeOfDay = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Booking rejecte
 
 export const createBookingRequestSchema = z
   .object({
+    // There is no consultant ID here on purpose: it comes from the session, so nobody can book as someone else.
     orderId: z.string().min(1),
-    // Sample only: taken from the request until sign-in exists, then it must come from the session.
-    consultantId: z.string().min(1),
     date: z.iso.date(),
     startTime: timeOfDay,
     endTime: timeOfDay,

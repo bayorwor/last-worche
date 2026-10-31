@@ -9,8 +9,9 @@ import {
   calculateBudget,
 } from "../domain/booking.ts";
 import { NotFoundError } from "../domain/errors.ts";
-import type { CreateBookingRequest, OrderBudgetResponse } from "../dtos/bookingDtos.ts";
-import type { BookingRepository } from "../repositories/bookingRepository.ts";
+import type { User } from "../domain/user.ts";
+import type { OrderBudgetResponse } from "../dtos/bookingDtos.ts";
+import type { BookingRepository, NewBooking } from "../repositories/bookingRepository.ts";
 
 export type BookingService = ReturnType<typeof createBookingService>;
 
@@ -18,7 +19,7 @@ export function createBookingService(repository: BookingRepository) {
   return {
     // The checks and the insert share one transaction that locks the order and the consultant, so two
     // bookings arriving at the same moment cannot both use the same free budget or the same hours.
-    createBooking(request: CreateBookingRequest) {
+    createBooking(request: NewBooking) {
       return repository.transaction(async (transaction) => {
         const order = await transaction.findOrderForUpdate(request.orderId);
         if (!order) throw new NotFoundError(`Order ${request.orderId} does not exist.`);
@@ -43,8 +44,9 @@ export function createBookingService(repository: BookingRepository) {
       });
     },
 
-    listOrders() {
-      return repository.listOrders();
+    // Consultants only ever see the orders they are assigned to.
+    listOrdersFor(user: User) {
+      return user.consultantId ? repository.listAssignedOrders(user.consultantId) : repository.listOrders();
     },
 
     listAssignedOrders(consultantId: string) {

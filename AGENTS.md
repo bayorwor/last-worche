@@ -18,15 +18,16 @@ Read these before proposing anything substantial: [product vision](docs/product-
 ## Rules
 
 1. **Commits:** one-line messages only (`feat|fix|docs|test: …`), with no body. Do not commit unless what is being committed is clearly understood. Commits must be spread over the hackathon days, at least two per day.
-2. **Decisions become ADRs:** offer one in `docs/adr/`, from `0000-template.md`, whenever a technology, library, database, hosting option or pattern is chosen.
-3. **Structure:** keep API DTOs, domain objects and persistence apart, as described in [ADR-0004](docs/adr/0004-code-structure.md).
-4. **Business rules** live in `backend/src/domain/`, are enforced on the server and return an understandable error. Each rule has a test for accepting and for rejecting.
-5. **Permissions** are checked on the server. Hiding a button or a tab is not a permission check.
-6. **Data** survives a restart. Seed data and one demo user per role are created automatically.
-7. **Configuration** lives in `.env.example` with safe defaults. Never commit secrets or real personal data. Nothing may need a paid account or API key. AI (`AI_MOCK`) and email (`MAIL_MOCK`) keep their mock switches.
-8. **README first:** when a command to install, run or test changes, update the README in the same step, and keep its evidence map and status table current. The jury starts the product from the README alone, within 5 minutes.
-9. **Client size and naming:** no client file may exceed 450 lines (`bun run lint` enforces this). Split code properly and use clear, descriptive names for files, functions and components.
-10. **Product name:** always write `lastWorche`. The repository folder is `last-worche` because of its URL.
+2. **Branches:** `feature/<short-name>` → `development` → `staging` → `main`, as described in [ADR-0012](docs/adr/0012-branching-workflow.md). Branch from `development`. Never commit directly to `development`, `staging` or `main`. Merge with `git merge --no-ff`, and never squash.
+3. **Decisions become ADRs:** offer one in `docs/adr/`, from `0000-template.md`, whenever a technology, library, database, hosting option or pattern is chosen.
+4. **Structure:** keep API DTOs, domain objects and persistence apart, as described in [ADR-0004](docs/adr/0004-code-structure.md).
+5. **Business rules** live in `backend/src/domain/`, are enforced on the server and return an understandable error. Each rule has a test for accepting and for rejecting.
+6. **Permissions** are checked on the server. Hiding a button or a tab is not a permission check.
+7. **Data** survives a restart. Seed data and one demo user per role are created automatically.
+8. **Configuration** lives in `.env.example` with safe defaults. Never commit secrets or real personal data. Nothing may need a paid account or API key. AI (`AI_MOCK`) and email (`MAIL_MOCK`) keep their mock switches.
+9. **README first:** when a command to install, run or test changes, update the README in the same step, and keep its evidence map and status table current. The jury starts the product from the README alone, within 5 minutes.
+10. **Client size and naming:** no client file may exceed 450 lines (`bun run lint` enforces this). Split code properly and use clear, descriptive names for files, functions and components.
+11. **Product name:** always write `lastWorche`. The repository folder is `last-worche` because of its URL.
 
 ## Project facts
 

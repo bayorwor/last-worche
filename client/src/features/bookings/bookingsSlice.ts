@@ -2,14 +2,14 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { FALLBACK_API_ERROR, getApiError, type ApiError } from '../../shared/api/getApiError.ts'
 import type { OrderSummary } from '../../shared/api/orderSummary.ts'
 import type { RequestStatus } from '../../shared/api/requestStatus.ts'
-import { createBooking, requestAssignedOrders, requestBookingProposal } from './bookingsApi.ts'
+import { createBooking, requestAssignedOrders, requestBookingProposal, requestOwnBookings } from './bookingsApi.ts'
 import type { Booking, BookingProposal } from './bookingTypes.ts'
 
 type BookingsState = {
   assignedOrders: OrderSummary[]
   assignedOrdersStatus: RequestStatus
   proposal: BookingProposal | null
-  confirmedBookings: Booking[]
+  ownBookings: Booking[]
   proposalStatus: RequestStatus
   confirmationStatus: RequestStatus
   error: ApiError | null
@@ -19,7 +19,7 @@ const initialState: BookingsState = {
   assignedOrders: [],
   assignedOrdersStatus: 'idle',
   proposal: null,
-  confirmedBookings: [],
+  ownBookings: [],
   proposalStatus: 'idle',
   confirmationStatus: 'idle',
   error: null,
@@ -30,6 +30,17 @@ export const fetchAssignedOrders = createAsyncThunk<OrderSummary[], void, { reje
   async (_, { rejectWithValue }) => {
     try {
       return await requestAssignedOrders()
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
+export const fetchOwnBookings = createAsyncThunk<Booking[], string, { rejectValue: ApiError }>(
+  'bookings/fetchOwnBookings',
+  async (consultantId, { rejectWithValue }) => {
+    try {
+      return await requestOwnBookings(consultantId)
     } catch (error) {
       return rejectWithValue(getApiError(error))
     }
@@ -85,6 +96,12 @@ const bookingsSlice = createSlice({
         state.assignedOrdersStatus = 'failed'
         state.error = action.payload ?? FALLBACK_API_ERROR
       })
+      .addCase(fetchOwnBookings.fulfilled, (state, action) => {
+        state.ownBookings = action.payload
+      })
+      .addCase(fetchOwnBookings.rejected, (state, action) => {
+        state.error = action.payload ?? FALLBACK_API_ERROR
+      })
       .addCase(fetchBookingProposal.pending, (state) => {
         state.proposalStatus = 'loading'
         state.confirmationStatus = 'idle'
@@ -105,7 +122,7 @@ const bookingsSlice = createSlice({
       .addCase(confirmBookingProposal.fulfilled, (state, action) => {
         state.confirmationStatus = 'succeeded'
         state.proposal = null
-        state.confirmedBookings.push(action.payload)
+        state.ownBookings.unshift(action.payload)
       })
       .addCase(confirmBookingProposal.rejected, (state, action) => {
         state.confirmationStatus = 'failed'

@@ -6,9 +6,16 @@ import {
   ASSIGNMENTS,
   buildDemoBookings,
   CONSULTANTS,
+  DEMO_PROJECT_LEAD_ID,
   DEMO_USERS,
   ORDERS,
+  ROLES,
+  SECOND_LEAD_ORDER,
+  SECOND_LEAD_ORDER_CONSULTANT_ID,
+  SECOND_LEAD_ORDER_DAYS,
   SUPPLIERS,
+  TEST_PASSWORD,
+  TEST_USERS,
 } from "./seedData.ts";
 
 type Migration = {
@@ -108,6 +115,99 @@ export const MIGRATIONS: Migration[] = [
       await db.query("INSERT INTO bookings (order_id, consultant_id, date, hours, description) VALUES ?", [
         buildDemoBookings().map((b) => [b.orderId, b.consultantId, b.date, b.hours, b.description]),
       ]);
+    },
+  },
+  {
+    // Overlaps and rest periods need clock times. Existing bookings get a start of 09:00.
+    name: "004-booking-times",
+    async run(db) {
+      await db.query("ALTER TABLE bookings ADD COLUMN start_time TIME NULL, ADD COLUMN end_time TIME NULL");
+      await db.query("UPDATE bookings SET start_time = '09:00:00', end_time = ADDTIME('09:00:00', SEC_TO_TIME(hours * 3600))");
+      await db.query("ALTER TABLE bookings MODIFY start_time TIME NOT NULL, MODIFY end_time TIME NOT NULL");
+    },
+  },
+  {
+    // A project lead may only see the orders they lead.
+    name: "005-order-project-lead",
+    async run(db) {
+      await db.query("ALTER TABLE orders ADD COLUMN project_lead_id VARCHAR(64) NULL");
+      await db.query("UPDATE orders SET project_lead_id = ?", [DEMO_PROJECT_LEAD_ID]);
+      await db.query(`
+        ALTER TABLE orders
+          MODIFY project_lead_id VARCHAR(64) NOT NULL,
+          ADD FOREIGN KEY (project_lead_id) REFERENCES users(id)
+      `);
+    },
+  },
+  {
+    // Sign-in with email and password, roles as data, and enough test users to see each role's data (ADR-0013).
+    name: "006-roles-and-accounts",
+    async run(db) {
+      await db.query(`
+        CREATE TABLE roles (
+          id VARCHAR(32) PRIMARY KEY,
+          name_de VARCHAR(255) NOT NULL,
+          name_en VARCHAR(255) NOT NULL,
+          summary_de VARCHAR(255) NOT NULL,
+          summary_en VARCHAR(255) NOT NULL,
+          sort_order INT NOT NULL
+        )
+      `);
+      await db.query("INSERT INTO roles (id, name_de, name_en, summary_de, summary_en, sort_order) VALUES ?", [
+        ROLES.map((role, position) => [role.id, role.nameDe, role.nameEn, role.summaryDe, role.summaryEn, position]),
+      ]);
+
+      await db.query(`
+        ALTER TABLE users
+          MODIFY role VARCHAR(32) NOT NULL,
+          ADD FOREIGN KEY (role) REFERENCES roles(id),
+          ADD COLUMN email VARCHAR(255) NULL,
+          ADD COLUMN password_hash VARCHAR(255) NULL
+      `);
+
+      const passwordHash = await Bun.password.hash(TEST_PASSWORD);
+      await db.query("INSERT IGNORE INTO users (id, name, role, consultant_id) VALUES ?", [
+        TEST_USERS.map((user) => [user.id, user.name, user.role, user.consultantId]),
+      ]);
+      for (const user of TEST_USERS) {
+        await db.query("UPDATE users SET email = ?, password_hash = ? WHERE id = ?", [user.email, passwordHash, user.id]);
+      }
+      await db.query(`
+        ALTER TABLE users
+          MODIFY email VARCHAR(255) NOT NULL UNIQUE,
+          MODIFY password_hash VARCHAR(255) NOT NULL
+      `);
+
+      const order = SECOND_LEAD_ORDER;
+      await db.query(
+        "INSERT INTO orders (id, title, ordered_person_days, accounting_object_id, project_lead_id) VALUES (?, ?, ?, ?, ?)",
+        [order.id, order.title, order.orderedPersonDays, order.accountingObjectId, order.projectLeadId],
+      );
+      await db.query("INSERT INTO order_assignments (consultant_id, order_id) VALUES (?, ?)", [
+        SECOND_LEAD_ORDER_CONSULTANT_ID,
+        order.id,
+      ]);
+      await db.query("INSERT INTO bookings (order_id, consultant_id, date, start_time, end_time, hours, description) VALUES ?", [
+        SECOND_LEAD_ORDER_DAYS.map((date) => [order.id, SECOND_LEAD_ORDER_CONSULTANT_ID, date, "09:00", "17:00", 8, "Portal rollout planning"]),
+      ]);
+    },
+  },
+  {
+    // Sign-in with a code by email instead of a password (ADR-0014).
+    name: "007-sign-in-codes",
+    async run(db) {
+      await db.query(`
+        CREATE TABLE sign_in_codes (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id VARCHAR(64) NOT NULL UNIQUE,
+          code_hash CHAR(64) NOT NULL,
+          created_at_ms BIGINT NOT NULL,
+          expires_at_ms BIGINT NOT NULL,
+          attempts INT NOT NULL DEFAULT 0,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      await db.query("ALTER TABLE users DROP COLUMN password_hash");
     },
   },
 ];

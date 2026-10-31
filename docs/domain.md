@@ -11,7 +11,7 @@
 | Accounting object | Client-side cost object (cost centre or project element) that hours are booked against. |
 | Consultant | An external person employed by a supplier who books working time on orders. |
 | Supplier | The company that delivers consultants and records their working time (e.g. Consultis GmbH). |
-| Booking | One entry of working time: date, duration, description, consultant, order and accounting object. Created by a consultant, checked server-side against the business rules before it is stored, and immutable once its proof of work is approved. |
+| Booking | One entry of working time: date, start and end time, duration, description, consultant, order and accounting object. Created by a consultant, checked server-side against the business rules before it is stored, and immutable once its proof of work is approved. |
 | Free budget | Ordered person-days minus the sum of stored bookings of the order. A booking that would exceed it is rejected. |
 | Business rules | Server-side checks before storing a booking: free budget, no overlapping bookings of one person, max 10 h per day and 11 h rest (ArbZG), no bookings on approved vacation or public holidays, booking date inside the order period. |
 | Forecast | The projected week in which an order's budget is exhausted, computed from the current booking pace including vacations, public holidays and shutdowns. |
@@ -36,7 +36,7 @@ erDiagram
 
 ## Implementation status
 
-`(now)` marks what the current stage is meant to contain, and all of it is now stored: **orders, bookings, suppliers, consultants, accounting objects and assignments**, in [migrations.ts](../backend/src/repositories/migrations.ts). A booking reaches its accounting object through its order. **Users** are also stored, as one demo user per role, but nothing signs in with them yet.
+`(now)` marks what the current stage is meant to contain, and all of it is now stored: **orders, bookings, suppliers, consultants, accounting objects and assignments**, in [migrations.ts](../backend/src/repositories/migrations.ts). A booking reaches its accounting object through its order. **Users** and **roles** are stored as well: users sign in with a code sent to their email ([ADR-0014](adr/0014-email-code-sign-in.md)), and each order names its project lead.
 
 ## Notes
 

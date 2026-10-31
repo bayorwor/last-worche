@@ -17,7 +17,7 @@ export function BookingProposalCard({ proposal, orderId, isConfirming, onConfirm
     <section aria-label={t('bookings.proposalLabel')} className="mt-4 border border-ink bg-paper p-4">
       <h3 className="text-xs font-semibold tracking-widest text-muted uppercase">{t('bookings.proposalHeading')}</h3>
       <p className="mt-2 text-sm">
-        {formatDate(proposal.date)} · <b>{formatHours(proposal.hours)}</b> · {t('bookings.proposalOrder', { orderId })}
+        {formatDate(proposal.date)} · {proposal.startTime}–{proposal.endTime} · <b>{formatHours(proposal.hours)}</b> · {t('bookings.proposalOrder', { orderId })}
       </p>
       <p className="mt-1 text-sm text-muted">{proposal.description}</p>
       <div className="mt-3 flex flex-wrap gap-2.5">

@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react'
 
-type ButtonVariant = 'primary' | 'signal' | 'ghost'
+type ButtonVariant = 'primary' | 'brand' | 'signal' | 'ghost'
 
 type ButtonProps = ComponentProps<'button'> & {
   variant?: ButtonVariant
@@ -8,6 +8,7 @@ type ButtonProps = ComponentProps<'button'> & {
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary: 'bg-ink font-bold text-white hover:bg-muted',
+  brand: 'bg-brand font-bold text-white hover:bg-brand-strong',
   signal: 'bg-signal font-bold text-white hover:bg-signal-strong',
   ghost: 'border border-ink hover:bg-neutral-soft',
 }

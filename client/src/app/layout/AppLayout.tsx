@@ -7,7 +7,7 @@ export function AppLayout() {
   return (
     <>
       <AppHeader />
-      <main className="mx-auto max-w-6xl px-4 pt-7 pb-16 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 pt-7 pb-[calc(4rem+env(safe-area-inset-bottom))] sm:px-6">
         <Suspense fallback={<PageLoader />}>
           <Outlet />
         </Suspense>

@@ -7,7 +7,7 @@ function failedRequest(status: number, data: unknown) {
 
 describe('getApiError', () => {
   test('passes on the values of a rejected business rule', () => {
-    const values = { hours: 9, orderId: '4500012345', freePersonDays: 0.5 }
+    const values = { orderId: '4500012345', freePersonDays: 0.5 }
 
     expect(getApiError(failedRequest(422, { rule: 'free-budget', values }))).toEqual({
       key: 'errors.ruleFreeBudget',
@@ -15,11 +15,28 @@ describe('getApiError', () => {
     })
   })
 
+  test('explains which input was invalid', () => {
+    const invalidDescription = { details: [{ path: ['description'] }] }
+
+    expect(getApiError(failedRequest(400, invalidDescription))).toEqual({ key: 'errors.descriptionRequired' })
+    expect(getApiError(failedRequest(400, {}))).toEqual({ key: 'errors.invalidInput' })
+  })
+
   test('shows the server text for a rule without a translation', () => {
     expect(getApiError(failedRequest(422, { rule: 'new-rule', error: 'Not allowed.' }))).toEqual({
       key: 'errors.fromServer',
       values: { message: 'Not allowed.' },
     })
+  })
+
+  test('tells a wrong code apart from an ended session', () => {
+    expect(getApiError(failedRequest(401, { code: 'invalid-code' }))).toEqual({ key: 'errors.invalidCode' })
+    expect(getApiError(failedRequest(400, { details: [{ path: ['email'] }] }))).toEqual({ key: 'errors.invalidEmail' })
+  })
+
+  test('explains a missing session and a missing permission', () => {
+    expect(getApiError(failedRequest(401, {}))).toEqual({ key: 'errors.sessionEnded' })
+    expect(getApiError(failedRequest(403, {}))).toEqual({ key: 'errors.forbidden' })
   })
 
   test('tells the AI errors apart by their code', () => {

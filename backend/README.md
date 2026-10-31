@@ -1,6 +1,6 @@
 # backend
 
-lastWorche API, running on Bun, Express and MySQL. No API key or mail server is needed: `AI_MOCK=true` returns a fixed AI proposal, and `MAIL_MOCK=true` writes emails to the log.
+lastWorche API, running on Bun, Express and MySQL. No API key or mail server is needed: `AI_MOCK=true` returns a fixed AI proposal, and `MAIL_MOCK=true` sends no email and shows sign-in codes on the screen.
 
 MySQL must be installed and running. To create the database and user once, run this from the repository root: `mysql -u root -p < backend/setup-database.sql`.
 
@@ -28,7 +28,7 @@ server.ts            entry point: connects to the database, starts listening
 src/
   app.ts             creates the Express app and connects the layers
   routes/            maps URLs to controllers
-  middlewares/       request validation, central error handling
+  middlewares/       sign-in and role checks, request validation, central error handling
   controllers/       HTTP only: read the request, call a service, write the response
   dtos/              shape of data crossing HTTP
   services/          use cases, the OpenRouter call and email sending
@@ -41,17 +41,25 @@ src/
 ## Try it
 
 ```bash
-curl -X POST localhost:3000/api/bookings -H 'Content-Type: application/json' \
-  -d '{"orderId":"4500012345","consultantId":"consultant-1","date":"2026-10-27","hours":7,"description":"Legacy data reconciliation"}'
+# Sign in as a test user: ask for a code, then confirm it. With MAIL_MOCK=true, the answer contains the code.
+# The README lists all test users.
+CODE=$(curl -s -X POST localhost:3000/api/auth/request-code -H 'Content-Type: application/json' \
+  -d '{"email":"l.hoffmann@consultis.example"}' | sed -E 's/.*"testCode":"([0-9]+)".*/\1/')
+
+TOKEN=$(curl -s -X POST localhost:3000/api/auth/verify-code -H 'Content-Type: application/json' \
+  -d "{\"email\":\"l.hoffmann@consultis.example\",\"code\":\"$CODE\"}" | sed -E 's/.*"token":"([^"]+)".*/\1/')
+
+curl -X POST localhost:3000/api/bookings -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"orderId":"4500012345","date":"2026-10-27","startTime":"09:00","endTime":"17:00","hours":7,"description":"Legacy data reconciliation"}'
 
 curl localhost:3000/api/orders/4500012345/budget
 
-curl localhost:3000/api/consultants/consultant-2/orders
+curl localhost:3000/api/orders -H "Authorization: Bearer $TOKEN"
 
-# rejected with 422: consultant-2 is not assigned to this order
+# rejected with 401: no session
 curl -X POST localhost:3000/api/bookings -H 'Content-Type: application/json' \
-  -d '{"orderId":"4500012346","consultantId":"consultant-2","date":"2026-10-27","hours":1,"description":"Report review"}'
+  -d '{"orderId":"4500012346","date":"2026-10-27","startTime":"09:00","endTime":"10:00","hours":1,"description":"Report review"}'
 
-curl -X POST localhost:3000/api/ai/parse-booking -H 'Content-Type: application/json' \
+curl -X POST localhost:3000/api/ai/parse-booking -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"sentence":"9 bis 5 am Kundenportal, 1 h Mittag"}'
 ```

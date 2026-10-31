@@ -5,7 +5,7 @@ const answerWith = (content: unknown) => ({ choices: [{ message: { content } }] 
 
 describe("readProposal", () => {
   test("accepts an answer that matches the proposal schema", () => {
-    const proposal = { date: "2026-10-30", hours: 7, description: "Kundenportal" };
+    const proposal = { date: "2026-10-30", startTime: "09:00", endTime: "17:00", hours: 7, description: "Kundenportal" };
 
     expect(readProposal(answerWith(JSON.stringify(proposal)))).toEqual(proposal);
   });
@@ -27,6 +27,12 @@ describe("parseBookingSentence", () => {
   test("AI_MOCK returns a fixed proposal without calling a service", async () => {
     const proposal = await parseBookingSentence("9 bis 5, 1 h Mittag", "2026-10-30");
 
-    expect(proposal).toEqual({ date: "2026-10-30", hours: 7, description: "9 bis 5, 1 h Mittag" });
+    expect(proposal).toEqual({
+      date: "2026-10-30",
+      startTime: "09:00",
+      endTime: "17:00",
+      hours: 7,
+      description: "9 bis 5, 1 h Mittag",
+    });
   });
 });

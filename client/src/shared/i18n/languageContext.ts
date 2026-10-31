@@ -10,6 +10,7 @@ export type LanguageContextValue = {
   formatHours: (hours: number) => string
   formatPersonDays: (personDays: number) => string
   formatDate: (isoDate: string) => string
+  formatMonth: (month: string) => string
 }
 
 export const LanguageContext = createContext<LanguageContextValue | null>(null)

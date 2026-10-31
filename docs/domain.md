@@ -29,7 +29,7 @@ erDiagram
     CONSULTANT }o--o{ ORDER : "is assigned to (now)"
     ORDER ||--o{ BOOKING : "has (now)"
     CONSULTANT ||--o{ BOOKING : "books (now)"
-    ORDER ||--o{ PROOF_OF_WORK : "is summarised in (later)"
+    ORDER ||--o{ PROOF_OF_WORK : "is summarised in (now)"
     SUPPLIER ||--o{ FRAMEWORK_AGREEMENT : "works under (later)"
     ORDER ||--o{ INVOICE : "is billed by (later)"
     CONSULTANT ||--o{ VACATION_DAY : "has approved (later)"
@@ -37,7 +37,7 @@ erDiagram
 
 ## Implementation status
 
-`(now)` marks what the current stage is meant to contain, and all of it is now stored: **orders, bookings, suppliers, consultants, accounting objects and assignments**, in [migrations.ts](../backend/src/repositories/migrations.ts). A booking reaches its accounting object through its order. **Users** and **roles** are stored as well: users sign in with a code sent to their email ([ADR-0014](adr/0014-email-code-sign-in.md)), and each order names its project lead.
+`(now)` marks what the current stage is meant to contain, and all of it is now stored: **orders, bookings, suppliers, consultants, accounting objects and assignments**, in [migrations.ts](../backend/src/repositories/migrations.ts). A booking reaches its accounting object through its order. **Proofs of work** are stored as one row per approved month, with their totals added up from the bookings. **Users** and **roles** are stored as well: users sign in with a code sent to their email ([ADR-0014](adr/0014-email-code-sign-in.md)), and each order names its project lead.
 
 ## Notes
 

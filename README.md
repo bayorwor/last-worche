@@ -64,7 +64,7 @@ To change user, choose *Abmelden / Sign out* at the top of the page. Labels are 
 | Role | Name | Email | What to try |
 |---|---|---|---|
 | Consultant | L. Hoffmann | `l.hoffmann@consultis.example` | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, choose *Vorschlag prüfen / Check proposal*, then *Buchung bestätigen / Confirm booking*. To see a rejection, choose order 4500012346 first: it has too little budget left. |
-| Project lead | A. Weber | `a.weber@client.example` | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days, and the booking appears in the list below it. |
+| Project lead | A. Weber | `a.weber@client.example` | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days, and the booking appears in the list below it. Then approve the current month under *Leistungsnachweise / Proofs of work*: a consultant's next booking in that month is rejected. |
 | Purchasing | K. Vogel | `k.vogel@client.example` | See totals per supplier and order, with no person or single booking. Order 4500012346 shows *Nachtrag nötig / Follow-up order needed*. |
 | Consultant | M. Krüger | `m.krueger@consultis.example` | Assigned to one order only, so only that one can be chosen. |
 | Consultant | S. Tanriver | `s.tanriver@nordlicht.example` | Works for another supplier, on orders 4500012346 and 4500012347. |
@@ -127,6 +127,8 @@ flowchart LR
 | `GET /api/auth/me` | Who the session belongs to | `401` no valid session |
 | `GET /api/orders` | Orders as ID and title, for all roles: a consultant sees their assigned orders, a project lead the orders they lead, purchasing all orders | `401` no session |
 | `GET /api/consultants/:consultantId/bookings` | A consultant's own 10 latest bookings, for the consultant role | `401`, `403` another consultant |
+| `GET /api/orders/:orderId/proofs-of-work` | Each month of an order with its totals and status, for the project lead of that order | `401`, `403` other roles or orders, `404` unknown order |
+| `POST /api/orders/:orderId/proofs-of-work/:month/approve` | Approve a month for good, for the project lead of that order | `400` invalid month, `401`, `403`, `404`, `422` already approved or no bookings |
 | `GET /api/purchasing/supplier-overview` | Totals per supplier and order, with nothing about a person, for the purchasing role | `401`, `403` other roles |
 | `GET /api/orders/:orderId/bookings` | The 10 latest single bookings of an order, for the project lead of that order | `401`, `403` other roles or orders, `404` unknown order |
 | `POST /api/bookings` | Check the rules, then store a booking, for the consultant role. The consultant comes from the session | `401`, `403` other roles, `400` invalid input, `404` unknown order, `422` rule violated, with `rule` and `values` so the client can explain it in either language |
@@ -158,10 +160,11 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | Area | Built | Planned |
 |---|---|---|
 | Core flow | Choose an assigned order, book time on it, see the effect on its budget | Manual booking form, without the AI sentence |
-| Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person; 10-hour day; 11-hour rest | Vacation and public holidays, order period |
-| Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, roles, users, with migrations | Proofs of work |
+| Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person; 10-hour day; 11-hour rest; no bookings in an approved month | Vacation and public holidays, order period |
+| Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, roles, users, proofs of work, with migrations | Vacation days, framework agreements |
 | Roles | Sign-in with a 6-digit code by email, roles and users stored in the database, one view per role, server-side role checks on every route and row-level scope | Limits per network address, single sign-on per customer ([ADR-0002](docs/adr/0002-identity-and-sign-in.md), [ADR-0014](docs/adr/0014-email-code-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |
+| Proof of work | A project lead approves a month per order, which locks it | Passing approved hours on to finance |
 | Purchasing | Totals per supplier and order from the database, with no personal data | Framework agreements |
 | Languages | Client screens, server errors and sign-in emails in German and English | Other emails, which need a stored language per user |
 | Email | Sign-in codes, with a mock switch. Real sending is not tested yet | After Sprint One: budget warnings, proof of work, rejected bookings, the single sign-on process ([ADR-0008](docs/adr/0008-email-with-nodemailer.md)) |

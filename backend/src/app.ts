@@ -7,6 +7,7 @@ import { env } from "./config/dotenv.ts";
 import { createAiController } from "./controllers/aiController.ts";
 import { createAuthController } from "./controllers/authController.ts";
 import { createBookingController } from "./controllers/bookingController.ts";
+import { createProofOfWorkController } from "./controllers/proofOfWorkController.ts";
 import { createPurchasingController } from "./controllers/purchasingController.ts";
 import { createAuthGuards } from "./middlewares/authentication.ts";
 import { errorHandler } from "./middlewares/errorHandler.ts";
@@ -15,9 +16,11 @@ import type { UserRepository } from "./repositories/userRepository.ts";
 import { createAiRoutes } from "./routes/aiRoutes.ts";
 import { createAuthRoutes } from "./routes/authRoutes.ts";
 import { createBookingRoutes } from "./routes/bookingRoutes.ts";
+import { createProofOfWorkRoutes } from "./routes/proofOfWorkRoutes.ts";
 import { createPurchasingRoutes } from "./routes/purchasingRoutes.ts";
 import { createAuthService } from "./services/authService.ts";
 import { sendEmail } from "./services/emailService.ts";
+import { createProofOfWorkService } from "./services/proofOfWorkService.ts";
 import { createPurchasingService } from "./services/purchasingService.ts";
 import { createBookingService } from "./services/bookingService.ts";
 
@@ -43,6 +46,7 @@ export function createApp({ bookingRepository, userRepository }: AppDependencies
 
   app.use("/api/auth", createAuthRoutes(createAuthController(authService), guards));
   app.use("/api", createBookingRoutes(createBookingController(bookingService), guards));
+  app.use("/api", createProofOfWorkRoutes(createProofOfWorkController(createProofOfWorkService(bookingRepository)), guards));
   app.use("/api/ai", createAiRoutes(createAiController(), guards));
   app.use("/api/purchasing", createPurchasingRoutes(createPurchasingController(createPurchasingService(bookingRepository)), guards));
 

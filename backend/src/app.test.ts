@@ -160,6 +160,8 @@ describe("every route except sign-in needs a session", () => {
     ["GET", `/orders/${ORDER_ID}/bookings`],
     ["GET", "/consultants/consultant-1/bookings"],
     ["GET", "/purchasing/supplier-overview"],
+    ["GET", `/orders/${ORDER_ID}/proofs-of-work`],
+    ["POST", `/orders/${ORDER_ID}/proofs-of-work/2026-10/approve`],
     ["POST", "/bookings"],
     ["POST", "/ai/parse-booking"],
   ])("%s %s is rejected with 401, before any handler or validation", async (method, path) => {
@@ -218,6 +220,31 @@ describe("role checks", () => {
 
       expect(response.status).toBe(403);
     }
+  });
+
+  test("only a project lead may read or approve a proof of work", async () => {
+    for (const user of ["user-consultant", "user-purchasing"]) {
+      const token = await signIn(user);
+
+      expect((await send("GET", `/orders/${ORDER_ID}/proofs-of-work`, { token })).status).toBe(403);
+      expect((await send("POST", `/orders/${ORDER_ID}/proofs-of-work/2026-10/approve`, { token })).status).toBe(403);
+    }
+  });
+
+  test("a project lead cannot approve an order they do not lead", async () => {
+    const response = await send("POST", `/orders/${OTHER_ORDER_ID}/proofs-of-work/2026-10/approve`, {
+      token: await signIn("user-project-lead"),
+    });
+
+    expect(response.status).toBe(403);
+  });
+
+  test("a malformed month is rejected with 400", async () => {
+    const response = await send("POST", `/orders/${ORDER_ID}/proofs-of-work/october/approve`, {
+      token: await signIn("user-project-lead"),
+    });
+
+    expect(response.status).toBe(400);
   });
 
   test("a consultant cannot use the project lead's route", async () => {

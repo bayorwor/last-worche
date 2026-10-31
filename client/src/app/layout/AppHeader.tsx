@@ -1,6 +1,6 @@
 import { useTranslation } from '../../shared/i18n/languageContext.ts'
 import { LanguageSwitcher } from './LanguageSwitcher.tsx'
-import { RoleNavigation } from './RoleNavigation.tsx'
+import { SessionBar } from './SessionBar.tsx'
 
 export function AppHeader() {
   const { t } = useTranslation()
@@ -16,7 +16,7 @@ export function AppHeader() {
         <p className="ml-auto text-right text-xs text-muted">{t('header.demoNotice')}</p>
         <LanguageSwitcher />
       </div>
-      <RoleNavigation />
+      <SessionBar />
     </header>
   )
 }

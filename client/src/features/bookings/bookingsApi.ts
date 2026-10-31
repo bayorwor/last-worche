@@ -1,10 +1,9 @@
 import { apiClient } from '../../shared/api/apiClient.ts'
-import { DEMO_CONSULTANT_ID } from '../../shared/config/demoContext.ts'
 import type { OrderSummary } from '../../shared/api/orderSummary.ts'
 import type { Booking, BookingProposal } from './bookingTypes.ts'
 
 export async function requestAssignedOrders(): Promise<OrderSummary[]> {
-  const { data } = await apiClient.get<OrderSummary[]>(`/consultants/${DEMO_CONSULTANT_ID}/orders`)
+  const { data } = await apiClient.get<OrderSummary[]>('/orders')
   return data
 }
 
@@ -14,10 +13,6 @@ export async function requestBookingProposal(sentence: string): Promise<BookingP
 }
 
 export async function createBooking(proposal: BookingProposal, orderId: string): Promise<Booking> {
-  const { data } = await apiClient.post<Booking>('/bookings', {
-    ...proposal,
-    orderId,
-    consultantId: DEMO_CONSULTANT_ID,
-  })
+  const { data } = await apiClient.post<Booking>('/bookings', { ...proposal, orderId })
   return data
 }

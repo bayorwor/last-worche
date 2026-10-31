@@ -5,13 +5,19 @@ export const de = {
   'header.tagline': 'Jede Stunde im Blick.',
   'header.demoNotice': 'Demo · Daten fiktiv',
 
-  'nav.label': 'Rollenansicht',
-  'nav.consultant.title': 'Berater',
-  'nav.consultant.subtitle': 'Lieferantenseite · buchen',
-  'nav.projectLead.title': 'Projektleitung',
-  'nav.projectLead.subtitle': 'Kundenseite · prüfen & steuern',
-  'nav.purchasing.title': 'Einkauf',
-  'nav.purchasing.subtitle': 'Kundenseite · nur Summen',
+  'role.consultant.title': 'Berater',
+  'role.consultant.subtitle': 'Lieferantenseite · buchen',
+  'role.projectLead.title': 'Projektleitung',
+  'role.projectLead.subtitle': 'Kundenseite · prüfen & steuern',
+  'role.purchasing.title': 'Einkauf',
+  'role.purchasing.subtitle': 'Kundenseite · nur Summen',
+
+  'signIn.pageTitle': 'Anmelden',
+  'signIn.panelTitle': 'Demo-Benutzer wählen',
+  'signIn.noPassword': 'In dieser Demo ist kein Passwort nötig.',
+
+  'session.signedInAs': 'Angemeldet als',
+  'session.signOut': 'Abmelden',
 
   'common.loading': 'Wird geladen …',
   'common.retry': 'Erneut versuchen',
@@ -62,6 +68,8 @@ export const de = {
   'purchasing.onTrack': 'Im Plan',
 
   'errors.serverUnavailable': 'Der Server ist gerade nicht erreichbar. Bitte versuchen Sie es erneut.',
+  'errors.sessionEnded': 'Ihre Sitzung ist beendet. Bitte melden Sie sich erneut an.',
+  'errors.forbidden': 'Dafür fehlt Ihnen die Berechtigung.',
   'errors.invalidInput': 'Diese Eingabe ist ungültig. Bitte prüfen Sie sie.',
   'errors.orderNotFound': 'Dieser Auftrag existiert nicht.',
   'errors.aiUnavailable': 'Der KI-Dienst ist nicht verfügbar. Bitte versuchen Sie es später erneut.',

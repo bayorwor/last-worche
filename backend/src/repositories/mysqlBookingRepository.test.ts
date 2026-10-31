@@ -4,8 +4,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:tes
 import type { Pool } from "mysql2/promise";
 import { BusinessRuleError } from "../domain/errors.ts";
 import { createBookingService, type BookingService } from "../services/bookingService.ts";
-import { openDatabase, SEED_ORDER_ID } from "./database.ts";
+import { openDatabase } from "./database.ts";
 import { createMysqlBookingRepository } from "./mysqlBookingRepository.ts";
+import { NEAR_LIMIT_ORDER_ID, SEED_ORDER_ID } from "./seedData.ts";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 
@@ -42,6 +43,18 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
     await expect(service.createBooking({ ...booking, hours: 2000 })).rejects.toThrow(BusinessRuleError);
 
     expect((await service.getOrderBudget(SEED_ORDER_ID)).usedPersonDays).toBe(0);
+  });
+
+  test("rejects a consultant not assigned to the order", async () => {
+    const unassigned = { ...booking, orderId: NEAR_LIMIT_ORDER_ID, consultantId: "consultant-2", hours: 1 };
+
+    await expect(service.createBooking(unassigned)).rejects.toThrow(BusinessRuleError);
+  });
+
+  test("lists only the orders a consultant is assigned to", async () => {
+    expect(await service.listAssignedOrders("consultant-2")).toEqual([
+      { id: SEED_ORDER_ID, title: "Customer portal migration" },
+    ]);
   });
 
   test("bookings at the same moment cannot exceed the free budget together", async () => {

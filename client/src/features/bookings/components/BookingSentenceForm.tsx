@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Button } from '../../../shared/components/Button.tsx'
+import { useTranslation } from '../../../shared/i18n/languageContext.ts'
 
 type BookingSentenceFormProps = {
   isSubmitting: boolean
@@ -7,6 +8,7 @@ type BookingSentenceFormProps = {
 }
 
 export function BookingSentenceForm({ isSubmitting, onSubmit }: BookingSentenceFormProps) {
+  const { t } = useTranslation()
   const [sentence, setSentence] = useState('')
   const trimmedSentence = sentence.trim()
 
@@ -18,19 +20,19 @@ export function BookingSentenceForm({ isSubmitting, onSubmit }: BookingSentenceF
   return (
     <form onSubmit={handleSubmit}>
       <label htmlFor="booking-sentence" className="block text-sm font-semibold">
-        Was haben Sie gearbeitet?
+        {t('bookings.sentenceLabel')}
       </label>
       <input
         id="booking-sentence"
         type="text"
         value={sentence}
         maxLength={500}
-        placeholder="9 bis 5 am Kundenportal, 1 h Mittag"
+        placeholder={t('bookings.sentencePlaceholder')}
         onChange={(event) => setSentence(event.target.value)}
         className="mt-2 min-h-11 w-full border border-ink bg-paper px-3.5 py-3 text-base placeholder:text-muted"
       />
       <Button type="submit" className="mt-3" disabled={!trimmedSentence || isSubmitting}>
-        {isSubmitting ? 'Wird geprüft …' : 'Vorschlag prüfen'}
+        {isSubmitting ? t('bookings.checkingProposal') : t('bookings.checkProposal')}
       </Button>
     </form>
   )

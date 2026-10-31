@@ -1,14 +1,16 @@
 import { DataTable } from '../../../shared/components/DataTable.tsx'
-import { formatDate, formatHours } from '../../../shared/utils/formatters.ts'
+import { useTranslation } from '../../../shared/i18n/languageContext.ts'
 import type { Booking } from '../bookingTypes.ts'
 
 export function ConfirmedBookingsTable({ bookings }: { bookings: Booking[] }) {
+  const { t, formatDate, formatHours } = useTranslation()
+
   if (bookings.length === 0) {
-    return <p className="text-sm text-muted">Noch keine Buchungen in dieser Sitzung.</p>
+    return <p className="text-sm text-muted">{t('bookings.noneYet')}</p>
   }
 
   return (
-    <DataTable headers={['Datum', 'Dauer', 'Tätigkeit', 'Auftrag']}>
+    <DataTable headers={[t('bookings.columnDate'), t('bookings.columnDuration'), t('bookings.columnActivity'), t('bookings.columnOrder')]}>
       {bookings.map((booking) => (
         <tr key={booking.id}>
           <td className="whitespace-nowrap">{formatDate(booking.date)}</td>

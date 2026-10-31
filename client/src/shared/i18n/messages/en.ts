@@ -1,0 +1,75 @@
+import type { MessageKey } from './de.ts'
+
+export const en: Record<MessageKey, string> = {
+  'language.switcherLabel': 'Language',
+
+  'header.tagline': 'Every hour in view.',
+  'header.demoNotice': 'Demo · fictional data',
+
+  'nav.label': 'Role view',
+  'nav.consultant.title': 'Consultant',
+  'nav.consultant.subtitle': 'Supplier side · book time',
+  'nav.projectLead.title': 'Project lead',
+  'nav.projectLead.subtitle': 'Client side · review & steer',
+  'nav.purchasing.title': 'Purchasing',
+  'nav.purchasing.subtitle': 'Client side · totals only',
+
+  'common.loading': 'Loading …',
+  'common.retry': 'Try again',
+
+  'orders.selectLabel': 'Order',
+  'orders.noneAssigned': 'You are not assigned to an order yet.',
+
+  'routeError.message': 'This page could not be loaded.',
+  'routeError.reload': 'Reload page',
+
+  'bookings.pageTitle': 'Consultant — Book time',
+  'bookings.formPanelTitle': 'Record a booking — one sentence is enough',
+  'bookings.sentenceLabel': 'What did you work on?',
+  'bookings.sentencePlaceholder': '9 to 5 on the customer portal, 1 h lunch',
+  'bookings.checkProposal': 'Check proposal',
+  'bookings.checkingProposal': 'Checking …',
+  'bookings.proposalLabel': 'Booking proposal',
+  'bookings.proposalHeading': 'Recognised — please confirm',
+  'bookings.proposalOrder': 'Order {orderId}',
+  'bookings.confirm': 'Confirm booking',
+  'bookings.confirming': 'Saving …',
+  'bookings.discard': 'Discard',
+  'bookings.saved': 'Booking saved — the project lead sees the effect on the budget immediately.',
+  'bookings.sessionPanelTitle': 'Booked in this session',
+  'bookings.ownBookingsOnly': 'Own bookings only',
+  'bookings.noneYet': 'No bookings in this session yet.',
+  'bookings.columnDate': 'Date',
+  'bookings.columnDuration': 'Duration',
+  'bookings.columnActivity': 'Activity',
+  'bookings.columnOrder': 'Order',
+
+  'budget.pageTitle': 'Project lead — Orders',
+  'budget.panelTitle': 'Budget — Order {orderId}',
+  'budget.ordered': 'Ordered',
+  'budget.used': 'Used',
+  'budget.free': 'Free',
+  'budget.usedProgressLabel': 'Budget used',
+
+  'purchasing.pageTitle': 'Purchasing — Supplier steering',
+  'purchasing.panelTitle': 'Supplier overview — aggregated values only (Σ)',
+  'purchasing.sampleData': 'Sample data',
+  'purchasing.columnSupplier': 'Supplier',
+  'purchasing.columnOrders': 'Orders',
+  'purchasing.columnUsed': 'Used',
+  'purchasing.columnFree': 'Free',
+  'purchasing.columnStatus': 'Status',
+  'purchasing.followUpNeeded': 'Follow-up order needed',
+  'purchasing.onTrack': 'On track',
+
+  'errors.serverUnavailable': 'The server cannot be reached right now. Please try again.',
+  'errors.invalidInput': 'This input is not valid. Please check it.',
+  'errors.orderNotFound': 'This order does not exist.',
+  'errors.aiUnavailable': 'The AI service is unavailable. Please try again later.',
+  'errors.aiBusy': 'The AI service is busy. Please try again in a moment.',
+  'errors.aiUnreadable': 'The sentence could not be turned into a booking. Please rephrase it.',
+  'errors.ruleFreeBudget':
+    'This booking needs {hours} h, but order {orderId} only has {freePersonDays} PD free.',
+  'errors.ruleAssignedOrder': 'Booking rejected: you are not assigned to order {orderId}.',
+  'errors.fromServer': '{message}',
+}

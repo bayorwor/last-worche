@@ -1,9 +1,10 @@
 // MySQL implementation of BookingRepository. Database column names stay inside this file.
 import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
-import type { BookingRepository, BookingTransaction } from "./bookingRepository.ts";
+import type { BookingRepository, BookingTransaction, OrderSummary } from "./bookingRepository.ts";
 
 type OrderRow = RowDataPacket & { id: string; ordered_person_days: number };
 type TotalRow = RowDataPacket & { total: number };
+type OrderSummaryRow = RowDataPacket & OrderSummary;
 
 async function findOrder(db: Pool | PoolConnection, orderId: string, lock = "") {
   const [rows] = await db.query<OrderRow[]>(`SELECT id, ordered_person_days FROM orders WHERE id = ? ${lock}`, [orderId]);
@@ -21,6 +22,13 @@ async function sumBookedHours(db: Pool | PoolConnection, orderId: string) {
 function createTransaction(connection: PoolConnection): BookingTransaction {
   return {
     findOrderForUpdate: (orderId) => findOrder(connection, orderId, "FOR UPDATE"),
+    isConsultantAssigned: async (consultantId, orderId) => {
+      const [rows] = await connection.query<RowDataPacket[]>(
+        "SELECT 1 FROM order_assignments WHERE consultant_id = ? AND order_id = ?",
+        [consultantId, orderId],
+      );
+      return rows.length > 0;
+    },
     sumBookedHours: (orderId) => sumBookedHours(connection, orderId),
     saveBooking: async (booking) => {
       const [result] = await connection.query<ResultSetHeader>(
@@ -34,6 +42,19 @@ function createTransaction(connection: PoolConnection): BookingTransaction {
 
 export function createMysqlBookingRepository(db: Pool): BookingRepository {
   return {
+    listOrders: async () => {
+      const [rows] = await db.query<OrderSummaryRow[]>("SELECT id, title FROM orders ORDER BY id");
+      return rows.map(({ id, title }) => ({ id, title }));
+    },
+    listAssignedOrders: async (consultantId) => {
+      const [rows] = await db.query<OrderSummaryRow[]>(
+        `SELECT orders.id, orders.title FROM orders
+         JOIN order_assignments ON order_assignments.order_id = orders.id
+         WHERE order_assignments.consultant_id = ? ORDER BY orders.id`,
+        [consultantId],
+      );
+      return rows.map(({ id, title }) => ({ id, title }));
+    },
     findOrder: (orderId) => findOrder(db, orderId),
     sumBookedHours: (orderId) => sumBookedHours(db, orderId),
 

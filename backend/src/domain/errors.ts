@@ -5,6 +5,7 @@ export class BusinessRuleError extends Error {
   constructor(
     readonly rule: string,
     message: string,
+    readonly values: Record<string, string | number> = {},
   ) {
     super(message);
   }

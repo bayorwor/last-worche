@@ -33,8 +33,8 @@ src/
   dtos/              shape of data crossing HTTP
   services/          use cases, the OpenRouter call and email sending
   templates/         AI prompts
-  domain/            business rules and their errors
-  repositories/      storage: the interface services use, its MySQL version and an in-memory version for tests
+  domain/            business rules and their errors, which carry a rule name and values so the client can translate them
+  repositories/      storage: the interface services use, its MySQL version, an in-memory version for tests, migrations and sample data
   config/            validated environment, mail transport
 ```
 
@@ -45,6 +45,12 @@ curl -X POST localhost:3000/api/bookings -H 'Content-Type: application/json' \
   -d '{"orderId":"4500012345","consultantId":"consultant-1","date":"2026-10-27","hours":7,"description":"Legacy data reconciliation"}'
 
 curl localhost:3000/api/orders/4500012345/budget
+
+curl localhost:3000/api/consultants/consultant-2/orders
+
+# rejected with 422: consultant-2 is not assigned to this order
+curl -X POST localhost:3000/api/bookings -H 'Content-Type: application/json' \
+  -d '{"orderId":"4500012346","consultantId":"consultant-2","date":"2026-10-27","hours":1,"description":"Report review"}'
 
 curl -X POST localhost:3000/api/ai/parse-booking -H 'Content-Type: application/json' \
   -d '{"sentence":"9 bis 5 am Kundenportal, 1 h Mittag"}'

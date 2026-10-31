@@ -10,6 +10,14 @@ export function createBookingController(bookingService: BookingService) {
       res.status(201).json(booking);
     },
 
+    async listOrders(_req: Request, res: Response) {
+      res.json(await bookingService.listOrders());
+    },
+
+    async listAssignedOrders(req: Request<{ consultantId: string }>, res: Response) {
+      res.json(await bookingService.listAssignedOrders(req.params.consultantId));
+    },
+
     async getOrderBudget(req: Request<{ orderId: string }>, res: Response) {
       res.json(await bookingService.getOrderBudget(req.params.orderId));
     },

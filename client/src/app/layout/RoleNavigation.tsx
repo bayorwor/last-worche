@@ -1,18 +1,22 @@
 // Switches between the role views, as in the mockup. This only changes the view:
 // who may see which data must be enforced by the server.
 import { NavLink } from 'react-router'
+import type { MessageKey } from '../../shared/i18n/messages/de.ts'
+import { useTranslation } from '../../shared/i18n/languageContext.ts'
 import { ROUTE_PATHS } from '../routePaths.ts'
 
-const ROLE_LINKS = [
-  { to: ROUTE_PATHS.consultant, title: 'Berater', subtitle: 'Lieferantenseite · buchen' },
-  { to: ROUTE_PATHS.projectLead, title: 'Projektleitung', subtitle: 'Kundenseite · prüfen & steuern' },
-  { to: ROUTE_PATHS.purchasing, title: 'Einkauf', subtitle: 'Kundenseite · nur Summen' },
+const ROLE_LINKS: { to: string; titleKey: MessageKey; subtitleKey: MessageKey }[] = [
+  { to: ROUTE_PATHS.consultant, titleKey: 'nav.consultant.title', subtitleKey: 'nav.consultant.subtitle' },
+  { to: ROUTE_PATHS.projectLead, titleKey: 'nav.projectLead.title', subtitleKey: 'nav.projectLead.subtitle' },
+  { to: ROUTE_PATHS.purchasing, titleKey: 'nav.purchasing.title', subtitleKey: 'nav.purchasing.subtitle' },
 ]
 
 export function RoleNavigation() {
+  const { t } = useTranslation()
+
   return (
-    <nav aria-label="Rollenansicht" className="mx-auto flex max-w-6xl border-t border-line">
-      {ROLE_LINKS.map(({ to, title, subtitle }) => (
+    <nav aria-label={t('nav.label')} className="mx-auto flex max-w-6xl border-t border-line">
+      {ROLE_LINKS.map(({ to, titleKey, subtitleKey }) => (
         <NavLink
           key={to}
           to={to}
@@ -22,8 +26,8 @@ export function RoleNavigation() {
             }`
           }
         >
-          <span className="block text-sm font-bold">{title}</span>
-          <span className="hidden text-xs text-muted sm:block">{subtitle}</span>
+          <span className="block text-sm font-bold">{t(titleKey)}</span>
+          <span className="hidden text-xs text-muted sm:block">{t(subtitleKey)}</span>
         </NavLink>
       ))}
     </nav>

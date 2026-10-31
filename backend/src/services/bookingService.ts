@@ -1,5 +1,5 @@
 // Use cases for bookings: loads data, applies the domain rules, stores the result.
-import { assertFitsFreeBudget, calculateBudget } from "../domain/booking.ts";
+import { assertAssignedToOrder, assertFitsFreeBudget, calculateBudget } from "../domain/booking.ts";
 import { NotFoundError } from "../domain/errors.ts";
 import type { CreateBookingRequest, OrderBudgetResponse } from "../dtos/bookingDtos.ts";
 import type { BookingRepository } from "../repositories/bookingRepository.ts";
@@ -15,9 +15,18 @@ export function createBookingService(repository: BookingRepository) {
         const order = await transaction.findOrderForUpdate(request.orderId);
         if (!order) throw new NotFoundError(`Order ${request.orderId} does not exist.`);
 
+        assertAssignedToOrder(await transaction.isConsultantAssigned(request.consultantId, order.id), order);
         assertFitsFreeBudget(order, await transaction.sumBookedHours(order.id), request.hours);
         return transaction.saveBooking(request);
       });
+    },
+
+    listOrders() {
+      return repository.listOrders();
+    },
+
+    listAssignedOrders(consultantId: string) {
+      return repository.listAssignedOrders(consultantId);
     },
 
     async getOrderBudget(orderId: string): Promise<OrderBudgetResponse> {

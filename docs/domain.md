@@ -36,7 +36,7 @@ erDiagram
 
 ## Implementation status
 
-`(now)` marks what the current stage is meant to contain. So far, the code stores **orders** and **bookings**, in [database.ts](../backend/src/repositories/database.ts). A booking holds a consultant ID without a consultant table, and has no accounting object yet. Suppliers, consultants, accounting objects and assignments are still to be built.
+`(now)` marks what the current stage is meant to contain, and all of it is now stored: **orders, bookings, suppliers, consultants, accounting objects and assignments**, in [migrations.ts](../backend/src/repositories/migrations.ts). A booking reaches its accounting object through its order. **Users** are also stored, as one demo user per role, but nothing signs in with them yet.
 
 ## Notes
 

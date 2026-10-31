@@ -13,9 +13,9 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
   } else if (error instanceof NotFoundError) {
     res.status(404).json({ error: error.message });
   } else if (error instanceof BusinessRuleError) {
-    res.status(422).json({ error: error.message, rule: error.rule });
+    res.status(422).json({ error: error.message, rule: error.rule, values: error.values });
   } else if (error instanceof AiServiceError) {
-    res.status(503).json({ error: error.message });
+    res.status(503).json({ error: error.message, code: error.code });
   } else {
     console.error(error);
     res.status(500).json({ error: "Something went wrong on the server." });

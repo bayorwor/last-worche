@@ -1,6 +1,6 @@
 # 0006 · MySQL database
 
-- **Status:** accepted, replaces the database choice in [ADR-0001](0001-technology-stack.md)
+- **Status:** accepted, replaces the database choice in [ADR-0001](0001-technology-stack.md). The consequence about migrations is replaced by [ADR-0010](0010-simple-database-migrations.md)
 - **Date:** 2026-10-31
 - **Deciders:** Team lastWorche
 

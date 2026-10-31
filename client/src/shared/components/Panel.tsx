@@ -8,7 +8,8 @@ type PanelProps = {
 
 export function Panel({ title, aside, children }: PanelProps) {
   return (
-    <section className="border border-line bg-panel">
+    // min-w-0 stops a wide table from stretching a grid column, so the table scrolls inside its own box.
+    <section className="min-w-0 border border-line bg-panel">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
         <h2 className="text-xs font-semibold tracking-widest text-muted uppercase">{title}</h2>
         {aside}

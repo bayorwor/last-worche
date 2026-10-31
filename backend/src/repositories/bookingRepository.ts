@@ -11,14 +11,19 @@ export type NewBooking = {
 
 export type StoredBooking = NewBooking & { id: number };
 
+export type OrderSummary = { id: string; title: string };
+
 export type BookingTransaction = {
   // Locks the order until the transaction ends, so its budget cannot change in the meantime.
   findOrderForUpdate(orderId: string): Promise<Order | null>;
+  isConsultantAssigned(consultantId: string, orderId: string): Promise<boolean>;
   sumBookedHours(orderId: string): Promise<number>;
   saveBooking(booking: NewBooking): Promise<StoredBooking>;
 };
 
 export type BookingRepository = {
+  listOrders(): Promise<OrderSummary[]>;
+  listAssignedOrders(consultantId: string): Promise<OrderSummary[]>;
   findOrder(orderId: string): Promise<Order | null>;
   sumBookedHours(orderId: string): Promise<number>;
   // Commits if `work` succeeds and rolls everything back if it throws.

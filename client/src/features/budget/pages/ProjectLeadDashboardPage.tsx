@@ -1,33 +1,62 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/storeHooks.ts'
 import { Button } from '../../../shared/components/Button.tsx'
+import { OrderSelect } from '../../../shared/components/OrderSelect.tsx'
 import { PageLoader } from '../../../shared/components/PageLoader.tsx'
 import { PageTitle } from '../../../shared/components/PageTitle.tsx'
 import { StatusMessage } from '../../../shared/components/StatusMessage.tsx'
-import { DEMO_ORDER_ID } from '../../../shared/config/demoContext.ts'
-import { fetchOrderBudget } from '../budgetSlice.ts'
+import { useTranslation } from '../../../shared/i18n/languageContext.ts'
+import { fetchOrderBudget, fetchOrders } from '../budgetSlice.ts'
 import { OrderBudgetPanel } from '../components/OrderBudgetPanel.tsx'
 
 export default function ProjectLeadDashboardPage() {
   const dispatch = useAppDispatch()
-  const { orderBudget, status, errorMessage } = useAppSelector((state) => state.budget)
+  const { t } = useTranslation()
+  const { orders, budgetsByOrderId, status, error } = useAppSelector((state) => state.budget)
+  const [chosenOrderId, setChosenOrderId] = useState<string | null>(null)
+  const selectedOrderId = chosenOrderId ?? orders[0]?.id
+  const selectedBudget = selectedOrderId ? budgetsByOrderId[selectedOrderId] : undefined
 
   useEffect(() => {
-    dispatch(fetchOrderBudget(DEMO_ORDER_ID))
+    dispatch(fetchOrders())
   }, [dispatch])
+
+  // Asks again every time an order is opened, so the figures always include the latest bookings.
+  useEffect(() => {
+    if (selectedOrderId) {
+      dispatch(fetchOrderBudget(selectedOrderId))
+    }
+  }, [dispatch, selectedOrderId])
+
+  function retry() {
+    if (selectedOrderId) {
+      dispatch(fetchOrderBudget(selectedOrderId))
+    } else {
+      dispatch(fetchOrders())
+    }
+  }
 
   return (
     <>
-      <PageTitle>Projektleitung — Auftrag {DEMO_ORDER_ID}</PageTitle>
-      {errorMessage && (
+      <PageTitle>{t('budget.pageTitle')}</PageTitle>
+      {selectedOrderId && (
+        <OrderSelect
+          id="budget-order"
+          className="mb-6 max-w-xl"
+          orders={orders}
+          selectedOrderId={selectedOrderId}
+          onChange={setChosenOrderId}
+        />
+      )}
+      {error && (
         <div className="mb-6 max-w-xl">
-          <StatusMessage tone="error">{errorMessage}</StatusMessage>
-          <Button className="mt-3" onClick={() => dispatch(fetchOrderBudget(DEMO_ORDER_ID))}>
-            Erneut versuchen
+          <StatusMessage tone="error">{t(error.key, error.values)}</StatusMessage>
+          <Button className="mt-3" onClick={retry}>
+            {t('common.retry')}
           </Button>
         </div>
       )}
-      {orderBudget ? <OrderBudgetPanel budget={orderBudget} /> : status === 'loading' && <PageLoader />}
+      {selectedBudget ? <OrderBudgetPanel budget={selectedBudget} /> : status === 'loading' && <PageLoader />}
     </>
   )
 }

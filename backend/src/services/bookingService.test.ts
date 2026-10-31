@@ -4,9 +4,18 @@ import { createInMemoryBookingRepository } from "../repositories/inMemoryBooking
 import { createBookingService } from "./bookingService.ts";
 
 const ORDER_ID = "4500012345";
+const OTHER_ORDER_ID = "4500012346";
 
 function createService() {
-  return createBookingService(createInMemoryBookingRepository([{ id: ORDER_ID, orderedPersonDays: 140 }]));
+  return createBookingService(
+    createInMemoryBookingRepository(
+      [
+        { id: ORDER_ID, orderedPersonDays: 140 },
+        { id: OTHER_ORDER_ID, orderedPersonDays: 10 },
+      ],
+      [{ consultantId: "consultant-1", orderId: ORDER_ID }],
+    ),
+  );
 }
 
 const booking = {
@@ -32,6 +41,19 @@ describe("bookingService", () => {
 
     await expect(service.createBooking({ ...booking, hours: 2000 })).rejects.toThrow(BusinessRuleError);
     expect((await service.getOrderBudget(ORDER_ID)).usedPersonDays).toBe(0);
+  });
+
+  test("rejects a booking on an order the consultant is not assigned to, and stores nothing", async () => {
+    const service = createService();
+
+    await expect(service.createBooking({ ...booking, orderId: OTHER_ORDER_ID })).rejects.toThrow(BusinessRuleError);
+    expect((await service.getOrderBudget(OTHER_ORDER_ID)).usedPersonDays).toBe(0);
+  });
+
+  test("lists only the orders a consultant is assigned to", async () => {
+    const assignedOrders = await createService().listAssignedOrders("consultant-1");
+
+    expect(assignedOrders.map((order) => order.id)).toEqual([ORDER_ID]);
   });
 
   test("rejects a booking on an unknown order", async () => {

@@ -36,27 +36,28 @@ cd backend && bun run start   # API on http://localhost:3000
 cd client && bun run dev      # web app on http://localhost:5173
 ```
 
-Open <http://localhost:5173>. On first start, the backend creates its tables in MySQL with one sample order, 4500012345, with a budget of 140 person-days. Data survives a restart.
+Open <http://localhost:5173>. The app starts in German if your device's time zone is in Germany, Austria, Switzerland or Liechtenstein or your browser's first language is German, and in English otherwise. Switch with *DE / EN* in the header; your choice is remembered. On first start, the backend creates its tables in MySQL and adds sample data: two orders, three consultants and their bookings. Order 4500012345 has 84 of 140 person-days used, and order 4500012346 has only 0.5 of 20 free. Data survives a restart.
 
-To stop the database, run `docker compose down`. Add `-v` to delete its data as well.
+To stop the database, run `docker compose down`. Add `-v` to delete its data as well; the sample data then returns on the next start. If you ran an earlier version and the backend fails while applying a database migration, this also resets it.
 
 ## Test
 
 ```bash
 cd backend && bun test
+cd client && bun test
 ```
 
-These tests need no database, so the 5 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database.
+These tests need no database, so the 7 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
 
 ## Demo users
 
-There is no login yet. Choose a role with the tabs at the top of the page.
+There is no login yet, so the demo users below are stored but cannot sign in. Choose a role with the tabs at the top of the page. Labels are shown as German / English.
 
-| Role | Sign in with | What to try |
-|---|---|---|
-| Consultant (Berater) | Tab *Berater* | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, choose *Vorschlag prüfen*, then *Buchung bestätigen*. |
-| Project lead (Projektleitung) | Tab *Projektleitung* | See the used and free person-days change after the booking. |
-| Purchasing (Einkauf) | Tab *Einkauf* | See the supplier overview with aggregated values only. These are sample values for now. |
+| Role | Demo user | Sign in with | What to try |
+|---|---|---|---|
+| Consultant | L. Hoffmann | Tab *Berater / Consultant* | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, choose *Vorschlag prüfen / Check proposal*, then *Buchung bestätigen / Confirm booking*. To see a rejection, choose order 4500012346 first: it has too little budget left. |
+| Project lead | A. Weber | Tab *Projektleitung / Project lead* | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days. |
+| Purchasing | K. Vogel | Tab *Einkauf / Purchasing* | See the supplier overview with aggregated values only. These are sample values for now. |
 
 With the default `AI_MOCK=true`, the one-sentence booking returns a fixed proposal of 7 hours for today, whatever the sentence says.
 
@@ -66,8 +67,8 @@ Where the technical jury finds the evidence for each [technical criterion](https
 
 | Criterion | Evidence |
 |---|---|
-| 1 · Persistence and data model | Schema and seed data in [database.ts](backend/src/repositories/database.ts), queries in [mysqlBookingRepository.ts](backend/src/repositories/mysqlBookingRepository.ts), [ER diagram](docs/domain.md) |
-| 2 · Business rules and unit tests | Rule in [booking.ts](backend/src/domain/booking.ts), tests in [booking.test.ts](backend/src/domain/booking.test.ts) and [bookingService.test.ts](backend/src/services/bookingService.test.ts), simultaneous bookings in [mysqlBookingRepository.test.ts](backend/src/repositories/mysqlBookingRepository.test.ts) |
+| 1 · Persistence and data model | Schema in [migrations.ts](backend/src/repositories/migrations.ts), sample data in [seedData.ts](backend/src/repositories/seedData.ts), queries in [mysqlBookingRepository.ts](backend/src/repositories/mysqlBookingRepository.ts), [ER diagram](docs/domain.md) |
+| 2 · Business rules and unit tests | Rules in [booking.ts](backend/src/domain/booking.ts), tests in [booking.test.ts](backend/src/domain/booking.test.ts) and [bookingService.test.ts](backend/src/services/bookingService.test.ts), simultaneous bookings in [mysqlBookingRepository.test.ts](backend/src/repositories/mysqlBookingRepository.test.ts) |
 | 3 · Roles, permissions and privacy | [Permission concept](docs/roles-and-privacy.md), role views in the [mockup](docs/mockup/index.html) and in [client/src/features](client/src/features) |
 | 4 · Architecture and engineering | **A** · structure in [backend/src](backend/src) and [client/src](client/src) · **B** · [ADRs](docs/adr/) · **C** · Git history · **E** (database only) · [compose.yaml](compose.yaml) · **F** · [mockup](docs/mockup/index.html) |
 
@@ -81,6 +82,7 @@ Building block D (API documentation) is not delivered: the API is described belo
 | Backend | Bun, Express 5, Zod | [ADR-0001](docs/adr/0001-technology-stack.md) |
 | Database | MySQL 8.4 (`mysql2`), started with Docker Compose | [ADR-0006](docs/adr/0006-mysql-database.md) |
 | Frontend | React 19, Vite, React Router, Redux Toolkit, axios, Tailwind CSS 4 | [ADR-0001](docs/adr/0001-technology-stack.md) |
+| Languages | German and English, default from the device's time zone | [ADR-0009](docs/adr/0009-languages-and-location-default.md) |
 | Tests and lint | `bun test`, oxlint | [ADR-0001](docs/adr/0001-technology-stack.md) |
 | AI | OpenRouter, with a mock switch | [ADR-0007](docs/adr/0007-openrouter-ai-gateway.md) |
 | Email | nodemailer over SMTP, with a mock switch | [ADR-0008](docs/adr/0008-email-with-nodemailer.md) |
@@ -107,9 +109,11 @@ flowchart LR
 
 | Method and path | Purpose | Errors |
 |---|---|---|
-| `POST /api/bookings` | Check the rules, then store a booking | `400` invalid input, `404` unknown order, `422` rule violated |
+| `GET /api/orders` | All orders, as ID and title | |
+| `GET /api/consultants/:consultantId/orders` | Only the orders this consultant is assigned to | |
+| `POST /api/bookings` | Check the rules, then store a booking | `400` invalid input, `404` unknown order, `422` rule violated, with `rule` and `values` so the client can explain it in either language |
 | `GET /api/orders/:orderId/budget` | Ordered, used and free person-days | `404` unknown order |
-| `POST /api/ai/parse-booking` | Turn one sentence into a booking proposal, without storing it | `400` invalid input, `503` AI service unavailable |
+| `POST /api/ai/parse-booking` | Turn one sentence into a booking proposal, without storing it | `400` invalid input, `503` AI service unavailable, with a `code` |
 
 ### Configuration
 
@@ -132,12 +136,13 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 
 | Area | Built | Planned |
 |---|---|---|
-| Core flow | Book time on an order, see the effect on its budget | Choosing from the consultant's assigned orders |
-| Business rules | Free budget of an order, safe for simultaneous bookings | Overlapping bookings, 10-hour day, 11-hour rest, vacation and public holidays, order period |
-| Data model | Orders and bookings | Consultants, suppliers, accounting objects, assignments, proofs of work |
-| Roles | Role views in the client, written permission concept | Sign-in, permission checks on the server ([ADR-0002](docs/adr/0002-identity-and-sign-in.md)) |
+| Core flow | Choose an assigned order, book time on it, see the effect on its budget | Manual booking form, without the AI sentence |
+| Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders | Overlapping bookings, 10-hour day, 11-hour rest, vacation and public holidays, order period |
+| Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, demo users, with migrations | Proofs of work |
+| Roles | Role views in the client, written permission concept. Until sign-in exists, the assignment rule trusts the consultant ID in the request | Sign-in, permission checks on the server ([ADR-0002](docs/adr/0002-identity-and-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |
 | Purchasing | Screen with sample values | Aggregated supplier endpoint |
+| Languages | Client screens and server errors in German and English | Emails, which need a stored language per user |
 | Email | Sending service with a mock switch, not used by any feature | After Sprint One: budget warnings, proof of work, rejected bookings, the single sign-on process ([ADR-0008](docs/adr/0008-email-with-nodemailer.md)) |
 
 ## Documentation
@@ -145,7 +150,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 - [Product vision](docs/product-vision.md): who it is for, core flow, what we leave out
 - [Domain model](docs/domain.md): glossary and ER diagram
 - [Roles and privacy](docs/roles-and-privacy.md): role matrix and personal data
-- Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md)
+- Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md)
 - [Mockup](docs/mockup/index.html) and its [visual direction](docs/mockup/README.md)
 - [AGENTS.md](AGENTS.md): instructions for AI coding agents
 

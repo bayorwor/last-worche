@@ -11,7 +11,14 @@ const REQUEST_TIMEOUT_MS = 30_000;
 const unavailableMessage = "The AI service is unavailable. Please try again later.";
 const unreadableMessage = "The sentence could not be turned into a booking. Please rephrase it.";
 
-export class AiServiceError extends Error {}
+export class AiServiceError extends Error {
+  constructor(
+    readonly code: "ai-unavailable" | "ai-busy" | "ai-unreadable",
+    message: string,
+  ) {
+    super(message);
+  }
+}
 
 export async function parseBookingSentence(
   sentence: string,
@@ -24,11 +31,11 @@ export async function parseBookingSentence(
   const response = await callOpenRouter(sentence, today);
 
   if (response.status === 429) {
-    throw new AiServiceError("The AI service is busy. Please try again in a moment.");
+    throw new AiServiceError("ai-busy", "The AI service is busy. Please try again in a moment.");
   }
   if (!response.ok) {
     console.error(`OpenRouter error ${response.status}:`, await response.text());
-    throw new AiServiceError(unavailableMessage);
+    throw new AiServiceError("ai-unavailable", unavailableMessage);
   }
 
   return readProposal(await response.json());
@@ -60,7 +67,7 @@ async function callOpenRouter(sentence: string, today: string): Promise<Response
     });
   } catch (error) {
     console.error("OpenRouter request failed:", error);
-    throw new AiServiceError(unavailableMessage);
+    throw new AiServiceError("ai-unavailable", unavailableMessage);
   }
 }
 
@@ -70,6 +77,6 @@ export function readProposal(body: unknown): BookingProposal {
   try {
     return bookingProposalSchema.parse(JSON.parse(String(content)));
   } catch {
-    throw new AiServiceError(unreadableMessage);
+    throw new AiServiceError("ai-unreadable", unreadableMessage);
   }
 }

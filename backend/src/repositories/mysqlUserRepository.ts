@@ -1,7 +1,7 @@
 // MySQL implementation of UserRepository. Database column names stay inside this file.
-import type { Pool, RowDataPacket } from "mysql2/promise";
+import type { Pool, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import type { Role, User, UserRole } from "../domain/user.ts";
-import type { UserAccount, UserRepository } from "./userRepository.ts";
+import type { SignInCode, UserRepository } from "./userRepository.ts";
 
 type UserRow = RowDataPacket & {
   id: string;
@@ -10,13 +10,19 @@ type UserRow = RowDataPacket & {
   role: UserRole;
   consultant_id: string | null;
 };
-type AccountRow = UserRow & { password_hash: string };
 type RoleRow = RowDataPacket & {
   id: UserRole;
   name_de: string;
   name_en: string;
   summary_de: string;
   summary_en: string;
+};
+type SignInCodeRow = RowDataPacket & {
+  id: number;
+  user_id: string;
+  code_hash: string;
+  created_at_ms: number;
+  expires_at_ms: number;
 };
 
 function toUser(row: UserRow): User {
@@ -45,13 +51,37 @@ export function createMysqlUserRepository(db: Pool): UserRepository {
       );
       return rows.map(toUser);
     },
-    findAccountByEmail: async (email): Promise<UserAccount | null> => {
-      const [rows] = await db.query<AccountRow[]>(
-        "SELECT id, name, email, role, consultant_id, password_hash FROM users WHERE email = ?",
-        [email],
+    findUserByEmail: async (email) => {
+      const [rows] = await db.query<UserRow[]>("SELECT id, name, email, role, consultant_id FROM users WHERE email = ?", [email]);
+      return rows[0] ? toUser(rows[0]) : null;
+    },
+    saveSignInCode: async ({ userId, codeHash, createdAtMs, expiresAtMs }) => {
+      await db.query(
+        `REPLACE INTO sign_in_codes (user_id, code_hash, created_at_ms, expires_at_ms, attempts)
+         VALUES (?, ?, ?, ?, 0)`,
+        [userId, codeHash, createdAtMs, expiresAtMs],
+      );
+    },
+    findSignInCode: async (userId): Promise<SignInCode | null> => {
+      const [rows] = await db.query<SignInCodeRow[]>(
+        "SELECT id, user_id, code_hash, created_at_ms, expires_at_ms FROM sign_in_codes WHERE user_id = ?",
+        [userId],
       );
       const row = rows[0];
-      return row ? { ...toUser(row), passwordHash: row.password_hash } : null;
+      return row
+        ? { id: row.id, userId: row.user_id, codeHash: row.code_hash, createdAtMs: row.created_at_ms, expiresAtMs: row.expires_at_ms }
+        : null;
+    },
+    registerCodeAttempt: async (codeId, maxAttempts) => {
+      const [result] = await db.query<ResultSetHeader>(
+        "UPDATE sign_in_codes SET attempts = attempts + 1 WHERE id = ? AND attempts < ?",
+        [codeId, maxAttempts],
+      );
+      return result.affectedRows === 1;
+    },
+    deleteSignInCode: async (codeId) => {
+      const [result] = await db.query<ResultSetHeader>("DELETE FROM sign_in_codes WHERE id = ?", [codeId]);
+      return result.affectedRows === 1;
     },
   };
 }

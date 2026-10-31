@@ -68,7 +68,7 @@ export const ROLES = [
   },
 ];
 
-// Public on purpose, and documented in the README, so that testers can sign in. Never use it on real data.
+// Only for migration 006. Migration 007 removes the passwords again, in favour of sign-in codes (ADR-0014).
 export const TEST_PASSWORD = "lastWorche-Test-2026";
 
 // Every person is fictional, and .example addresses can never reach a real mailbox.

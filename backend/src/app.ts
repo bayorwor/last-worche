@@ -10,12 +10,12 @@ import { createBookingController } from "./controllers/bookingController.ts";
 import { createAuthGuards } from "./middlewares/authentication.ts";
 import { errorHandler } from "./middlewares/errorHandler.ts";
 import type { BookingRepository } from "./repositories/bookingRepository.ts";
-import { TEST_PASSWORD } from "./repositories/seedData.ts";
 import type { UserRepository } from "./repositories/userRepository.ts";
 import { createAiRoutes } from "./routes/aiRoutes.ts";
 import { createAuthRoutes } from "./routes/authRoutes.ts";
 import { createBookingRoutes } from "./routes/bookingRoutes.ts";
 import { createAuthService } from "./services/authService.ts";
+import { sendEmail } from "./services/emailService.ts";
 import { createBookingService } from "./services/bookingService.ts";
 
 type AppDependencies = {
@@ -27,7 +27,9 @@ export function createApp({ bookingRepository, userRepository }: AppDependencies
   const bookingService = createBookingService(bookingRepository);
   const authService = createAuthService(userRepository, {
     sessionSecret: env.JWT_SECRET,
-    testAccountPassword: env.TEST_ACCOUNTS_ENABLED ? TEST_PASSWORD : null,
+    showCodes: env.MAIL_MOCK,
+    testAccountsEnabled: env.TEST_ACCOUNTS_ENABLED,
+    sendEmail,
   });
   const guards = createAuthGuards(authService);
 

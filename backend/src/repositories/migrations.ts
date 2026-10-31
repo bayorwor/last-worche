@@ -192,4 +192,22 @@ export const MIGRATIONS: Migration[] = [
       ]);
     },
   },
+  {
+    // Sign-in with a code by email instead of a password (ADR-0014).
+    name: "007-sign-in-codes",
+    async run(db) {
+      await db.query(`
+        CREATE TABLE sign_in_codes (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          user_id VARCHAR(64) NOT NULL UNIQUE,
+          code_hash CHAR(64) NOT NULL,
+          created_at_ms BIGINT NOT NULL,
+          expires_at_ms BIGINT NOT NULL,
+          attempts INT NOT NULL DEFAULT 0,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `);
+      await db.query("ALTER TABLE users DROP COLUMN password_hash");
+    },
+  },
 ];

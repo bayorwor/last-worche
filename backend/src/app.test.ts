@@ -10,16 +10,13 @@ import { createInMemoryUserRepository } from "./repositories/inMemoryUserReposit
 const ORDER_ID = "4500012345";
 const OTHER_ORDER_ID = "4500012346";
 
-const PASSWORD = "correct-password";
-const passwordHash = Bun.password.hashSync(PASSWORD, { algorithm: "bcrypt", cost: 4 }); // low cost, so the tests stay fast
-
-const accounts = [
+const users = [
   { id: "user-consultant", name: "L. Hoffmann", email: "l.hoffmann@test.example", role: "consultant", consultantId: "consultant-1" },
   { id: "user-other-consultant", name: "S. Tanriver", email: "s.tanriver@test.example", role: "consultant", consultantId: "consultant-3" },
   { id: "user-project-lead", name: "A. Weber", email: "a.weber@test.example", role: "project_lead", consultantId: null },
   { id: "user-other-lead", name: "B. Lang", email: "b.lang@test.example", role: "project_lead", consultantId: null },
   { id: "user-purchasing", name: "K. Vogel", email: "k.vogel@test.example", role: "purchasing", consultantId: null },
-].map((account) => ({ ...account, role: account.role as Role["id"], passwordHash }));
+].map((user) => ({ ...user, role: user.role as Role["id"] }));
 
 const roles: Role[] = [
   { id: "consultant", names: { de: "Berater", en: "Consultant" }, summaries: { de: "buchen", en: "book time" } },
@@ -42,7 +39,7 @@ beforeAll(() => {
         { consultantId: "consultant-3", orderId: OTHER_ORDER_ID },
       ],
     ),
-    userRepository: createInMemoryUserRepository(accounts, roles),
+    userRepository: createInMemoryUserRepository(users, roles),
   });
   server = app.listen(0);
   baseUrl = `http://localhost:${(server.address() as AddressInfo).port}/api`;
@@ -63,9 +60,15 @@ function send(method: string, path: string, { token, body }: { token?: string; b
   });
 }
 
+// The tests run with MAIL_MOCK on, so the code comes back in the response.
+async function requestCode(email: string): Promise<string> {
+  const response = await send("POST", "/auth/request-code", { body: { email, language: "en" } });
+  return ((await response.json()) as { testCode: string }).testCode;
+}
+
 async function signIn(userId: string): Promise<string> {
-  const email = accounts.find((account) => account.id === userId)?.email;
-  const response = await send("POST", "/auth/sign-in", { body: { email, password: PASSWORD } });
+  const email = users.find((user) => user.id === userId)?.email as string;
+  const response = await send("POST", "/auth/verify-code", { body: { email, code: await requestCode(email) } });
   return ((await response.json()) as { token: string }).token;
 }
 
@@ -74,32 +77,43 @@ describe("sign-in", () => {
     expect(await (await send("GET", "/auth/roles")).json()).toEqual(roles);
   });
 
-  test("the test accounts never include a password hash", async () => {
-    const response = await send("GET", "/auth/test-accounts");
-    const body = (await response.json()) as { accounts: { role: string }[] };
+  test("the test accounts list each user's email, name and role", async () => {
+    const accounts = (await (await send("GET", "/auth/test-accounts")).json()) as object[];
 
-    expect(body.accounts.map(({ role }) => role)).toContain("purchasing");
-    expect(JSON.stringify(body)).not.toContain(passwordHash);
+    expect(accounts[0]).toEqual({ email: "l.hoffmann@test.example", name: "L. Hoffmann", role: "consultant" });
   });
 
   test("the email does not depend on upper or lower case", async () => {
-    const response = await send("POST", "/auth/sign-in", { body: { email: " A.WEBER@test.example ", password: PASSWORD } });
+    const code = await requestCode(" A.WEBER@test.example ");
+
+    const response = await send("POST", "/auth/verify-code", { body: { email: "a.weber@TEST.example", code } });
 
     expect(response.status).toBe(200);
-    expect(JSON.stringify(await response.json())).not.toContain(passwordHash);
   });
 
-  test("rejects a wrong password and an unknown email with the same answer", async () => {
-    const wrongPassword = await send("POST", "/auth/sign-in", { body: { email: "a.weber@test.example", password: "wrong" } });
-    const unknownEmail = await send("POST", "/auth/sign-in", { body: { email: "nobody@test.example", password: PASSWORD } });
+  test("an unknown email gets the same status, with no code", async () => {
+    const response = await send("POST", "/auth/request-code", { body: { email: "nobody@test.example" } });
 
-    expect(wrongPassword.status).toBe(401);
-    expect(unknownEmail.status).toBe(401);
-    expect(await wrongPassword.json()).toEqual(await unknownEmail.json());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({});
   });
 
-  test("rejects a malformed email with 400", async () => {
-    expect((await send("POST", "/auth/sign-in", { body: { email: "not-an-email", password: PASSWORD } })).status).toBe(400);
+  test("rejects a wrong code and an unknown email with the same answer", async () => {
+    const code = await requestCode("a.weber@test.example");
+    const wrongCode = code === "000000" ? "000001" : "000000";
+
+    const wrong = await send("POST", "/auth/verify-code", { body: { email: "a.weber@test.example", code: wrongCode } });
+    const unknown = await send("POST", "/auth/verify-code", { body: { email: "nobody@test.example", code: wrongCode } });
+
+    expect(wrong.status).toBe(401);
+    expect(unknown.status).toBe(401);
+    expect(await wrong.json()).toEqual(await unknown.json());
+  });
+
+  test("rejects a malformed email or code with 400", async () => {
+    expect((await send("POST", "/auth/request-code", { body: { email: "not-an-email" } })).status).toBe(400);
+    expect((await send("POST", "/auth/verify-code", { body: { email: "a.weber@test.example", code: "12345" } })).status).toBe(400);
+    expect((await send("POST", "/auth/verify-code", { body: { email: "a.weber@test.example", code: "abcdef" } })).status).toBe(400);
   });
 
   test("a session tells the server who is signed in", async () => {

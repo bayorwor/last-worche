@@ -1,10 +1,17 @@
 // API DTOs for signing in.
 import { z } from "zod";
 
-export const signInRequestSchema = z.object({
-  email: z.string().trim().toLowerCase().pipe(z.email()),
-  // The upper limit stops very long passwords from keeping the server busy with hashing.
-  password: z.string().min(1).max(200),
+const email = z.string().trim().toLowerCase().pipe(z.email());
+
+export const requestCodeSchema = z.object({
+  email,
+  language: z.enum(["de", "en"]).default("en"),
 });
 
-export type SignInRequest = z.infer<typeof signInRequestSchema>;
+export const verifyCodeSchema = z.object({
+  email,
+  code: z.string().regex(/^\d{6}$/),
+});
+
+export type RequestCodeRequest = z.infer<typeof requestCodeSchema>;
+export type VerifyCodeRequest = z.infer<typeof verifyCodeSchema>;

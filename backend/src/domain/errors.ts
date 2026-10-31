@@ -1,7 +1,14 @@
 // Domain errors. They describe what went wrong; errorHandler decides the HTTP status.
 export class NotFoundError extends Error {}
 
-export class UnauthorizedError extends Error {}
+export class UnauthorizedError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+  ) {
+    super(message);
+  }
+}
 
 export class ForbiddenError extends Error {}
 

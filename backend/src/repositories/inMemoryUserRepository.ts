@@ -1,10 +1,11 @@
 // A UserRepository that keeps data in memory, so unit tests run without a database.
-import type { User } from "../domain/user.ts";
-import type { UserRepository } from "./userRepository.ts";
+import type { Role } from "../domain/user.ts";
+import type { UserAccount, UserRepository } from "./userRepository.ts";
 
-export function createInMemoryUserRepository(users: User[]): UserRepository {
+export function createInMemoryUserRepository(accounts: UserAccount[], roles: Role[] = []): UserRepository {
   return {
-    listUsers: async () => users,
-    findUser: async (userId) => users.find((user) => user.id === userId) ?? null,
+    listRoles: async () => roles,
+    listUsers: async () => accounts.map(({ passwordHash: _passwordHash, ...user }) => user),
+    findAccountByEmail: async (email) => accounts.find((account) => account.email === email) ?? null,
   };
 }

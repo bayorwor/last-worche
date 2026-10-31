@@ -20,6 +20,7 @@ const envSchema = z.object({
     .transform((origins) => origins.split(",").map((origin) => origin.trim())),
   // Signs session tokens. The default is for local development only, like the demo sign-in itself.
   JWT_SECRET: z.string().min(16).default("local-demo-secret-not-for-production"),
+  TEST_ACCOUNTS_ENABLED: booleanFlag("true"),
   AI_MOCK: booleanFlag("true"),
   OPENROUTER_API_KEY: z.string().optional(),
   OPENROUTER_MODEL: z.string().min(1).default("openrouter/auto"),

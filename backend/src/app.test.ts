@@ -3,19 +3,26 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { createApp } from "./app.ts";
-import type { User } from "./domain/user.ts";
+import type { Role } from "./domain/user.ts";
 import { createInMemoryBookingRepository } from "./repositories/inMemoryBookingRepository.ts";
 import { createInMemoryUserRepository } from "./repositories/inMemoryUserRepository.ts";
 
 const ORDER_ID = "4500012345";
 const OTHER_ORDER_ID = "4500012346";
 
-const users: User[] = [
-  { id: "user-consultant", name: "L. Hoffmann", role: "consultant", consultantId: "consultant-1" },
-  { id: "user-other-consultant", name: "S. Tanriver", role: "consultant", consultantId: "consultant-3" },
-  { id: "user-project-lead", name: "A. Weber", role: "project_lead", consultantId: null },
-  { id: "user-other-lead", name: "B. Lang", role: "project_lead", consultantId: null },
-  { id: "user-purchasing", name: "K. Vogel", role: "purchasing", consultantId: null },
+const PASSWORD = "correct-password";
+const passwordHash = Bun.password.hashSync(PASSWORD, { algorithm: "bcrypt", cost: 4 }); // low cost, so the tests stay fast
+
+const accounts = [
+  { id: "user-consultant", name: "L. Hoffmann", email: "l.hoffmann@test.example", role: "consultant", consultantId: "consultant-1" },
+  { id: "user-other-consultant", name: "S. Tanriver", email: "s.tanriver@test.example", role: "consultant", consultantId: "consultant-3" },
+  { id: "user-project-lead", name: "A. Weber", email: "a.weber@test.example", role: "project_lead", consultantId: null },
+  { id: "user-other-lead", name: "B. Lang", email: "b.lang@test.example", role: "project_lead", consultantId: null },
+  { id: "user-purchasing", name: "K. Vogel", email: "k.vogel@test.example", role: "purchasing", consultantId: null },
+].map((account) => ({ ...account, role: account.role as Role["id"], passwordHash }));
+
+const roles: Role[] = [
+  { id: "consultant", names: { de: "Berater", en: "Consultant" }, summaries: { de: "buchen", en: "book time" } },
 ];
 
 const newBooking = { orderId: ORDER_ID, date: "2026-10-27", startTime: "09:00", endTime: "17:00", hours: 7, description: "Work" };
@@ -35,7 +42,7 @@ beforeAll(() => {
         { consultantId: "consultant-3", orderId: OTHER_ORDER_ID },
       ],
     ),
-    userRepository: createInMemoryUserRepository(users),
+    userRepository: createInMemoryUserRepository(accounts, roles),
   });
   server = app.listen(0);
   baseUrl = `http://localhost:${(server.address() as AddressInfo).port}/api`;
@@ -57,32 +64,48 @@ function send(method: string, path: string, { token, body }: { token?: string; b
 }
 
 async function signIn(userId: string): Promise<string> {
-  const response = await send("POST", "/auth/sign-in", { body: { userId } });
+  const email = accounts.find((account) => account.id === userId)?.email;
+  const response = await send("POST", "/auth/sign-in", { body: { email, password: PASSWORD } });
   return ((await response.json()) as { token: string }).token;
 }
 
 describe("sign-in", () => {
-  test("lists one demo user per role to anyone", async () => {
-    const response = await send("GET", "/auth/demo-users");
+  test("anyone can read the roles", async () => {
+    expect(await (await send("GET", "/auth/roles")).json()).toEqual(roles);
+  });
+
+  test("the test accounts never include a password hash", async () => {
+    const response = await send("GET", "/auth/test-accounts");
+    const body = (await response.json()) as { accounts: { role: string }[] };
+
+    expect(body.accounts.map(({ role }) => role)).toContain("purchasing");
+    expect(JSON.stringify(body)).not.toContain(passwordHash);
+  });
+
+  test("the email does not depend on upper or lower case", async () => {
+    const response = await send("POST", "/auth/sign-in", { body: { email: " A.WEBER@test.example ", password: PASSWORD } });
 
     expect(response.status).toBe(200);
-    expect(((await response.json()) as User[]).map((user) => user.role)).toEqual([
-      "consultant",
-      "consultant",
-      "project_lead",
-      "project_lead",
-      "purchasing",
-    ]);
+    expect(JSON.stringify(await response.json())).not.toContain(passwordHash);
+  });
+
+  test("rejects a wrong password and an unknown email with the same answer", async () => {
+    const wrongPassword = await send("POST", "/auth/sign-in", { body: { email: "a.weber@test.example", password: "wrong" } });
+    const unknownEmail = await send("POST", "/auth/sign-in", { body: { email: "nobody@test.example", password: PASSWORD } });
+
+    expect(wrongPassword.status).toBe(401);
+    expect(unknownEmail.status).toBe(401);
+    expect(await wrongPassword.json()).toEqual(await unknownEmail.json());
+  });
+
+  test("rejects a malformed email with 400", async () => {
+    expect((await send("POST", "/auth/sign-in", { body: { email: "not-an-email", password: PASSWORD } })).status).toBe(400);
   });
 
   test("a session tells the server who is signed in", async () => {
     const response = await send("GET", "/auth/me", { token: await signIn("user-project-lead") });
 
     expect(await response.json()).toMatchObject({ name: "A. Weber", role: "project_lead" });
-  });
-
-  test("rejects an unknown demo user with 401", async () => {
-    expect((await send("POST", "/auth/sign-in", { body: { userId: "nobody" } })).status).toBe(401);
   });
 
   test("rejects a made-up token with 401", async () => {

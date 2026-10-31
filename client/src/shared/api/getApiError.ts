@@ -23,6 +23,9 @@ const RULE_MESSAGE_KEYS: Record<string, MessageKey> = {
   'free-budget': 'errors.ruleFreeBudget',
   'assigned-order': 'errors.ruleAssignedOrder',
   'no-overlap': 'errors.ruleOverlap',
+  'daily-limit': 'errors.ruleDailyLimit',
+  'rest-after-previous-day': 'errors.ruleRestAfterPreviousDay',
+  'rest-before-next-day': 'errors.ruleRestBeforeNextDay',
 }
 
 // Which input field the server's validation complained about first.
@@ -61,6 +64,12 @@ export function getApiError(error: unknown): ApiError {
   if (status === 400) {
     const invalidField = String(data?.details?.[0]?.path?.[0])
     return { key: FIELD_MESSAGE_KEYS[invalidField] ?? 'errors.invalidInput' }
+  }
+  if (status === 401) {
+    return { key: 'errors.sessionEnded' }
+  }
+  if (status === 403) {
+    return { key: 'errors.forbidden' }
   }
   if (status === 404) {
     return { key: 'errors.orderNotFound' }

@@ -6,6 +6,7 @@ import {
   ASSIGNMENTS,
   buildDemoBookings,
   CONSULTANTS,
+  DEMO_PROJECT_LEAD_ID,
   DEMO_USERS,
   ORDERS,
   SUPPLIERS,
@@ -117,6 +118,19 @@ export const MIGRATIONS: Migration[] = [
       await db.query("ALTER TABLE bookings ADD COLUMN start_time TIME NULL, ADD COLUMN end_time TIME NULL");
       await db.query("UPDATE bookings SET start_time = '09:00:00', end_time = ADDTIME('09:00:00', SEC_TO_TIME(hours * 3600))");
       await db.query("ALTER TABLE bookings MODIFY start_time TIME NOT NULL, MODIFY end_time TIME NOT NULL");
+    },
+  },
+  {
+    // A project lead may only see the orders they lead.
+    name: "005-order-project-lead",
+    async run(db) {
+      await db.query("ALTER TABLE orders ADD COLUMN project_lead_id VARCHAR(64) NULL");
+      await db.query("UPDATE orders SET project_lead_id = ?", [DEMO_PROJECT_LEAD_ID]);
+      await db.query(`
+        ALTER TABLE orders
+          MODIFY project_lead_id VARCHAR(64) NOT NULL,
+          ADD FOREIGN KEY (project_lead_id) REFERENCES users(id)
+      `);
     },
   },
 ];

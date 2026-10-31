@@ -2,9 +2,16 @@
 import { env } from "./src/config/dotenv.ts";
 import { createApp } from "./src/app.ts";
 import { openDatabase } from "./src/repositories/database.ts";
+import { createMysqlBookingRepository } from "./src/repositories/mysqlBookingRepository.ts";
+import { createMysqlUserRepository } from "./src/repositories/mysqlUserRepository.ts";
 
 const db = await openDatabase(env.DATABASE_URL);
 
-createApp(db).listen(env.PORT, () => {
+const app = createApp({
+  bookingRepository: createMysqlBookingRepository(db),
+  userRepository: createMysqlUserRepository(db),
+});
+
+app.listen(env.PORT, () => {
   console.log(`lastWorche API listening on http://localhost:${env.PORT}`);
 });

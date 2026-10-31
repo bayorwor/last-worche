@@ -6,16 +6,18 @@ import { PageLoader } from '../../../shared/components/PageLoader.tsx'
 import { PageTitle } from '../../../shared/components/PageTitle.tsx'
 import { StatusMessage } from '../../../shared/components/StatusMessage.tsx'
 import { useTranslation } from '../../../shared/i18n/languageContext.ts'
-import { fetchOrderBudget, fetchOrders } from '../budgetSlice.ts'
+import { fetchOrderBookings, fetchOrderBudget, fetchOrders } from '../budgetSlice.ts'
+import { OrderBookingsTable } from '../components/OrderBookingsTable.tsx'
 import { OrderBudgetPanel } from '../components/OrderBudgetPanel.tsx'
 
 export default function ProjectLeadDashboardPage() {
   const dispatch = useAppDispatch()
   const { t } = useTranslation()
-  const { orders, budgetsByOrderId, status, error } = useAppSelector((state) => state.budget)
+  const { orders, budgetsByOrderId, bookingsByOrderId, status, error } = useAppSelector((state) => state.budget)
   const [chosenOrderId, setChosenOrderId] = useState<string | null>(null)
   const selectedOrderId = chosenOrderId ?? orders[0]?.id
   const selectedBudget = selectedOrderId ? budgetsByOrderId[selectedOrderId] : undefined
+  const selectedBookings = selectedOrderId ? bookingsByOrderId[selectedOrderId] : undefined
 
   useEffect(() => {
     dispatch(fetchOrders())
@@ -25,12 +27,14 @@ export default function ProjectLeadDashboardPage() {
   useEffect(() => {
     if (selectedOrderId) {
       dispatch(fetchOrderBudget(selectedOrderId))
+      dispatch(fetchOrderBookings(selectedOrderId))
     }
   }, [dispatch, selectedOrderId])
 
   function retry() {
     if (selectedOrderId) {
       dispatch(fetchOrderBudget(selectedOrderId))
+      dispatch(fetchOrderBookings(selectedOrderId))
     } else {
       dispatch(fetchOrders())
     }
@@ -56,7 +60,10 @@ export default function ProjectLeadDashboardPage() {
           </Button>
         </div>
       )}
-      {selectedBudget ? <OrderBudgetPanel budget={selectedBudget} /> : status === 'loading' && <PageLoader />}
+      <div className="grid gap-6">
+        {selectedBudget ? <OrderBudgetPanel budget={selectedBudget} /> : status === 'loading' && <PageLoader />}
+        {selectedOrderId && selectedBookings && <OrderBookingsTable orderId={selectedOrderId} bookings={selectedBookings} />}
+      </div>
     </>
   )
 }

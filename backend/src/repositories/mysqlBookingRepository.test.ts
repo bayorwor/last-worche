@@ -6,7 +6,7 @@ import { BusinessRuleError } from "../domain/errors.ts";
 import { createBookingService, type BookingService } from "../services/bookingService.ts";
 import { openDatabase } from "./database.ts";
 import { createMysqlBookingRepository } from "./mysqlBookingRepository.ts";
-import { NEAR_LIMIT_ORDER_ID, SEED_ORDER_ID } from "./seedData.ts";
+import { DEMO_PROJECT_LEAD_ID, NEAR_LIMIT_ORDER_ID, SEED_ORDER_ID } from "./seedData.ts";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 
@@ -62,6 +62,26 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
   });
 
+  test("one person booking at the same moment cannot pass 10 h on one day together", async () => {
+    const attempts = [
+      { orderId: SEED_ORDER_ID, startTime: "06:00", endTime: "12:00", hours: 6 },
+      { orderId: NEAR_LIMIT_ORDER_ID, startTime: "12:00", endTime: "18:00", hours: 6 },
+    ].map((attempt) => service.createBooking({ ...booking, ...attempt }));
+
+    const results = await Promise.allSettled(attempts);
+
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+  });
+
+  test("enforces the 11-hour rest across two days", async () => {
+    await service.createBooking({ ...booking, date: "2026-10-26", startTime: "12:00", endTime: "21:00", hours: 9 });
+
+    await expect(
+      service.createBooking({ ...booking, startTime: "07:59", endTime: "12:00", hours: 4 }),
+    ).rejects.toThrow(BusinessRuleError);
+    await service.createBooking({ ...booking, startTime: "08:00", endTime: "12:00", hours: 4 });
+  });
+
   test("stores and reads back start and end times", async () => {
     await service.createBooking({ ...booking, startTime: "09:30", endTime: "12:00", hours: 2.5 });
 
@@ -77,6 +97,35 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
     await expect(service.createBooking(unassigned)).rejects.toThrow(BusinessRuleError);
   });
 
+  test("reads back recent bookings with the consultant's name, newest first", async () => {
+    await service.createBooking({ ...booking, date: "2026-10-26", hours: 7 });
+    await service.createBooking({ ...booking, date: "2026-10-27", hours: 7 });
+    const lead = { id: DEMO_PROJECT_LEAD_ID, name: "A. Weber", role: "project_lead" as const, consultantId: null };
+
+    const bookings = await service.listOrderBookingsFor(lead, SEED_ORDER_ID);
+
+    expect(bookings[0]).toMatchObject({
+      orderId: SEED_ORDER_ID,
+      consultantId: "consultant-1",
+      consultantName: "L. Hoffmann",
+      date: "2026-10-27",
+      startTime: "09:00",
+      endTime: "17:00",
+      hours: 7,
+    });
+    expect(bookings.map(({ date }) => date)).toEqual(["2026-10-27", "2026-10-26"]);
+  });
+
+  test("a consultant's list holds only their own bookings", async () => {
+    await service.createBooking({ ...booking, hours: 7 });
+    await service.createBooking({ ...booking, consultantId: "consultant-2", hours: 7 });
+    const consultant = { id: "user-consultant", name: "L. Hoffmann", role: "consultant" as const, consultantId: "consultant-1" };
+
+    const bookings = await service.listConsultantBookingsFor(consultant, "consultant-1");
+
+    expect(bookings.map(({ consultantId }) => consultantId)).toEqual(["consultant-1"]);
+  });
+
   test("lists only the orders a consultant is assigned to", async () => {
     expect(await service.listAssignedOrders("consultant-2")).toEqual([
       { id: SEED_ORDER_ID, title: "Customer portal migration" },
@@ -84,14 +133,18 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
   });
 
   test("bookings at the same moment cannot exceed the free budget together", async () => {
-    // One day each, so only the budget can stop them.
+    // Leaves 4 h free on this 20 PT order, and every attempt is on its own day, so only the budget can stop them.
+    await db.query(
+      "INSERT INTO bookings (order_id, consultant_id, date, start_time, end_time, hours, description) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [NEAR_LIMIT_ORDER_ID, "consultant-3", "2026-09-01", "09:00", "17:00", 156, "Earlier work"],
+    );
     const attempts = Array.from({ length: 5 }, (_, day) =>
-      service.createBooking({ ...booking, date: `2026-10-0${day + 1}`, hours: 500 }),
+      service.createBooking({ ...booking, orderId: NEAR_LIMIT_ORDER_ID, date: `2026-10-0${day + 1}`, hours: 1.5 }),
     );
 
     const results = await Promise.allSettled(attempts);
 
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(2);
-    expect((await service.getOrderBudget(SEED_ORDER_ID)).usedPersonDays).toBe(125);
+    expect((await service.getOrderBudget(NEAR_LIMIT_ORDER_ID)).usedPersonDays).toBe(19.875);
   });
 });

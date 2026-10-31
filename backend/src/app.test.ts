@@ -210,3 +210,26 @@ describe("row-level scope", () => {
     expect(response.status).toBe(404);
   });
 });
+
+describe("calls from the mobile app", () => {
+  const preflight = (origin: string) =>
+    fetch(`${baseUrl}/orders`, {
+      method: "OPTIONS",
+      headers: { Origin: origin, "Access-Control-Request-Method": "GET", "Access-Control-Request-Headers": "authorization" },
+    });
+
+  test("the iOS and Android apps may call the API with a session token", async () => {
+    for (const origin of ["capacitor://localhost", "https://localhost"]) {
+      const response = await preflight(origin);
+
+      expect(response.headers.get("access-control-allow-origin")).toBe(origin);
+      expect(response.headers.get("access-control-allow-headers")?.toLowerCase()).toContain("authorization");
+    }
+  });
+
+  test("another website may not", async () => {
+    const response = await preflight("https://example.com");
+
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
+  });
+});

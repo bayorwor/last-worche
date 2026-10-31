@@ -129,6 +129,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 |---|---|---|
 | `PORT` | `3000` | API port. The Vite dev server expects `3000`. |
 | `DATABASE_URL` | `mysql://lastworche:lastworche@localhost:3306/lastworche` | MySQL connection, matching `backend/setup-database.sql`. For local development only. |
+| `CORS_ORIGINS` | `capacitor://localhost,https://localhost` | Web addresses allowed to call the API. The defaults are the iOS and Android apps |
 | `JWT_SECRET` | a value for local development only | Signs session tokens |
 | `AI_MOCK` | `true` | `true` returns a fixed AI proposal, `false` calls OpenRouter |
 | `OPENROUTER_API_KEY` | not set | Only needed with `AI_MOCK=false` |
@@ -137,7 +138,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | `MAIL_FROM` | `lastWorche <no-reply@lastworche.example>` | Sender of emails |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | not set, port `587` | Mail server, only needed with `MAIL_MOCK=false` |
 | `TEST_DATABASE_URL` | not set | Optional MySQL connection for the database tests |
-| `VITE_API_BASE_URL` | `/api` | Client: base URL of the API |
+| `VITE_API_BASE_URL` | `/api`, or the address in [client/.env.mobile](client/.env.mobile) for the mobile app | Client: base URL of the API |
 
 ## Status
 

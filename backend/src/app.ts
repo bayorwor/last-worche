@@ -1,5 +1,6 @@
 // Builds the Express app and connects the layers:
 // routes -> controllers -> services -> domain, with services using repositories for storage.
+import cors from "cors";
 import express from "express";
 import morgan from "morgan";
 import { env } from "./config/dotenv.ts";
@@ -28,6 +29,7 @@ export function createApp({ bookingRepository, userRepository }: AppDependencies
 
   const app = express();
   app.use(morgan("dev", { skip: () => process.env.NODE_ENV === "test" }));
+  app.use(cors({ origin: env.CORS_ORIGINS }));
   app.use(express.json());
 
   app.use("/api/auth", createAuthRoutes(createAuthController(authService), guards));

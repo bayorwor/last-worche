@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { assertAssignedToOrder, assertFitsFreeBudget, assertNoOverlap, assertWithinDailyLimit, calculateBudget } from "./booking.ts";
+import {
+  addDays,
+  assertAssignedToOrder,
+  assertFitsFreeBudget,
+  assertNoOverlap,
+  assertRestPeriod,
+  assertWithinDailyLimit,
+  calculateBudget,
+} from "./booking.ts";
 import { BusinessRuleError } from "./errors.ts";
 
 const order = { id: "4500012345", orderedPersonDays: 1 };
@@ -81,6 +89,56 @@ describe("10-hour day rule", () => {
 
   test("rejects a single booking above 10 h on an empty day", () => {
     expect(() => assertWithinDailyLimit([], 10.5)).toThrow(BusinessRuleError);
+  });
+});
+
+describe("11-hour rest rule", () => {
+  const startsAtEight = { startTime: "08:00", endTime: "12:00" };
+
+  test("accepts exactly 11 h since the previous day", () => {
+    expect(() => assertRestPeriod([{ startTime: "12:00", endTime: "21:00" }], [], startsAtEight)).not.toThrow();
+  });
+
+  test("rejects less than 11 h since the previous day, in the words of story #6", () => {
+    expect(() => assertRestPeriod([{ startTime: "12:00", endTime: "22:00" }], [], startsAtEight)).toThrow(
+      "Booking rejected: less than 11 h rest since the last working day (ArbZG §5).",
+    );
+  });
+
+  test("rejects one minute too little", () => {
+    expect(() => assertRestPeriod([{ startTime: "12:00", endTime: "21:01" }], [], startsAtEight)).toThrow(BusinessRuleError);
+  });
+
+  test("checks the latest booking of the previous day, whatever the order", () => {
+    const previousDay = [
+      { startTime: "18:00", endTime: "22:00" },
+      { startTime: "09:00", endTime: "12:00" },
+    ];
+
+    expect(() => assertRestPeriod(previousDay, [], startsAtEight)).toThrow(BusinessRuleError);
+  });
+
+  const endsAtNine = { startTime: "14:00", endTime: "21:00" };
+
+  test("accepts exactly 11 h before the next day", () => {
+    expect(() => assertRestPeriod([], [{ startTime: "08:00", endTime: "12:00" }], endsAtNine)).not.toThrow();
+  });
+
+  test("rejects less than 11 h before the next day", () => {
+    expect(() => assertRestPeriod([], [{ startTime: "07:59", endTime: "12:00" }], endsAtNine)).toThrow(
+      "Booking rejected: less than 11 h rest before the next working day (ArbZG §5).",
+    );
+  });
+
+  test("accepts a booking when the days around it are empty", () => {
+    expect(() => assertRestPeriod([], [], startsAtEight)).not.toThrow();
+  });
+});
+
+describe("addDays", () => {
+  test("crosses the end of a month and of a year", () => {
+    expect(addDays("2026-10-31", 1)).toBe("2026-11-01");
+    expect(addDays("2027-01-01", -1)).toBe("2026-12-31");
   });
 });
 

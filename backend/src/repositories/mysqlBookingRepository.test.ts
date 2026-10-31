@@ -73,6 +73,15 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
   });
 
+  test("enforces the 11-hour rest across two days", async () => {
+    await service.createBooking({ ...booking, date: "2026-10-26", startTime: "12:00", endTime: "21:00", hours: 9 });
+
+    await expect(
+      service.createBooking({ ...booking, startTime: "07:59", endTime: "12:00", hours: 4 }),
+    ).rejects.toThrow(BusinessRuleError);
+    await service.createBooking({ ...booking, startTime: "08:00", endTime: "12:00", hours: 4 });
+  });
+
   test("stores and reads back start and end times", async () => {
     await service.createBooking({ ...booking, startTime: "09:30", endTime: "12:00", hours: 2.5 });
 

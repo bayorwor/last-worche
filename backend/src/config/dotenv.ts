@@ -16,7 +16,7 @@ const envSchema = z.object({
   // Web addresses allowed to call this API from a browser or the mobile app. The Vite dev server needs no entry.
   CORS_ORIGINS: z
     .string()
-    .default("capacitor://localhost,https://localhost")
+    .default("capacitor://localhost,http://localhost")
     .transform((origins) => origins.split(",").map((origin) => origin.trim())),
   // Signs session tokens. The default is for local development only, like the demo sign-in itself.
   JWT_SECRET: z.string().min(16).default("local-demo-secret-not-for-production"),

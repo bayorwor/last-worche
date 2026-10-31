@@ -60,6 +60,8 @@ One command, from the repository root:
 (cd backend && bun test) && (cd client && bun test)
 ```
 
+On Windows, see the [PowerShell commands](docs/testing.md#windows-and-linux-commands). To test by hand, on any platform, use the [testing guide](docs/testing.md).
+
 These tests need no database, so the 26 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
 
 ## Demo users
@@ -82,6 +84,43 @@ To change user, choose *Abmelden / Sign out* at the top of the page. Labels are 
 | Project lead | J. Schneider | `j.schneider@client.example` | Leads only order 4500012347, and cannot see A. Weber's orders. |
 
 With the default `AI_MOCK=true`, the one-sentence booking returns a fixed proposal of 09:00–17:00 with 7 hours for today, whatever the sentence says. Confirming it a second time is rejected as an overlap, which shows that rule. To book other times, use the API as shown in the [backend README](backend/README.md).
+
+## For teammates: which branch to test
+
+**Test on `staging`.** It holds the next version of the product. Only use the others for the reasons below.
+
+| Branch | What it is | Who uses it |
+|---|---|---|
+| **`staging`** | The next candidate for `main` | **Teammates testing the product** |
+| `main` | The version the jury runs | Only for the final run check before the deadline |
+| `development` | The latest merged work, which may still be rough | Developers checking that merges work together |
+| `feature/<short-name>` | One change, not merged yet | Whoever reviews that pull request |
+
+To switch to it, from the repository root:
+
+```bash
+git fetch origin
+git switch staging
+git pull
+cd backend && bun install --frozen-lockfile && cd ..
+cd client && bun install --frozen-lockfile && cd ..
+```
+
+Then start the apps as under [Run](#run), or on another platform as under [Test on every platform](#test-on-every-platform). The backend updates your database by itself when it starts.
+
+- **Found a bug?** Report it with the branch, the test user and the steps. Fix it on a new `feature/` branch from `development`, never on `staging` itself.
+- **Going back to an older branch?** An older version may not match your updated database. If the backend or a screen fails, reset the database as described under [Run](#run).
+
+## Test on every platform
+
+The [testing guide](docs/testing.md) has the exact steps and one checklist for all of these, with what has been tested so far.
+
+| Platform | Quick start |
+|---|---|
+| Computer browser on macOS, Windows or Linux | [Run](#run), then open <http://localhost:5173> |
+| Any phone's browser, on the same Wi-Fi | `cd client && bun run dev --host`, then open the printed `Network` address on the phone. See [Phone browser](docs/testing.md#phone-browser) |
+| iOS simulator or iPhone app | Needs a Mac with Xcode. See [iOS simulator app](docs/testing.md#ios-simulator-app) and [iPhone app](docs/testing.md#iphone-app) |
+| Android emulator or phone app | Needs Android Studio and Java 21. See [Android app](docs/testing.md#android-app) |
 
 ## Evidence map
 
@@ -154,7 +193,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 |---|---|---|
 | `PORT` | `3000` | API port. The Vite dev server expects `3000`. |
 | `DATABASE_URL` | `mysql://lastworche:lastworche@localhost:3306/lastworche` | MySQL connection, matching `backend/setup-database.sql`. For local development only. |
-| `CORS_ORIGINS` | `capacitor://localhost,https://localhost` | Web addresses allowed to call the API. The defaults are the iOS and Android apps |
+| `CORS_ORIGINS` | `capacitor://localhost,http://localhost` | Web addresses allowed to call the API. The defaults are the iOS and Android apps |
 | `JWT_SECRET` | a value for local development only | Signs session tokens |
 | `TEST_ACCOUNTS_ENABLED` | `true` | `true` lists the test accounts on the sign-in screen. Use `false` on any shared server |
 | `AI_MOCK` | `true` | `true` returns a fixed AI proposal, `false` calls OpenRouter |
@@ -164,7 +203,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | `MAIL_FROM` | `lastWorche <no-reply@lastworche.example>` | Sender of emails |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | not set, port `587` | Mail server, only needed with `MAIL_MOCK=false` |
 | `TEST_DATABASE_URL` | not set | Optional MySQL connection for the database tests |
-| `VITE_API_BASE_URL` | `/api`, or the address in [client/.env.mobile](client/.env.mobile) for the mobile app | Client: base URL of the API |
+| `VITE_API_BASE_URL` | `/api`, or the address in [client/.env.mobile](client/.env.mobile) for the mobile apps. Set it yourself for a [physical iPhone](docs/testing.md#iphone-app) | Client: base URL of the API |
 
 ## Status
 
@@ -176,6 +215,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | Roles | Sign-in with a 6-digit code by email, roles and users stored in the database, one view per role, server-side role checks on every route and row-level scope | Limits per network address, single sign-on per customer ([ADR-0002](docs/adr/0002-identity-and-sign-in.md), [ADR-0014](docs/adr/0014-email-code-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |
 | Proof of work | A project lead approves a month per order, which locks it | Passing approved hours on to finance |
+| Mobile | Responsive screens in a phone browser, iOS app in the simulator | The apps on physical phones, Android ([testing guide](docs/testing.md#which-platforms-are-tested)) |
 | Purchasing | Totals per supplier and order from the database, with no personal data | Framework agreements |
 | Languages | Client screens, server errors and sign-in emails in German and English | Other emails, which need a stored language per user |
 | Email | Sign-in codes, with a mock switch. Real sending is not tested yet | After Sprint One: budget warnings, proof of work, rejected bookings, the single sign-on process ([ADR-0008](docs/adr/0008-email-with-nodemailer.md)) |
@@ -188,6 +228,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 - Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md) · [0012 Branching workflow](docs/adr/0012-branching-workflow.md) · [0013 Email and password sign-in](docs/adr/0013-email-and-password-sign-in.md) (replaced) · [0014 Sign-in with a code by email](docs/adr/0014-email-code-sign-in.md)
 - [Mockup](docs/mockup/index.html) and its [visual direction](docs/mockup/README.md)
 - [Brand assets](docs/brand/README.md): logo files and where each is used
+- [Testing guide](docs/testing.md): how to test on every platform, with one checklist
 - [Pitch](docs/pitch.md): the story and the live demo, step by step
 - [AGENTS.md](AGENTS.md): instructions for AI coding agents
 

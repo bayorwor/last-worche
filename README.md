@@ -1,3 +1,5 @@
+<img src="docs/brand/logo.svg" alt="lastWorche logo" width="320">
+
 # lastWorche
 
 *Jede Stunde im Blick* (every hour you buy, in view). lastWorche lets project leads at large companies see what every hour booked by external consultants does to an order's budget, and checks each booking against the rules on the server before it is stored. See the [product vision](docs/product-vision.md).
@@ -157,6 +159,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 - [Roles and privacy](docs/roles-and-privacy.md): role matrix and personal data
 - Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md) · [0012 Branching workflow](docs/adr/0012-branching-workflow.md)
 - [Mockup](docs/mockup/index.html) and its [visual direction](docs/mockup/README.md)
+- [Brand assets](docs/brand/README.md): logo files and where each is used
 - [AGENTS.md](AGENTS.md): instructions for AI coding agents
 
 ## Branching workflow

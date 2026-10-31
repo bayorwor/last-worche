@@ -3,7 +3,6 @@ import type { MessageKey } from './de.ts'
 export const en: Record<MessageKey, string> = {
   'language.switcherLabel': 'Language',
 
-  'header.tagline': 'Every hour in view.',
   'header.demoNotice': 'Demo · fictional data',
 
   'role.consultant.title': 'Consultant',

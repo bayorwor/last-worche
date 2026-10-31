@@ -2,7 +2,6 @@
 export const de = {
   'language.switcherLabel': 'Sprache',
 
-  'header.tagline': 'Jede Stunde im Blick.',
   'header.demoNotice': 'Demo · Daten fiktiv',
 
   'role.consultant.title': 'Berater',

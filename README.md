@@ -42,14 +42,25 @@ Open <http://localhost:5173>. The app starts in German if your device's time zon
 
 To delete all data, run `mysql -u root -p -e "DROP DATABASE lastworche"`, then the first Setup command again; the sample data returns on the next backend start. If you ran an earlier version and the backend fails while applying a database migration, this also resets it.
 
+### If something does not start
+
+| What you see | What to do |
+|---|---|
+| `ECONNREFUSED` on port `3306` when the backend starts | MySQL is not running. Start it, for example with `brew services start mysql`. |
+| `mysql -u root -p` waits for a password you do not have | If your MySQL root has no password, press Enter, or run `mysql -u root < backend/setup-database.sql`. |
+| `Access denied for user 'lastworche'` | The database user is missing. Run the first Setup command. |
+| `EADDRINUSE` or a Vite port error | Port `3000` or `5173` is in use. Stop the other program. |
+| The backend fails while applying a database migration | Reset the database as described above. |
+
 ## Test
 
+One command, from the repository root:
+
 ```bash
-cd backend && bun test
-cd client && bun test
+(cd backend && bun test) && (cd client && bun test)
 ```
 
-These tests need no database, so the 21 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
+These tests need no database, so the 26 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
 
 ## Demo users
 
@@ -79,8 +90,8 @@ Where the technical jury finds the evidence for each [technical criterion](https
 | Criterion | Evidence |
 |---|---|
 | 1 · Persistence and data model | Schema in [migrations.ts](backend/src/repositories/migrations.ts), sample data in [seedData.ts](backend/src/repositories/seedData.ts), queries in [mysqlBookingRepository.ts](backend/src/repositories/mysqlBookingRepository.ts), [ER diagram](docs/domain.md) |
-| 2 · Business rules and unit tests | Rules in [booking.ts](backend/src/domain/booking.ts), tests in [booking.test.ts](backend/src/domain/booking.test.ts) and [bookingService.test.ts](backend/src/services/bookingService.test.ts), simultaneous bookings in [mysqlBookingRepository.test.ts](backend/src/repositories/mysqlBookingRepository.test.ts) |
-| 3 · Roles, permissions and privacy | [Permission concept](docs/roles-and-privacy.md), guards in [authentication.ts](backend/src/middlewares/authentication.ts), allowed roles per route in [bookingRoutes.ts](backend/src/routes/bookingRoutes.ts), row-level scope in [bookingService.ts](backend/src/services/bookingService.ts), rejections tested in [app.test.ts](backend/src/app.test.ts), role views in the [mockup](docs/mockup/index.html) and in [client/src/features](client/src/features) |
+| 2 · Business rules and unit tests | Rules in [booking.ts](backend/src/domain/booking.ts) and [proofOfWork.ts](backend/src/domain/proofOfWork.ts), tests in [booking.test.ts](backend/src/domain/booking.test.ts) and [bookingService.test.ts](backend/src/services/bookingService.test.ts), simultaneous bookings in [mysqlBookingRepository.test.ts](backend/src/repositories/mysqlBookingRepository.test.ts) |
+| 3 · Roles, permissions and privacy | [Permission concept](docs/roles-and-privacy.md), guards in [authentication.ts](backend/src/middlewares/authentication.ts), allowed roles per route in [bookingRoutes.ts](backend/src/routes/bookingRoutes.ts), row-level scope in [bookingService.ts](backend/src/services/bookingService.ts), totals with no personal data for purchasing in [purchasing.ts](backend/src/domain/purchasing.ts), rejections tested in [app.test.ts](backend/src/app.test.ts), role views in the [mockup](docs/mockup/index.html) and in [client/src/features](client/src/features) |
 | 4 · Architecture and engineering | **A** · structure in [backend/src](backend/src) and [client/src](client/src) · **B** · [ADRs](docs/adr/) · **C** · Git history · **F** · [mockup](docs/mockup/index.html) |
 
 Building block D (API documentation) is not delivered: the API is described below, but not in a machine-readable form. Building block E (containers) is not delivered, as decided in [ADR-0011](docs/adr/0011-mysql-without-docker.md).
@@ -177,6 +188,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 - Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md) · [0012 Branching workflow](docs/adr/0012-branching-workflow.md) · [0013 Email and password sign-in](docs/adr/0013-email-and-password-sign-in.md) (replaced) · [0014 Sign-in with a code by email](docs/adr/0014-email-code-sign-in.md)
 - [Mockup](docs/mockup/index.html) and its [visual direction](docs/mockup/README.md)
 - [Brand assets](docs/brand/README.md): logo files and where each is used
+- [Pitch](docs/pitch.md): the story and the live demo, step by step
 - [AGENTS.md](AGENTS.md): instructions for AI coding agents
 
 ## Branching workflow

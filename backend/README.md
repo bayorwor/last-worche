@@ -41,9 +41,9 @@ src/
 ## Try it
 
 ```bash
-# Sign in as the demo consultant. The other demo users are user-project-lead and user-purchasing.
+# Sign in as a test user. The README lists all of them.
 TOKEN=$(curl -s -X POST localhost:3000/api/auth/sign-in -H 'Content-Type: application/json' \
-  -d '{"userId":"user-consultant"}' | sed -E 's/.*"token":"([^"]+)".*/\1/')
+  -d '{"email":"l.hoffmann@consultis.example","password":"lastWorche-Test-2026"}' | sed -E 's/.*"token":"([^"]+)".*/\1/')
 
 curl -X POST localhost:3000/api/bookings -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"orderId":"4500012345","date":"2026-10-27","startTime":"09:00","endTime":"17:00","hours":7,"description":"Legacy data reconciliation"}'

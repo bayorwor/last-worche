@@ -38,7 +38,7 @@ cd backend && bun run start   # API on http://localhost:3000
 cd client && bun run dev      # web app on http://localhost:5173
 ```
 
-Open <http://localhost:5173>. The app starts in German if your device's time zone is in Germany, Austria, Switzerland or Liechtenstein or your browser's first language is German, and in English otherwise. Switch with *DE / EN* in the header; your choice is remembered. On first start, the backend creates its tables in MySQL and adds sample data: two orders, three consultants and their bookings. Order 4500012345 has 84 of 140 person-days used, and order 4500012346 has only 0.5 of 20 free. Data survives a restart.
+Open <http://localhost:5173>. The app starts in German if your device's time zone is in Germany, Austria, Switzerland or Liechtenstein or your browser's first language is German, and in English otherwise. Switch with *DE / EN* in the header; your choice is remembered. On first start, the backend creates its tables in MySQL and adds sample data: the roles, six test users, three orders and their bookings. Order 4500012345 has 84 of 140 person-days used, order 4500012346 has only 0.5 of 20 free, and order 4500012347 belongs to a second project lead. Data survives a restart.
 
 To delete all data, run `mysql -u root -p -e "DROP DATABASE lastworche"`, then the first Setup command again; the sample data returns on the next backend start. If you ran an earlier version and the backend fails while applying a database migration, this also resets it.
 
@@ -53,13 +53,16 @@ These tests need no database, so the 13 tests against real MySQL are reported as
 
 ## Demo users
 
-Open <http://localhost:5173> and choose a user on the sign-in screen. No password is needed in the demo. To change user, choose *Abmelden / Sign out* at the top of the page. Labels are shown as German / English.
+Open <http://localhost:5173> and sign in with an email below. **All test users share the password `lastWorche-Test-2026`.** You can type them, or choose one under *Testzugänge / Test accounts* on the sign-in screen, which fills in the form. To change user, choose *Abmelden / Sign out* at the top of the page. Labels are shown as German / English. All users are fictional.
 
-| Role | Demo user to choose | What to try |
-|---|---|---|
-| Consultant | L. Hoffmann | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, choose *Vorschlag prüfen / Check proposal*, then *Buchung bestätigen / Confirm booking*. To see a rejection, choose order 4500012346 first: it has too little budget left. |
-| Project lead | A. Weber | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days, and the booking appears in the list below it. |
-| Purchasing | K. Vogel | See the supplier overview with aggregated values only. These are sample values for now. |
+| Role | Name | Email | What to try |
+|---|---|---|---|
+| Consultant | L. Hoffmann | `l.hoffmann@consultis.example` | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, choose *Vorschlag prüfen / Check proposal*, then *Buchung bestätigen / Confirm booking*. To see a rejection, choose order 4500012346 first: it has too little budget left. |
+| Project lead | A. Weber | `a.weber@client.example` | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days, and the booking appears in the list below it. |
+| Purchasing | K. Vogel | `k.vogel@client.example` | See the supplier overview with aggregated values only. These are sample values for now. |
+| Consultant | M. Krüger | `m.krueger@consultis.example` | Assigned to one order only, so only that one can be chosen. |
+| Consultant | S. Tanriver | `s.tanriver@nordlicht.example` | Works for another supplier, on orders 4500012346 and 4500012347. |
+| Project lead | J. Schneider | `j.schneider@client.example` | Leads only order 4500012347, and cannot see A. Weber's orders. |
 
 With the default `AI_MOCK=true`, the one-sentence booking returns a fixed proposal of 09:00–17:00 with 7 hours for today, whatever the sentence says. Confirming it a second time is rejected as an overlap, which shows that rule. To book other times, use the API as shown in the [backend README](backend/README.md).
 
@@ -111,8 +114,9 @@ flowchart LR
 
 | Method and path | Purpose | Errors |
 |---|---|---|
-| `GET /api/auth/demo-users` | The demo users to choose from | |
-| `POST /api/auth/sign-in` | Start a session for a demo user, and receive a signed token | `401` unknown user |
+| `GET /api/auth/roles` | All roles, with names and descriptions in German and English | |
+| `GET /api/auth/test-accounts` | The seeded test accounts and their shared password | `404` when switched off |
+| `POST /api/auth/sign-in` | Check an email and password, and receive a signed session token | `400` invalid email, `401` wrong email or password |
 | `GET /api/auth/me` | Who the session belongs to | `401` no valid session |
 | `GET /api/orders` | Orders as ID and title, for all roles: a consultant sees their assigned orders, a project lead the orders they lead, purchasing all orders | `401` no session |
 | `GET /api/consultants/:consultantId/bookings` | A consultant's own 10 latest bookings, for the consultant role | `401`, `403` another consultant |
@@ -131,6 +135,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | `DATABASE_URL` | `mysql://lastworche:lastworche@localhost:3306/lastworche` | MySQL connection, matching `backend/setup-database.sql`. For local development only. |
 | `CORS_ORIGINS` | `capacitor://localhost,https://localhost` | Web addresses allowed to call the API. The defaults are the iOS and Android apps |
 | `JWT_SECRET` | a value for local development only | Signs session tokens |
+| `TEST_ACCOUNTS_ENABLED` | `true` | `true` lists the test accounts and their password on the sign-in screen. Use `false` on any shared server |
 | `AI_MOCK` | `true` | `true` returns a fixed AI proposal, `false` calls OpenRouter |
 | `OPENROUTER_API_KEY` | not set | Only needed with `AI_MOCK=false` |
 | `OPENROUTER_MODEL` | `openrouter/auto` | Model to use. `openrouter/auto` lets OpenRouter pick one per request. |
@@ -146,8 +151,8 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 |---|---|---|
 | Core flow | Choose an assigned order, book time on it, see the effect on its budget | Manual booking form, without the AI sentence |
 | Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person; 10-hour day; 11-hour rest | Vacation and public holidays, order period |
-| Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, demo users, with migrations | Proofs of work |
-| Roles | Demo sign-in with a signed session, one view per role, server-side role checks on every route and row-level scope | Single sign-on per customer ([ADR-0002](docs/adr/0002-identity-and-sign-in.md)) |
+| Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, roles, users, with migrations | Proofs of work |
+| Roles | Sign-in with email and password, roles and users stored in the database, one view per role, server-side role checks on every route and row-level scope | Password reset, limits on sign-in attempts, single sign-on per customer ([ADR-0002](docs/adr/0002-identity-and-sign-in.md), [ADR-0013](docs/adr/0013-email-and-password-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |
 | Purchasing | Screen with sample values | Aggregated supplier endpoint |
 | Languages | Client screens and server errors in German and English | Emails, which need a stored language per user |
@@ -158,7 +163,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 - [Product vision](docs/product-vision.md): who it is for, core flow, what we leave out
 - [Domain model](docs/domain.md): glossary and ER diagram
 - [Roles and privacy](docs/roles-and-privacy.md): role matrix and personal data
-- Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md) · [0012 Branching workflow](docs/adr/0012-branching-workflow.md)
+- Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md) · [0012 Branching workflow](docs/adr/0012-branching-workflow.md) · [0013 Email and password sign-in](docs/adr/0013-email-and-password-sign-in.md)
 - [Mockup](docs/mockup/index.html) and its [visual direction](docs/mockup/README.md)
 - [Brand assets](docs/brand/README.md): logo files and where each is used
 - [AGENTS.md](AGENTS.md): instructions for AI coding agents

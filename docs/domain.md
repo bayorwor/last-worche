@@ -36,7 +36,7 @@ erDiagram
 
 ## Implementation status
 
-`(now)` marks what the current stage is meant to contain, and all of it is now stored: **orders, bookings, suppliers, consultants, accounting objects and assignments**, in [migrations.ts](../backend/src/repositories/migrations.ts). A booking reaches its accounting object through its order. **Users** are also stored, as one demo user per role, but nothing signs in with them yet.
+`(now)` marks what the current stage is meant to contain, and all of it is now stored: **orders, bookings, suppliers, consultants, accounting objects and assignments**, in [migrations.ts](../backend/src/repositories/migrations.ts). A booking reaches its accounting object through its order. **Users** and **roles** are stored as well: users sign in with an email and a hashed password ([ADR-0013](adr/0013-email-and-password-sign-in.md)), and each order names its project lead.
 
 ## Notes
 

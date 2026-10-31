@@ -138,7 +138,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | Roles | Role views in the client, written permission concept | Sign-in, permission checks on the server ([ADR-0002](docs/adr/0002-identity-and-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |
 | Purchasing | Screen with sample values | Aggregated supplier endpoint |
-| Email | Sending service with a mock switch, not used by any feature | Budget warnings, proof of work, rejected bookings, the single sign-on process ([ADR-0008](docs/adr/0008-email-with-nodemailer.md)) |
+| Email | Sending service with a mock switch, not used by any feature | After Sprint One: budget warnings, proof of work, rejected bookings, the single sign-on process ([ADR-0008](docs/adr/0008-email-with-nodemailer.md)) |
 
 ## Documentation
 

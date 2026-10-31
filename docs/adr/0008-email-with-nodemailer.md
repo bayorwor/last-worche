@@ -1,6 +1,6 @@
 # 0008 · Email with nodemailer
 
-- **Status:** accepted for the tool, the features are still open
+- **Status:** accepted for the tool, the features are future scope, outside the Sprint One goal (#16)
 - **Date:** 2026-10-31
 - **Deciders:** Team lastWorche
 
@@ -28,5 +28,6 @@ Planned uses, none of them built yet:
 ## Consequences
 
 - No feature sends email yet, because lastWorche has no user records with addresses. Those come with sign-in.
+- Email work waits until the Sprint One walking skeleton and rules are done, so it does not take time from them.
 - Emails can carry personal data, so each one must follow [roles-and-privacy.md](../roles-and-privacy.md). For example, an email to purchasing must never name a consultant's daily hours.
 - Sending should not make a booking fail. When the first feature is connected, a mail error must be logged, not returned to the user.

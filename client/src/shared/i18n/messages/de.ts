@@ -71,6 +71,7 @@ export const de = {
     'Buchung abgelehnt: Auftrag {orderId} hat nur noch {freePersonDays} PT frei.',
   'errors.ruleAssignedOrder': 'Buchung abgelehnt: Sie sind dem Auftrag {orderId} nicht zugewiesen.',
   'errors.ruleOverlap': 'Buchung abgelehnt: Überschneidung mit einer bestehenden Buchung ({startTime}–{endTime}).',
+  'errors.ruleDailyLimit': 'Buchung abgelehnt: Mehr als {maxHours} h pro Tag sind nicht erlaubt (ArbZG §3).',
   'errors.descriptionRequired': 'Buchung abgelehnt: Eine Beschreibung der Tätigkeit ist erforderlich.',
   'errors.invalidDuration': 'Buchung abgelehnt: Die Dauer muss größer als null sein und zwischen Start- und Endzeit passen.',
   'errors.invalidTimes': 'Buchung abgelehnt: Die Endzeit muss nach der Startzeit liegen.',

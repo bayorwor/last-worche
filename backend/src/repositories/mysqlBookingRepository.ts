@@ -1,12 +1,12 @@
 // MySQL implementation of BookingRepository. Database column names stay inside this file.
 import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
-import type { TimeRange } from "../domain/booking.ts";
+import type { DayBooking } from "../domain/booking.ts";
 import type { BookingRepository, BookingTransaction, OrderSummary } from "./bookingRepository.ts";
 
 type OrderRow = RowDataPacket & { id: string; ordered_person_days: number };
 type TotalRow = RowDataPacket & { total: number };
 type OrderSummaryRow = RowDataPacket & OrderSummary;
-type TimeRangeRow = RowDataPacket & TimeRange;
+type DayBookingRow = RowDataPacket & DayBooking;
 
 async function findOrder(db: Pool | PoolConnection, orderId: string, lock = "") {
   const [rows] = await db.query<OrderRow[]>(`SELECT id, ordered_person_days FROM orders WHERE id = ? ${lock}`, [orderId]);
@@ -35,13 +35,13 @@ function createTransaction(connection: PoolConnection): BookingTransaction {
     lockConsultant: async (consultantId) => {
       await connection.query("SELECT id FROM consultants WHERE id = ? FOR UPDATE", [consultantId]);
     },
-    findBookingTimesOnDate: async (consultantId, date) => {
-      const [rows] = await connection.query<TimeRangeRow[]>(
-        `SELECT TIME_FORMAT(start_time, '%H:%i') AS startTime, TIME_FORMAT(end_time, '%H:%i') AS endTime
+    findBookingsOnDate: async (consultantId, date) => {
+      const [rows] = await connection.query<DayBookingRow[]>(
+        `SELECT TIME_FORMAT(start_time, '%H:%i') AS startTime, TIME_FORMAT(end_time, '%H:%i') AS endTime, hours
          FROM bookings WHERE consultant_id = ? AND date = ?`,
         [consultantId, date],
       );
-      return rows.map(({ startTime, endTime }) => ({ startTime, endTime }));
+      return rows.map(({ startTime, endTime, hours }) => ({ startTime, endTime, hours }));
     },
     saveBooking: async (booking) => {
       const [result] = await connection.query<ResultSetHeader>(

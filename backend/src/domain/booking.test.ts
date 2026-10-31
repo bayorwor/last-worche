@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { assertAssignedToOrder, assertFitsFreeBudget, assertNoOverlap, calculateBudget } from "./booking.ts";
+import { assertAssignedToOrder, assertFitsFreeBudget, assertNoOverlap, assertWithinDailyLimit, calculateBudget } from "./booking.ts";
 import { BusinessRuleError } from "./errors.ts";
 
 const order = { id: "4500012345", orderedPersonDays: 1 };
@@ -53,6 +53,34 @@ describe("overlapping bookings rule", () => {
 
   test("uses the wording of story #5", () => {
     expect(() => assertNoOverlap([morning], morning)).toThrow("Booking rejected: overlaps with an existing booking.");
+  });
+});
+
+describe("10-hour day rule", () => {
+  const bookedToday = [{ startTime: "08:00", endTime: "16:30", hours: 8.5 }];
+
+  test("accepts a booking that reaches exactly 10 h", () => {
+    expect(() => assertWithinDailyLimit(bookedToday, 1.5)).not.toThrow();
+  });
+
+  test("rejects a booking that goes above 10 h, in the words of story #7", () => {
+    expect(() => assertWithinDailyLimit(bookedToday, 2)).toThrow(
+      "Booking rejected: more than 10 h per day is not allowed (ArbZG §3).",
+    );
+  });
+
+  test("adds up several bookings, without decimal errors", () => {
+    const threeBookings = [
+      { startTime: "08:00", endTime: "11:30", hours: 3.3 },
+      { startTime: "11:30", endTime: "15:00", hours: 3.3 },
+    ];
+
+    expect(() => assertWithinDailyLimit(threeBookings, 3.4)).not.toThrow();
+    expect(() => assertWithinDailyLimit(threeBookings, 3.41)).toThrow(BusinessRuleError);
+  });
+
+  test("rejects a single booking above 10 h on an empty day", () => {
+    expect(() => assertWithinDailyLimit([], 10.5)).toThrow(BusinessRuleError);
   });
 });
 

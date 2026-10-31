@@ -29,6 +29,11 @@ describe('getApiError', () => {
     })
   })
 
+  test('tells a wrong code apart from an ended session', () => {
+    expect(getApiError(failedRequest(401, { code: 'invalid-code' }))).toEqual({ key: 'errors.invalidCode' })
+    expect(getApiError(failedRequest(400, { details: [{ path: ['email'] }] }))).toEqual({ key: 'errors.invalidEmail' })
+  })
+
   test('explains a missing session and a missing permission', () => {
     expect(getApiError(failedRequest(401, {}))).toEqual({ key: 'errors.sessionEnded' })
     expect(getApiError(failedRequest(403, {}))).toEqual({ key: 'errors.forbidden' })

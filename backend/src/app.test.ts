@@ -3,19 +3,23 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { createApp } from "./app.ts";
-import type { User } from "./domain/user.ts";
+import type { Role } from "./domain/user.ts";
 import { createInMemoryBookingRepository } from "./repositories/inMemoryBookingRepository.ts";
 import { createInMemoryUserRepository } from "./repositories/inMemoryUserRepository.ts";
 
 const ORDER_ID = "4500012345";
 const OTHER_ORDER_ID = "4500012346";
 
-const users: User[] = [
-  { id: "user-consultant", name: "L. Hoffmann", role: "consultant", consultantId: "consultant-1" },
-  { id: "user-other-consultant", name: "S. Tanriver", role: "consultant", consultantId: "consultant-3" },
-  { id: "user-project-lead", name: "A. Weber", role: "project_lead", consultantId: null },
-  { id: "user-other-lead", name: "B. Lang", role: "project_lead", consultantId: null },
-  { id: "user-purchasing", name: "K. Vogel", role: "purchasing", consultantId: null },
+const users = [
+  { id: "user-consultant", name: "L. Hoffmann", email: "l.hoffmann@test.example", role: "consultant", consultantId: "consultant-1" },
+  { id: "user-other-consultant", name: "S. Tanriver", email: "s.tanriver@test.example", role: "consultant", consultantId: "consultant-3" },
+  { id: "user-project-lead", name: "A. Weber", email: "a.weber@test.example", role: "project_lead", consultantId: null },
+  { id: "user-other-lead", name: "B. Lang", email: "b.lang@test.example", role: "project_lead", consultantId: null },
+  { id: "user-purchasing", name: "K. Vogel", email: "k.vogel@test.example", role: "purchasing", consultantId: null },
+].map((user) => ({ ...user, role: user.role as Role["id"] }));
+
+const roles: Role[] = [
+  { id: "consultant", names: { de: "Berater", en: "Consultant" }, summaries: { de: "buchen", en: "book time" } },
 ];
 
 const newBooking = { orderId: ORDER_ID, date: "2026-10-27", startTime: "09:00", endTime: "17:00", hours: 7, description: "Work" };
@@ -35,7 +39,7 @@ beforeAll(() => {
         { consultantId: "consultant-3", orderId: OTHER_ORDER_ID },
       ],
     ),
-    userRepository: createInMemoryUserRepository(users),
+    userRepository: createInMemoryUserRepository(users, roles),
   });
   server = app.listen(0);
   baseUrl = `http://localhost:${(server.address() as AddressInfo).port}/api`;
@@ -56,33 +60,66 @@ function send(method: string, path: string, { token, body }: { token?: string; b
   });
 }
 
+// The tests run with MAIL_MOCK on, so the code comes back in the response.
+async function requestCode(email: string): Promise<string> {
+  const response = await send("POST", "/auth/request-code", { body: { email, language: "en" } });
+  return ((await response.json()) as { testCode: string }).testCode;
+}
+
 async function signIn(userId: string): Promise<string> {
-  const response = await send("POST", "/auth/sign-in", { body: { userId } });
+  const email = users.find((user) => user.id === userId)?.email as string;
+  const response = await send("POST", "/auth/verify-code", { body: { email, code: await requestCode(email) } });
   return ((await response.json()) as { token: string }).token;
 }
 
 describe("sign-in", () => {
-  test("lists one demo user per role to anyone", async () => {
-    const response = await send("GET", "/auth/demo-users");
+  test("anyone can read the roles", async () => {
+    expect(await (await send("GET", "/auth/roles")).json()).toEqual(roles);
+  });
+
+  test("the test accounts list each user's email, name and role", async () => {
+    const accounts = (await (await send("GET", "/auth/test-accounts")).json()) as object[];
+
+    expect(accounts[0]).toEqual({ email: "l.hoffmann@test.example", name: "L. Hoffmann", role: "consultant" });
+  });
+
+  test("the email does not depend on upper or lower case", async () => {
+    const code = await requestCode(" A.WEBER@test.example ");
+
+    const response = await send("POST", "/auth/verify-code", { body: { email: "a.weber@TEST.example", code } });
 
     expect(response.status).toBe(200);
-    expect(((await response.json()) as User[]).map((user) => user.role)).toEqual([
-      "consultant",
-      "consultant",
-      "project_lead",
-      "project_lead",
-      "purchasing",
-    ]);
+  });
+
+  test("an unknown email gets the same status, with no code", async () => {
+    const response = await send("POST", "/auth/request-code", { body: { email: "nobody@test.example" } });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({});
+  });
+
+  test("rejects a wrong code and an unknown email with the same answer", async () => {
+    const code = await requestCode("a.weber@test.example");
+    const wrongCode = code === "000000" ? "000001" : "000000";
+
+    const wrong = await send("POST", "/auth/verify-code", { body: { email: "a.weber@test.example", code: wrongCode } });
+    const unknown = await send("POST", "/auth/verify-code", { body: { email: "nobody@test.example", code: wrongCode } });
+
+    expect(wrong.status).toBe(401);
+    expect(unknown.status).toBe(401);
+    expect(await wrong.json()).toEqual(await unknown.json());
+  });
+
+  test("rejects a malformed email or code with 400", async () => {
+    expect((await send("POST", "/auth/request-code", { body: { email: "not-an-email" } })).status).toBe(400);
+    expect((await send("POST", "/auth/verify-code", { body: { email: "a.weber@test.example", code: "12345" } })).status).toBe(400);
+    expect((await send("POST", "/auth/verify-code", { body: { email: "a.weber@test.example", code: "abcdef" } })).status).toBe(400);
   });
 
   test("a session tells the server who is signed in", async () => {
     const response = await send("GET", "/auth/me", { token: await signIn("user-project-lead") });
 
     expect(await response.json()).toMatchObject({ name: "A. Weber", role: "project_lead" });
-  });
-
-  test("rejects an unknown demo user with 401", async () => {
-    expect((await send("POST", "/auth/sign-in", { body: { userId: "nobody" } })).status).toBe(401);
   });
 
   test("rejects a made-up token with 401", async () => {
@@ -208,5 +245,28 @@ describe("row-level scope", () => {
     const response = await send("GET", "/orders/missing/budget", { token: await signIn("user-purchasing") });
 
     expect(response.status).toBe(404);
+  });
+});
+
+describe("calls from the mobile app", () => {
+  const preflight = (origin: string) =>
+    fetch(`${baseUrl}/orders`, {
+      method: "OPTIONS",
+      headers: { Origin: origin, "Access-Control-Request-Method": "GET", "Access-Control-Request-Headers": "authorization" },
+    });
+
+  test("the iOS and Android apps may call the API with a session token", async () => {
+    for (const origin of ["capacitor://localhost", "https://localhost"]) {
+      const response = await preflight(origin);
+
+      expect(response.headers.get("access-control-allow-origin")).toBe(origin);
+      expect(response.headers.get("access-control-allow-headers")?.toLowerCase()).toContain("authorization");
+    }
+  });
+
+  test("another website may not", async () => {
+    const response = await preflight("https://example.com");
+
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
   });
 });

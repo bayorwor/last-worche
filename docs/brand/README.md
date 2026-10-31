@@ -5,6 +5,7 @@
 | File | Use |
 |---|---|
 | `logo.svg` | Full logo: icon, wordmark and tagline. Used in the app header and the README. |
+| `logo-on-crimson.svg` | Full logo for a crimson background, as on the sign-in screen. |
 | `logo-icon.svg` | Icon with rounded corners, for any place that needs only the icon. |
 | `logo-icon-1024.png` | The same icon as an image, for tools that cannot read SVG. |
 | `logo-icon-square.svg` | Icon without rounded corners, for iOS and other systems that cut their own shape. |

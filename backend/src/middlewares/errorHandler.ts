@@ -11,7 +11,7 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
   } else if (error instanceof SyntaxError) {
     res.status(400).json({ error: "The request body is not valid JSON." }); // from express.json()
   } else if (error instanceof UnauthorizedError) {
-    res.status(401).json({ error: error.message });
+    res.status(401).json({ error: error.message, code: error.code });
   } else if (error instanceof ForbiddenError) {
     res.status(403).json({ error: error.message });
   } else if (error instanceof NotFoundError) {

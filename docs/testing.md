@@ -215,7 +215,7 @@ Then restart the backend. To sign in: enter the email, choose *Send code*, then 
 
 ### Screen sizes
 
-- **1280 px wide or more:** tabs on the left, the page in the middle, and profile and activity on the right.
+- **1280 px wide or more:** tabs on the left, the page in the middle, and profile and activity on the right. When the page scrolls, the side columns stay in view, and the right column scrolls by itself.
 - **1024 to 1279 px:** tabs on the left, with profile and activity below the page.
 - **Below 1024 px:** tabs in a row above the page, with profile and activity below it.
 

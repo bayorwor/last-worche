@@ -37,7 +37,13 @@ export function AppLayout() {
           </Suspense>
         </main>
         {user && (
-          <aside aria-label={t('layout.sideColumnLabel')} className="grid min-w-0 content-start gap-6 lg:col-start-2 xl:col-start-3 xl:row-start-1">
+          // Stays in view beside the page and scrolls by itself. tabIndex lets the keyboard scroll it too.
+          // 5.5rem is its 1.5rem gap at the top and the layout's 4rem padding at the bottom, so it fits at the end of a short page.
+          <aside
+            aria-label={t('layout.sideColumnLabel')}
+            tabIndex={0}
+            className="grid min-w-0 content-start gap-6 focus-visible:-outline-offset-2 lg:col-start-2 xl:sticky xl:top-6 xl:col-start-3 xl:row-start-1 xl:max-h-[calc(100dvh-5.5rem)] xl:self-start xl:overflow-y-auto"
+          >
             <ProfilePanel user={user} />
             <RecentActivityPanel scopeKey={ACTIVITY_SCOPE_KEYS[user.role]} />
           </aside>

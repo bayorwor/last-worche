@@ -14,7 +14,7 @@ export function RoleSidebar({ role }: { role: UserRole }) {
   const { name, summary } = roleText(role)
 
   return (
-    <nav aria-label={t('navigation.label')} className="min-w-0 lg:sticky lg:top-6 lg:self-start lg:border lg:border-line lg:bg-panel">
+    <nav aria-label={t('navigation.label')} className="min-w-0 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:self-start lg:overflow-y-auto lg:border lg:border-line lg:bg-panel">
       <div className="hidden border-b border-line px-4 py-3 lg:block">
         <p className="text-sm font-bold">{name}</p>
         <p className="mt-0.5 text-xs text-muted">{summary}</p>

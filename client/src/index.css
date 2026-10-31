@@ -11,6 +11,10 @@
   --color-line: #deddd6;
   --color-neutral-soft: #efefea;
 
+  --color-brand: #ae2036; /* the logo's crimson */
+  --color-brand-strong: #8f1a2c;
+  --color-brand-soft: #f9eef0;
+
   --color-signal: #e3000f;
   --color-signal-strong: #c4000d; /* darker, so small text on signal-soft stays readable */
   --color-signal-soft: #fbe9ea;

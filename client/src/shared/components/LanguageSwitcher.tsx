@@ -1,5 +1,5 @@
-import type { Language } from '../../shared/i18n/languages.ts'
-import { useTranslation } from '../../shared/i18n/languageContext.ts'
+import type { Language } from '../i18n/languages.ts'
+import { useTranslation } from '../i18n/languageContext.ts'
 
 // Each language is named in itself, so people can find theirs whatever language is showing.
 const LANGUAGE_OPTIONS: { language: Language; label: string; name: string }[] = [

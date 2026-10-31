@@ -1,13 +1,18 @@
 import { apiClient } from '../../shared/api/apiClient.ts'
-import type { DemoUser, SessionUser, SignInResponse } from './authTypes.ts'
+import type { Credentials, Role, SessionUser, SignInResponse, TestAccounts } from './authTypes.ts'
 
-export async function requestDemoUsers(): Promise<DemoUser[]> {
-  const { data } = await apiClient.get<DemoUser[]>('/auth/demo-users')
+export async function requestRoles(): Promise<Role[]> {
+  const { data } = await apiClient.get<Role[]>('/auth/roles')
   return data
 }
 
-export async function requestSignIn(userId: string): Promise<SignInResponse> {
-  const { data } = await apiClient.post<SignInResponse>('/auth/sign-in', { userId })
+export async function requestTestAccounts(): Promise<TestAccounts> {
+  const { data } = await apiClient.get<TestAccounts>('/auth/test-accounts')
+  return data
+}
+
+export async function requestSignIn(credentials: Credentials): Promise<SignInResponse> {
+  const { data } = await apiClient.post<SignInResponse>('/auth/sign-in', credentials)
   return data
 }
 

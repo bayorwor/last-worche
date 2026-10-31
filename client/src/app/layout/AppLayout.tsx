@@ -1,21 +1,9 @@
-import { Suspense, useEffect } from 'react'
+import { Suspense } from 'react'
 import { Outlet } from 'react-router'
-import { restoreSession } from '../../features/auth/authSlice.ts'
 import { PageLoader } from '../../shared/components/PageLoader.tsx'
-import { useAppDispatch, useAppSelector } from '../storeHooks.ts'
 import { AppHeader } from './AppHeader.tsx'
 
 export function AppLayout() {
-  const dispatch = useAppDispatch()
-  const sessionStatus = useAppSelector((state) => state.auth.sessionStatus)
-
-  // After a reload the server confirms the stored token, and says who it belongs to.
-  useEffect(() => {
-    if (sessionStatus === 'checking') {
-      dispatch(restoreSession())
-    }
-  }, [dispatch, sessionStatus])
-
   return (
     <>
       <AppHeader />

@@ -2,8 +2,8 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { FALLBACK_API_ERROR, getApiError, type ApiError } from '../../shared/api/getApiError.ts'
 import type { RequestStatus } from '../../shared/api/requestStatus.ts'
 import { clearSessionToken, readSessionToken, saveSessionToken } from '../../shared/api/sessionToken.ts'
-import { requestCurrentUser, requestDemoUsers, requestSignIn } from './authApi.ts'
-import type { DemoUser, SessionUser } from './authTypes.ts'
+import { requestCurrentUser, requestRoles, requestSignIn, requestTestAccounts } from './authApi.ts'
+import type { Credentials, Role, SessionUser, TestAccounts } from './authTypes.ts'
 
 // 'checking' means a token was found and the server has not yet confirmed it.
 type SessionStatus = 'checking' | 'signedIn' | 'signedOut'
@@ -11,8 +11,8 @@ type SessionStatus = 'checking' | 'signedIn' | 'signedOut'
 type AuthState = {
   sessionStatus: SessionStatus
   user: SessionUser | null
-  demoUsers: DemoUser[]
-  demoUsersStatus: RequestStatus
+  roles: Role[]
+  testAccounts: TestAccounts | null
   signInStatus: RequestStatus
   error: ApiError | null
 }
@@ -20,28 +20,22 @@ type AuthState = {
 const initialState: AuthState = {
   sessionStatus: readSessionToken() ? 'checking' : 'signedOut',
   user: null,
-  demoUsers: [],
-  demoUsersStatus: 'idle',
+  roles: [],
+  testAccounts: null,
   signInStatus: 'idle',
   error: null,
 }
 
-export const fetchDemoUsers = createAsyncThunk<DemoUser[], void, { rejectValue: ApiError }>(
-  'auth/fetchDemoUsers',
-  async (_, { rejectWithValue }) => {
-    try {
-      return await requestDemoUsers()
-    } catch (error) {
-      return rejectWithValue(getApiError(error))
-    }
-  },
-)
+export const fetchRoles = createAsyncThunk<Role[], void>('auth/fetchRoles', () => requestRoles())
 
-export const signIn = createAsyncThunk<SessionUser, string, { rejectValue: ApiError }>(
+// The list is optional, so a failure just leaves it out. It fails on purpose when switched off on the server.
+export const fetchTestAccounts = createAsyncThunk<TestAccounts, void>('auth/fetchTestAccounts', () => requestTestAccounts())
+
+export const signIn = createAsyncThunk<SessionUser, Credentials, { rejectValue: ApiError }>(
   'auth/signIn',
-  async (userId, { rejectWithValue }) => {
+  async (credentials, { rejectWithValue }) => {
     try {
-      const { token, user } = await requestSignIn(userId)
+      const { token, user } = await requestSignIn(credentials)
       saveSessionToken(token)
       return user
     } catch (error) {
@@ -72,17 +66,11 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchDemoUsers.pending, (state) => {
-        state.demoUsersStatus = 'loading'
-        state.error = null
+      .addCase(fetchRoles.fulfilled, (state, action) => {
+        state.roles = action.payload
       })
-      .addCase(fetchDemoUsers.fulfilled, (state, action) => {
-        state.demoUsersStatus = 'succeeded'
-        state.demoUsers = action.payload
-      })
-      .addCase(fetchDemoUsers.rejected, (state, action) => {
-        state.demoUsersStatus = 'failed'
-        state.error = action.payload ?? FALLBACK_API_ERROR
+      .addCase(fetchTestAccounts.fulfilled, (state, action) => {
+        state.testAccounts = action.payload
       })
       .addCase(signIn.pending, (state) => {
         state.signInStatus = 'loading'

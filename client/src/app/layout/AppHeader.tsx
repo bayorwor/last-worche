@@ -1,5 +1,5 @@
 import { useTranslation } from '../../shared/i18n/languageContext.ts'
-import { LanguageSwitcher } from './LanguageSwitcher.tsx'
+import { LanguageSwitcher } from '../../shared/components/LanguageSwitcher.tsx'
 import { SessionBar } from './SessionBar.tsx'
 
 export function AppHeader() {

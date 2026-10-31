@@ -30,6 +30,8 @@ const RULE_MESSAGE_KEYS: Record<string, MessageKey> = {
 
 // Which input field the server's validation complained about first.
 const FIELD_MESSAGE_KEYS: Record<string, MessageKey> = {
+  email: 'errors.invalidEmail',
+  password: 'errors.invalidCredentials',
   description: 'errors.descriptionRequired',
   hours: 'errors.invalidDuration',
   startTime: 'errors.invalidTimes',
@@ -64,6 +66,9 @@ export function getApiError(error: unknown): ApiError {
   if (status === 400) {
     const invalidField = String(data?.details?.[0]?.path?.[0])
     return { key: FIELD_MESSAGE_KEYS[invalidField] ?? 'errors.invalidInput' }
+  }
+  if (status === 401 && data?.code === 'invalid-credentials') {
+    return { key: 'errors.invalidCredentials' }
   }
   if (status === 401) {
     return { key: 'errors.sessionEnded' }

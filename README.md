@@ -47,7 +47,7 @@ cd backend && bun test
 cd client && bun test
 ```
 
-These tests need no database, so the 10 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
+These tests need no database, so the 11 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
 
 ## Demo users
 
@@ -137,7 +137,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | Area | Built | Planned |
 |---|---|---|
 | Core flow | Choose an assigned order, book time on it, see the effect on its budget | Manual booking form, without the AI sentence |
-| Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person; 10-hour day |  11-hour rest, vacation and public holidays, order period |
+| Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person; 10-hour day; 11-hour rest | Vacation and public holidays, order period |
 | Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, demo users, with migrations | Proofs of work |
 | Roles | Role views in the client, written permission concept. Until sign-in exists, the assignment rule trusts the consultant ID in the request | Sign-in, permission checks on the server ([ADR-0002](docs/adr/0002-identity-and-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |

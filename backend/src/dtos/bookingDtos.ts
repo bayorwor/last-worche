@@ -1,12 +1,8 @@
 // API DTOs: the shape of booking data as it crosses HTTP. Kept apart from domain and database types.
 import { z } from "zod";
+import { minutesOfDay } from "../domain/booking.ts";
 
 const timeOfDay = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Booking rejected: times must look like 09:00.");
-
-function minutesOfDay(time: string) {
-  const [hours = 0, minutes = 0] = time.split(":").map(Number);
-  return hours * 60 + minutes;
-}
 
 export const createBookingRequestSchema = z
   .object({

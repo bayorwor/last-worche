@@ -24,6 +24,8 @@ const RULE_MESSAGE_KEYS: Record<string, MessageKey> = {
   'assigned-order': 'errors.ruleAssignedOrder',
   'no-overlap': 'errors.ruleOverlap',
   'daily-limit': 'errors.ruleDailyLimit',
+  'rest-after-previous-day': 'errors.ruleRestAfterPreviousDay',
+  'rest-before-next-day': 'errors.ruleRestBeforeNextDay',
 }
 
 // Which input field the server's validation complained about first.

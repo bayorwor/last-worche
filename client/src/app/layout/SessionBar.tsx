@@ -1,4 +1,4 @@
-// Shows who is signed in, in the place of the former role tabs.
+// Shows who is signed in, and lets them sign out.
 import { clearSessionToken } from '../../shared/api/sessionToken.ts'
 import { Button } from '../../shared/components/Button.tsx'
 import { useTranslation } from '../../shared/i18n/languageContext.ts'
@@ -23,7 +23,7 @@ export function SessionBar() {
 
   return (
     <div className="border-t border-line">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2 sm:px-6">
+      <div className="mx-auto flex max-w-360 flex-wrap items-center justify-between gap-2 px-4 py-2 sm:px-6">
         <p className="text-sm">
           <span className="text-muted">{t('session.signedInAs')}</span> <b>{user.name}</b> ·{' '}
           {roleText(user.role).name}

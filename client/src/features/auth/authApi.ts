@@ -22,6 +22,11 @@ export async function requestCodeVerification(email: string, code: string): Prom
   return data
 }
 
+export async function requestProfileUpdate(name: string): Promise<SessionUser> {
+  const { data } = await apiClient.patch<SessionUser>('/auth/me', { name })
+  return data
+}
+
 export async function requestCurrentUser(): Promise<SessionUser> {
   const { data } = await apiClient.get<SessionUser>('/auth/me')
   return data

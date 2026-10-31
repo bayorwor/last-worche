@@ -31,6 +31,41 @@ export const en: Record<MessageKey, string> = {
   'session.signedInAs': 'Signed in as',
   'session.signOut': 'Sign out',
 
+  'navigation.label': 'Sections',
+  'navigation.bookTime': 'Book time',
+  'navigation.ownBookings': 'My bookings',
+  'navigation.budget': 'Budget',
+  'navigation.orderBookings': 'Bookings',
+  'navigation.proofsOfWork': 'Proofs of work',
+  'navigation.suppliers': 'Suppliers',
+  'navigation.orders': 'Orders',
+
+  'layout.sideColumnLabel': 'Profile and recent activity',
+
+  'profile.panelTitle': 'My profile',
+  'profile.name': 'Name',
+  'profile.email': 'Email address',
+  'profile.emailHint': 'You sign in with this address, so it cannot be changed here.',
+  'profile.role': 'Role',
+  'profile.edit': 'Edit',
+  'profile.save': 'Save',
+  'profile.saving': 'Saving …',
+  'profile.cancel': 'Cancel',
+  'profile.saved': 'Profile saved.',
+
+  'activity.panelTitle': 'Recent activity',
+  'activity.scopeConsultant': 'Only your own activity',
+  'activity.scopeProjectLead': 'Your activity and your orders',
+  'activity.scopePurchasing': 'No single bookings or names',
+  'activity.none': 'No activity yet.',
+  'activity.signedIn': 'You signed in',
+  'activity.profileUpdated': 'You updated your profile',
+  'activity.ownBooking': 'You booked {hours} for {date} on order {orderId}',
+  'activity.otherBooking': '{name} booked {hours} for {date} on order {orderId}',
+  'activity.ownApproval': 'You approved {month} on order {orderId}',
+  'activity.otherApproval': '{name} approved {month} on order {orderId}',
+  'activity.anonymousApproval': 'The proof of work for {month} was approved on order {orderId}',
+
   'common.loading': 'Loading …',
   'common.retry': 'Try again',
 
@@ -41,6 +76,7 @@ export const en: Record<MessageKey, string> = {
   'routeError.reload': 'Reload page',
 
   'bookings.pageTitle': 'Consultant — Book time',
+  'bookings.ownPageTitle': 'Consultant — My bookings',
   'bookings.formPanelTitle': 'Record a booking — one sentence is enough',
   'bookings.sentenceLabel': 'What did you work on?',
   'bookings.sentencePlaceholder': '9 to 5 on the customer portal, 1 h lunch',
@@ -115,6 +151,7 @@ export const en: Record<MessageKey, string> = {
 
   'errors.serverUnavailable': 'The server cannot be reached right now. Please try again.',
   'errors.invalidCode': 'The code is wrong or has expired. Please try again, or ask for a new one.',
+  'errors.invalidName': 'Please enter a name with 2 to 100 characters.',
   'errors.invalidEmail': 'Please enter a valid email address.',
   'errors.sessionEnded': 'Your session has ended. Please sign in again.',
   'errors.forbidden': 'You do not have permission to do this.',

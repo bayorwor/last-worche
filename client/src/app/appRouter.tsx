@@ -3,7 +3,18 @@ import { AppLayout } from './layout/AppLayout.tsx'
 import { HomeRedirect, RedirectIfSignedIn, RequireRole } from './layout/RouteGuards.tsx'
 import { RouteErrorPage } from './layout/RouteErrorPage.tsx'
 import { SessionLayout } from './layout/SessionLayout.tsx'
-import { ConsultantBookingPage, ProjectLeadDashboardPage, PurchasingOverviewPage, SignInPage } from './lazyPages.ts'
+import {
+  ConsultantBookingPage,
+  OrderBookingsPage,
+  OrderBudgetPage,
+  OrderTotalsPage,
+  OwnBookingsPage,
+  ProjectLeadDashboardPage,
+  ProofsOfWorkPage,
+  PurchasingOverviewPage,
+  SignInPage,
+  SupplierTotalsPage,
+} from './lazyPages.ts'
 import { ROUTE_PATHS } from './routePaths.ts'
 
 export const appRouter = createBrowserRouter([
@@ -24,15 +35,37 @@ export const appRouter = createBrowserRouter([
             children: [
               {
                 element: <RequireRole role="consultant" />,
-                children: [{ path: ROUTE_PATHS.consultant, element: <ConsultantBookingPage /> }],
+                children: [
+                  { path: ROUTE_PATHS.consultant, element: <ConsultantBookingPage /> },
+                  { path: ROUTE_PATHS.consultantBookings, element: <OwnBookingsPage /> },
+                ],
               },
               {
                 element: <RequireRole role="project_lead" />,
-                children: [{ path: ROUTE_PATHS.projectLead, element: <ProjectLeadDashboardPage /> }],
+                children: [
+                  {
+                    path: ROUTE_PATHS.projectLead,
+                    element: <ProjectLeadDashboardPage />,
+                    children: [
+                      { index: true, element: <OrderBudgetPage /> },
+                      { path: ROUTE_PATHS.projectLeadBookings, element: <OrderBookingsPage /> },
+                      { path: ROUTE_PATHS.projectLeadProofs, element: <ProofsOfWorkPage /> },
+                    ],
+                  },
+                ],
               },
               {
                 element: <RequireRole role="purchasing" />,
-                children: [{ path: ROUTE_PATHS.purchasing, element: <PurchasingOverviewPage /> }],
+                children: [
+                  {
+                    path: ROUTE_PATHS.purchasing,
+                    element: <PurchasingOverviewPage />,
+                    children: [
+                      { index: true, element: <SupplierTotalsPage /> },
+                      { path: ROUTE_PATHS.purchasingOrders, element: <OrderTotalsPage /> },
+                    ],
+                  },
+                ],
               },
             ],
           },

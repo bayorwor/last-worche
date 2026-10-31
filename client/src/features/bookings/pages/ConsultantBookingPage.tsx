@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/storeHooks.ts'
-import { InfoNote } from '../../../shared/components/InfoNote.tsx'
 import { OrderSelect } from '../../../shared/components/OrderSelect.tsx'
 import { PageTitle } from '../../../shared/components/PageTitle.tsx'
 import { Panel } from '../../../shared/components/Panel.tsx'
-import { StatusChip } from '../../../shared/components/StatusChip.tsx'
 import { StatusMessage } from '../../../shared/components/StatusMessage.tsx'
 import { useTranslation } from '../../../shared/i18n/languageContext.ts'
 import {
@@ -16,7 +14,6 @@ import {
 } from '../bookingsSlice.ts'
 import { BookingProposalCard } from '../components/BookingProposalCard.tsx'
 import { BookingSentenceForm } from '../components/BookingSentenceForm.tsx'
-import { OwnBookingsTable } from '../components/OwnBookingsTable.tsx'
 import { TodayHoursPanel } from '../components/TodayHoursPanel.tsx'
 
 export default function ConsultantBookingPage() {
@@ -41,54 +38,45 @@ export default function ConsultantBookingPage() {
   return (
     <>
       <PageTitle>{t('bookings.pageTitle')}</PageTitle>
-      <div className="grid items-start gap-6 lg:grid-cols-[1.1fr_1fr]">
-        <div className="grid min-w-0 gap-6">
-          <Panel title={t('bookings.formPanelTitle')}>
-            {selectedOrderId && (
-              <OrderSelect
-                id="booking-order"
-                className="mb-4"
-                orders={assignedOrders}
-                selectedOrderId={selectedOrderId}
-                onChange={setChosenOrderId}
-              />
-            )}
-            {assignedOrdersStatus === 'succeeded' && assignedOrders.length === 0 && (
-              <p className="mb-4 text-sm text-muted">{t('orders.noneAssigned')}</p>
-            )}
-            <BookingSentenceForm
-              isSubmitting={proposalStatus === 'loading'}
-              onSubmit={(sentence) => dispatch(fetchBookingProposal(sentence))}
+      <div className="grid gap-6">
+        <Panel title={t('bookings.formPanelTitle')}>
+          {selectedOrderId && (
+            <OrderSelect
+              id="booking-order"
+              className="mb-4"
+              orders={assignedOrders}
+              selectedOrderId={selectedOrderId}
+              onChange={setChosenOrderId}
             />
-            {proposal && selectedOrderId && (
-              <BookingProposalCard
-                proposal={proposal}
-                orderId={selectedOrderId}
-                isConfirming={confirmationStatus === 'loading'}
-                onConfirm={() => dispatch(confirmBookingProposal({ proposal, orderId: selectedOrderId }))}
-                onDiscard={() => dispatch(proposalDiscarded())}
-              />
-            )}
-            {error && (
-              <StatusMessage tone="error" className="mt-4">
-                {t(error.key, error.values)}
-              </StatusMessage>
-            )}
-            {confirmationStatus === 'succeeded' && (
-              <StatusMessage tone="success" className="mt-4">
-                {t('bookings.saved')}
-              </StatusMessage>
-            )}
-          </Panel>
-          <TodayHoursPanel bookings={ownBookings} />
-        </div>
-        <Panel
-          title={t('bookings.ownPanelTitle')}
-          aside={<StatusChip tone="neutral">{t('bookings.ownBookingsOnly')}</StatusChip>}
-        >
-          <OwnBookingsTable bookings={ownBookings} />
-          <InfoNote>{t('bookings.rulesNote')}</InfoNote>
+          )}
+          {assignedOrdersStatus === 'succeeded' && assignedOrders.length === 0 && (
+            <p className="mb-4 text-sm text-muted">{t('orders.noneAssigned')}</p>
+          )}
+          <BookingSentenceForm
+            isSubmitting={proposalStatus === 'loading'}
+            onSubmit={(sentence) => dispatch(fetchBookingProposal(sentence))}
+          />
+          {proposal && selectedOrderId && (
+            <BookingProposalCard
+              proposal={proposal}
+              orderId={selectedOrderId}
+              isConfirming={confirmationStatus === 'loading'}
+              onConfirm={() => dispatch(confirmBookingProposal({ proposal, orderId: selectedOrderId }))}
+              onDiscard={() => dispatch(proposalDiscarded())}
+            />
+          )}
+          {error && (
+            <StatusMessage tone="error" className="mt-4">
+              {t(error.key, error.values)}
+            </StatusMessage>
+          )}
+          {confirmationStatus === 'succeeded' && (
+            <StatusMessage tone="success" className="mt-4">
+              {t('bookings.saved')}
+            </StatusMessage>
+          )}
         </Panel>
+        <TodayHoursPanel bookings={ownBookings} />
       </div>
     </>
   )

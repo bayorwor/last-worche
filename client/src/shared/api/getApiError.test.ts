@@ -29,8 +29,8 @@ describe('getApiError', () => {
     })
   })
 
-  test('tells a wrong password apart from an ended session', () => {
-    expect(getApiError(failedRequest(401, { code: 'invalid-credentials' }))).toEqual({ key: 'errors.invalidCredentials' })
+  test('tells a wrong code apart from an ended session', () => {
+    expect(getApiError(failedRequest(401, { code: 'invalid-code' }))).toEqual({ key: 'errors.invalidCode' })
     expect(getApiError(failedRequest(400, { details: [{ path: ['email'] }] }))).toEqual({ key: 'errors.invalidEmail' })
   })
 

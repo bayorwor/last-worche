@@ -1,15 +1,15 @@
 import { useTranslation } from '../../../shared/i18n/languageContext.ts'
-import type { TestAccount, TestAccounts } from '../authTypes.ts'
+import type { TestAccount } from '../authTypes.ts'
 import { useRoleText } from '../useRoleText.ts'
 
 type TestAccountListProps = {
-  testAccounts: TestAccounts
+  accounts: TestAccount[]
   selectedEmail: string
-  onSelect: (account: TestAccount) => void
+  onSelect: (email: string) => void
 }
 
-// Choosing an account only fills in the form, so testers still sign in the real way.
-export function TestAccountList({ testAccounts, selectedEmail, onSelect }: TestAccountListProps) {
+// Choosing an account only fills in the email, so testers still go through the real sign-in.
+export function TestAccountList({ accounts, selectedEmail, onSelect }: TestAccountListProps) {
   const { t } = useTranslation()
   const roleText = useRoleText()
 
@@ -18,19 +18,16 @@ export function TestAccountList({ testAccounts, selectedEmail, onSelect }: TestA
       <h2 id="test-accounts-title" className="text-xs font-semibold tracking-widest text-muted uppercase">
         {t('signIn.testAccountsTitle')}
       </h2>
-      <p className="mt-2 text-sm text-muted">
-        {t('signIn.testAccountsHint')}
-        <code className="mt-1 block font-semibold text-ink">{testAccounts.password}</code>
-      </p>
+      <p className="mt-2 text-sm text-muted">{t('signIn.testAccountsHint')}</p>
       <ul className="mt-4 grid gap-2">
-        {testAccounts.accounts.map((account) => {
+        {accounts.map((account) => {
           const isSelected = account.email === selectedEmail
           return (
             <li key={account.email}>
               <button
                 type="button"
                 aria-pressed={isSelected}
-                onClick={() => onSelect(account)}
+                onClick={() => onSelect(account.email)}
                 className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 border px-3.5 py-2.5 text-left transition-colors duration-200 motion-reduce:transition-none ${
                   isSelected ? 'border-brand bg-brand-soft' : 'border-line bg-panel hover:border-ink'
                 }`}

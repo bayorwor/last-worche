@@ -20,18 +20,13 @@ export type SignInResponse = {
   user: SessionUser
 }
 
+// testCode is only sent in test mode, when no real email goes out.
+export type RequestCodeResponse = {
+  testCode?: string
+}
+
 export type TestAccount = {
   email: string
   name: string
   role: UserRole
-}
-
-export type TestAccounts = {
-  password: string
-  accounts: TestAccount[]
-}
-
-export type Credentials = {
-  email: string
-  password: string
 }

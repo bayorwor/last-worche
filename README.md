@@ -42,14 +42,25 @@ Open <http://localhost:5173>. The app starts in German if your device's time zon
 
 To delete all data, run `mysql -u root -p -e "DROP DATABASE lastworche"`, then the first Setup command again; the sample data returns on the next backend start. If you ran an earlier version and the backend fails while applying a database migration, this also resets it.
 
+### If something does not start
+
+| What you see | What to do |
+|---|---|
+| `ECONNREFUSED` on port `3306` when the backend starts | MySQL is not running. Start it, for example with `brew services start mysql`. |
+| `mysql -u root -p` waits for a password you do not have | If your MySQL root has no password, press Enter, or run `mysql -u root < backend/setup-database.sql`. |
+| `Access denied for user 'lastworche'` | The database user is missing. Run the first Setup command. |
+| `EADDRINUSE` or a Vite port error | Port `3000` or `5173` is in use. Stop the other program. |
+| The backend fails while applying a database migration | Reset the database as described above. |
+
 ## Test
 
+One command, from the repository root:
+
 ```bash
-cd backend && bun test
-cd client && bun test
+(cd backend && bun test) && (cd client && bun test)
 ```
 
-These tests need no database, so the 21 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
+These tests need no database, so the 26 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
 
 ## Demo users
 
@@ -64,8 +75,8 @@ To change user, choose *Abmelden / Sign out* at the top of the page. Labels are 
 | Role | Name | Email | What to try |
 |---|---|---|---|
 | Consultant | L. Hoffmann | `l.hoffmann@consultis.example` | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, choose *Vorschlag prüfen / Check proposal*, then *Buchung bestätigen / Confirm booking*. To see a rejection, choose order 4500012346 first: it has too little budget left. |
-| Project lead | A. Weber | `a.weber@client.example` | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days, and the booking appears in the list below it. |
-| Purchasing | K. Vogel | `k.vogel@client.example` | See the supplier overview with aggregated values only. These are sample values for now. |
+| Project lead | A. Weber | `a.weber@client.example` | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days, and the booking appears in the list below it. Then approve the current month under *Leistungsnachweise / Proofs of work*: a consultant's next booking in that month is rejected. |
+| Purchasing | K. Vogel | `k.vogel@client.example` | See totals per supplier and order, with no person or single booking. Order 4500012346 shows *Nachtrag nötig / Follow-up order needed*. |
 | Consultant | M. Krüger | `m.krueger@consultis.example` | Assigned to one order only, so only that one can be chosen. |
 | Consultant | S. Tanriver | `s.tanriver@nordlicht.example` | Works for another supplier, on orders 4500012346 and 4500012347. |
 | Project lead | J. Schneider | `j.schneider@client.example` | Leads only order 4500012347, and cannot see A. Weber's orders. |
@@ -79,8 +90,8 @@ Where the technical jury finds the evidence for each [technical criterion](https
 | Criterion | Evidence |
 |---|---|
 | 1 · Persistence and data model | Schema in [migrations.ts](backend/src/repositories/migrations.ts), sample data in [seedData.ts](backend/src/repositories/seedData.ts), queries in [mysqlBookingRepository.ts](backend/src/repositories/mysqlBookingRepository.ts), [ER diagram](docs/domain.md) |
-| 2 · Business rules and unit tests | Rules in [booking.ts](backend/src/domain/booking.ts), tests in [booking.test.ts](backend/src/domain/booking.test.ts) and [bookingService.test.ts](backend/src/services/bookingService.test.ts), simultaneous bookings in [mysqlBookingRepository.test.ts](backend/src/repositories/mysqlBookingRepository.test.ts) |
-| 3 · Roles, permissions and privacy | [Permission concept](docs/roles-and-privacy.md), guards in [authentication.ts](backend/src/middlewares/authentication.ts), allowed roles per route in [bookingRoutes.ts](backend/src/routes/bookingRoutes.ts), row-level scope in [bookingService.ts](backend/src/services/bookingService.ts), rejections tested in [app.test.ts](backend/src/app.test.ts), role views in the [mockup](docs/mockup/index.html) and in [client/src/features](client/src/features) |
+| 2 · Business rules and unit tests | Rules in [booking.ts](backend/src/domain/booking.ts) and [proofOfWork.ts](backend/src/domain/proofOfWork.ts), tests in [booking.test.ts](backend/src/domain/booking.test.ts) and [bookingService.test.ts](backend/src/services/bookingService.test.ts), simultaneous bookings in [mysqlBookingRepository.test.ts](backend/src/repositories/mysqlBookingRepository.test.ts) |
+| 3 · Roles, permissions and privacy | [Permission concept](docs/roles-and-privacy.md), guards in [authentication.ts](backend/src/middlewares/authentication.ts), allowed roles per route in [bookingRoutes.ts](backend/src/routes/bookingRoutes.ts), row-level scope in [bookingService.ts](backend/src/services/bookingService.ts), totals with no personal data for purchasing in [purchasing.ts](backend/src/domain/purchasing.ts), rejections tested in [app.test.ts](backend/src/app.test.ts), role views in the [mockup](docs/mockup/index.html) and in [client/src/features](client/src/features) |
 | 4 · Architecture and engineering | **A** · structure in [backend/src](backend/src) and [client/src](client/src) · **B** · [ADRs](docs/adr/) · **C** · Git history · **F** · [mockup](docs/mockup/index.html) |
 
 Building block D (API documentation) is not delivered: the API is described below, but not in a machine-readable form. Building block E (containers) is not delivered, as decided in [ADR-0011](docs/adr/0011-mysql-without-docker.md).
@@ -127,6 +138,9 @@ flowchart LR
 | `GET /api/auth/me` | Who the session belongs to | `401` no valid session |
 | `GET /api/orders` | Orders as ID and title, for all roles: a consultant sees their assigned orders, a project lead the orders they lead, purchasing all orders | `401` no session |
 | `GET /api/consultants/:consultantId/bookings` | A consultant's own 10 latest bookings, for the consultant role | `401`, `403` another consultant |
+| `GET /api/orders/:orderId/proofs-of-work` | Each month of an order with its totals and status, for the project lead of that order | `401`, `403` other roles or orders, `404` unknown order |
+| `POST /api/orders/:orderId/proofs-of-work/:month/approve` | Approve a month for good, for the project lead of that order | `400` invalid month, `401`, `403`, `404`, `422` already approved or no bookings |
+| `GET /api/purchasing/supplier-overview` | Totals per supplier and order, with nothing about a person, for the purchasing role | `401`, `403` other roles |
 | `GET /api/orders/:orderId/bookings` | The 10 latest single bookings of an order, for the project lead of that order | `401`, `403` other roles or orders, `404` unknown order |
 | `POST /api/bookings` | Check the rules, then store a booking, for the consultant role. The consultant comes from the session | `401`, `403` other roles, `400` invalid input, `404` unknown order, `422` rule violated, with `rule` and `values` so the client can explain it in either language |
 | `GET /api/orders/:orderId/budget` | Ordered, used and free person-days, for all roles within their orders | `401`, `403` an order outside your scope, `404` unknown order |
@@ -157,11 +171,12 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | Area | Built | Planned |
 |---|---|---|
 | Core flow | Choose an assigned order, book time on it, see the effect on its budget | Manual booking form, without the AI sentence |
-| Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person; 10-hour day; 11-hour rest | Vacation and public holidays, order period |
-| Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, roles, users, with migrations | Proofs of work |
+| Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person; 10-hour day; 11-hour rest; no bookings in an approved month | Vacation and public holidays, order period |
+| Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, roles, users, proofs of work, with migrations | Vacation days, framework agreements |
 | Roles | Sign-in with a 6-digit code by email, roles and users stored in the database, one view per role, server-side role checks on every route and row-level scope | Limits per network address, single sign-on per customer ([ADR-0002](docs/adr/0002-identity-and-sign-in.md), [ADR-0014](docs/adr/0014-email-code-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |
-| Purchasing | Screen with sample values | Aggregated supplier endpoint |
+| Proof of work | A project lead approves a month per order, which locks it | Passing approved hours on to finance |
+| Purchasing | Totals per supplier and order from the database, with no personal data | Framework agreements |
 | Languages | Client screens, server errors and sign-in emails in German and English | Other emails, which need a stored language per user |
 | Email | Sign-in codes, with a mock switch. Real sending is not tested yet | After Sprint One: budget warnings, proof of work, rejected bookings, the single sign-on process ([ADR-0008](docs/adr/0008-email-with-nodemailer.md)) |
 
@@ -173,6 +188,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 - Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md) · [0012 Branching workflow](docs/adr/0012-branching-workflow.md) · [0013 Email and password sign-in](docs/adr/0013-email-and-password-sign-in.md) (replaced) · [0014 Sign-in with a code by email](docs/adr/0014-email-code-sign-in.md)
 - [Mockup](docs/mockup/index.html) and its [visual direction](docs/mockup/README.md)
 - [Brand assets](docs/brand/README.md): logo files and where each is used
+- [Pitch](docs/pitch.md): the story and the live demo, step by step
 - [AGENTS.md](AGENTS.md): instructions for AI coding agents
 
 ## Branching workflow

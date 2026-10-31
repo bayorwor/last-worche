@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { formatDate, formatHours, formatPersonDays } from '../utils/formatters.ts'
+import { formatDate, formatHours, formatMonth, formatPersonDays } from '../utils/formatters.ts'
 import { detectLanguage } from './detectLanguage.ts'
 import { LanguageContext } from './languageContext.ts'
 import type { Language } from './languages.ts'
@@ -34,6 +34,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         formatHours: (hours) => formatHours(hours, language),
         formatPersonDays: (personDays) => formatPersonDays(personDays, language),
         formatDate: (isoDate) => formatDate(isoDate, language),
+        formatMonth: (month) => formatMonth(month, language),
       }}
     >
       {children}

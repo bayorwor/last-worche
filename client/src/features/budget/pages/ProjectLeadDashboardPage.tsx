@@ -6,18 +6,21 @@ import { PageLoader } from '../../../shared/components/PageLoader.tsx'
 import { PageTitle } from '../../../shared/components/PageTitle.tsx'
 import { StatusMessage } from '../../../shared/components/StatusMessage.tsx'
 import { useTranslation } from '../../../shared/i18n/languageContext.ts'
-import { fetchOrderBookings, fetchOrderBudget, fetchOrders } from '../budgetSlice.ts'
+import { approveProofOfWork, fetchOrderBookings, fetchOrderBudget, fetchOrders, fetchProofsOfWork } from '../budgetSlice.ts'
 import { OrderBookingsTable } from '../components/OrderBookingsTable.tsx'
 import { OrderBudgetPanel } from '../components/OrderBudgetPanel.tsx'
+import { ProofOfWorkPanel } from '../components/ProofOfWorkPanel.tsx'
 
 export default function ProjectLeadDashboardPage() {
   const dispatch = useAppDispatch()
   const { t } = useTranslation()
-  const { orders, budgetsByOrderId, bookingsByOrderId, status, error } = useAppSelector((state) => state.budget)
+  const { orders, budgetsByOrderId, bookingsByOrderId, proofsByOrderId, approvalStatus, status, error } = useAppSelector((state) => state.budget)
   const [chosenOrderId, setChosenOrderId] = useState<string | null>(null)
   const selectedOrderId = chosenOrderId ?? orders[0]?.id
+  const selectedOrder = orders.find((order) => order.id === selectedOrderId)
   const selectedBudget = selectedOrderId ? budgetsByOrderId[selectedOrderId] : undefined
   const selectedBookings = selectedOrderId ? bookingsByOrderId[selectedOrderId] : undefined
+  const selectedProofs = selectedOrderId ? proofsByOrderId[selectedOrderId] : undefined
 
   useEffect(() => {
     dispatch(fetchOrders())
@@ -28,6 +31,7 @@ export default function ProjectLeadDashboardPage() {
     if (selectedOrderId) {
       dispatch(fetchOrderBudget(selectedOrderId))
       dispatch(fetchOrderBookings(selectedOrderId))
+      dispatch(fetchProofsOfWork(selectedOrderId))
     }
   }, [dispatch, selectedOrderId])
 
@@ -35,6 +39,7 @@ export default function ProjectLeadDashboardPage() {
     if (selectedOrderId) {
       dispatch(fetchOrderBudget(selectedOrderId))
       dispatch(fetchOrderBookings(selectedOrderId))
+      dispatch(fetchProofsOfWork(selectedOrderId))
     } else {
       dispatch(fetchOrders())
     }
@@ -42,7 +47,11 @@ export default function ProjectLeadDashboardPage() {
 
   return (
     <>
-      <PageTitle>{t('budget.pageTitle')}</PageTitle>
+      <PageTitle>
+        {selectedOrder
+          ? t('budget.pageTitleForOrder', { orderId: selectedOrder.id, title: selectedOrder.title })
+          : t('budget.pageTitle')}
+      </PageTitle>
       {selectedOrderId && (
         <OrderSelect
           id="budget-order"
@@ -62,7 +71,16 @@ export default function ProjectLeadDashboardPage() {
       )}
       <div className="grid gap-6">
         {selectedBudget ? <OrderBudgetPanel budget={selectedBudget} /> : status === 'loading' && <PageLoader />}
-        {selectedOrderId && selectedBookings && <OrderBookingsTable orderId={selectedOrderId} bookings={selectedBookings} />}
+        {selectedOrderId && selectedBookings && selectedProofs && (
+          <div className="grid items-start gap-6 lg:grid-cols-[1.4fr_1fr]">
+            <OrderBookingsTable orderId={selectedOrderId} bookings={selectedBookings} />
+            <ProofOfWorkPanel
+              proofs={selectedProofs}
+              isApproving={approvalStatus === 'loading'}
+              onApprove={(month) => dispatch(approveProofOfWork({ orderId: selectedOrderId, month }))}
+            />
+          </div>
+        )}
       </div>
     </>
   )

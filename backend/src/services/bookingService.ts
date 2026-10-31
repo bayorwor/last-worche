@@ -9,6 +9,7 @@ import {
   calculateBudget,
 } from "../domain/booking.ts";
 import { ForbiddenError, NotFoundError } from "../domain/errors.ts";
+import { assertMonthNotApproved, monthOf } from "../domain/proofOfWork.ts";
 import type { User } from "../domain/user.ts";
 import type { OrderBudgetResponse } from "../dtos/bookingDtos.ts";
 import type { BookingRepository, NewBooking } from "../repositories/bookingRepository.ts";
@@ -44,6 +45,7 @@ export function createBookingService(repository: BookingRepository) {
         await transaction.lockConsultant(request.consultantId);
 
         assertAssignedToOrder(await transaction.isConsultantAssigned(request.consultantId, order.id), order);
+        assertMonthNotApproved(await transaction.isMonthApproved(order.id, monthOf(request.date)));
         assertFitsFreeBudget(order, await transaction.sumBookedHours(order.id), request.hours);
 
         const bookingsOnDay = await transaction.findBookingsOnDate(request.consultantId, request.date);

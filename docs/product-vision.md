@@ -40,7 +40,7 @@ The **project lead** on the client side — the role whose daily work we improve
 
 - Invoice creation and payment processing — we stop at the approved proof of work.
 - Framework agreement and contract management — purchasing gets an aggregated overview only.
-- Full SSO/IdP integration — seeded demo users per role instead (decision in [ADR-0002](adr/0002-identity-and-sign-in.md)).
+- Full SSO/IdP integration — seeded test users sign in with a code by email instead (decisions in [ADR-0002](adr/0002-identity-and-sign-in.md) and [ADR-0014](adr/0014-email-code-sign-in.md)).
 - Native mobile apps — responsive web is enough.
 - Reporting/BI beyond the per-order forecast.
 

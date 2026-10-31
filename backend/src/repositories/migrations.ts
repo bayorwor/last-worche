@@ -8,6 +8,7 @@ import {
   CONSULTANTS,
   DEMO_PROJECT_LEAD_ID,
   DEMO_USERS,
+  ORDER_SUPPLIERS,
   ORDERS,
   ROLES,
   SECOND_LEAD_ORDER,
@@ -208,6 +209,38 @@ export const MIGRATIONS: Migration[] = [
         )
       `);
       await db.query("ALTER TABLE users DROP COLUMN password_hash");
+    },
+  },
+  {
+    // An order is given to one supplier, which purchasing needs for its totals per supplier (story #13).
+    name: "008-order-supplier",
+    async run(db) {
+      await db.query("ALTER TABLE orders ADD COLUMN supplier_id VARCHAR(64) NULL");
+      for (const { orderId, supplierId } of ORDER_SUPPLIERS) {
+        await db.query("UPDATE orders SET supplier_id = ? WHERE id = ?", [supplierId, orderId]);
+      }
+      await db.query(`
+        ALTER TABLE orders
+          MODIFY supplier_id VARCHAR(64) NOT NULL,
+          ADD FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+      `);
+    },
+  },
+  {
+    // One row means that month of that order is approved. Its totals are always added up from the bookings (story #11).
+    name: "009-proofs-of-work",
+    async run(db) {
+      await db.query(`
+        CREATE TABLE proofs_of_work (
+          order_id VARCHAR(32) NOT NULL,
+          month CHAR(7) NOT NULL,
+          approved_by_user_id VARCHAR(64) NOT NULL,
+          approved_at_ms BIGINT NOT NULL,
+          PRIMARY KEY (order_id, month),
+          FOREIGN KEY (order_id) REFERENCES orders(id),
+          FOREIGN KEY (approved_by_user_id) REFERENCES users(id)
+        )
+      `);
     },
   },
 ];

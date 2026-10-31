@@ -13,6 +13,12 @@ export function formatPersonDays(personDays: number, language: Language): string
   return `${formatter.format(personDays)}\u00a0${PERSON_DAY_UNITS[language]}`
 }
 
+// Expects YYYY-MM, and gives for example "Oktober 2026".
+export function formatMonth(month: string, language: Language): string {
+  const formatter = new Intl.DateTimeFormat(LOCALES[language], { month: 'long', year: 'numeric', timeZone: 'UTC' })
+  return formatter.format(new Date(`${month}-01T00:00:00Z`))
+}
+
 // Expects YYYY-MM-DD. UTC on both sides, so the shown day never shifts with the viewer's time zone.
 export function formatDate(isoDate: string, language: Language): string {
   const formatter = new Intl.DateTimeFormat(LOCALES[language], {

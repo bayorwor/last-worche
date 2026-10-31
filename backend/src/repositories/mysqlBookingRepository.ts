@@ -1,6 +1,8 @@
 // MySQL implementation of BookingRepository. Database column names stay inside this file.
 import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import type { DayBooking } from "../domain/booking.ts";
+import type { ProofOfWorkTotals } from "../domain/proofOfWork.ts";
+import type { OrderTotals } from "../domain/purchasing.ts";
 import {
   RECENT_BOOKINGS_LIMIT,
   type BookingRepository,
@@ -16,6 +18,9 @@ type OrderSummaryRow = RowDataPacket & OrderSummary;
 type DayBookingRow = RowDataPacket & DayBooking;
 type OrderBookingRow = RowDataPacket & OrderBooking;
 type StoredBookingRow = RowDataPacket & StoredBooking;
+type OrderTotalsRow = RowDataPacket & OrderTotals;
+type ProofOfWorkRow = RowDataPacket & ProofOfWorkTotals;
+type CountRow = RowDataPacket & { total: number };
 
 const BOOKING_COLUMNS = `bookings.id, bookings.order_id AS orderId, bookings.consultant_id AS consultantId, bookings.date,
   TIME_FORMAT(bookings.start_time, '%H:%i') AS startTime, TIME_FORMAT(bookings.end_time, '%H:%i') AS endTime,
@@ -74,6 +79,26 @@ function createTransaction(connection: PoolConnection): BookingTransaction {
       );
       return { id: result.insertId, ...booking };
     },
+    isMonthApproved: async (orderId, month) => {
+      const [rows] = await connection.query<RowDataPacket[]>("SELECT 1 FROM proofs_of_work WHERE order_id = ? AND month = ?", [
+        orderId,
+        month,
+      ]);
+      return rows.length > 0;
+    },
+    countBookingsInMonth: async (orderId, month) => {
+      const [rows] = await connection.query<CountRow[]>(
+        "SELECT COUNT(*) AS total FROM bookings WHERE order_id = ? AND DATE_FORMAT(date, '%Y-%m') = ?",
+        [orderId, month],
+      );
+      return rows[0]?.total ?? 0;
+    },
+    approveMonth: async ({ orderId, month, approvedByUserId, approvedAtMs }) => {
+      await connection.query(
+        "INSERT INTO proofs_of_work (order_id, month, approved_by_user_id, approved_at_ms) VALUES (?, ?, ?, ?)",
+        [orderId, month, approvedByUserId, approvedAtMs],
+      );
+    },
   };
 }
 
@@ -82,6 +107,34 @@ export function createMysqlBookingRepository(db: Pool): BookingRepository {
     listOrders: async () => {
       const [rows] = await db.query<OrderSummaryRow[]>("SELECT id, title FROM orders ORDER BY id");
       return rows.map(({ id, title }) => ({ id, title }));
+    },
+    listOrderTotals: async () => {
+      const [rows] = await db.query<OrderTotalsRow[]>(
+        `SELECT orders.id AS orderId, orders.title, orders.ordered_person_days AS orderedPersonDays,
+           suppliers.id AS supplierId, suppliers.name AS supplierName, COALESCE(SUM(bookings.hours), 0) AS bookedHours
+         FROM orders
+         JOIN suppliers ON suppliers.id = orders.supplier_id
+         LEFT JOIN bookings ON bookings.order_id = orders.id
+         GROUP BY orders.id, orders.title, orders.ordered_person_days, suppliers.id, suppliers.name
+         ORDER BY suppliers.name, orders.id`,
+      );
+      return rows.map((row) => ({ ...row }));
+    },
+    listProofsOfWork: async (orderId) => {
+      const [rows] = await db.query<ProofOfWorkRow[]>(
+        `SELECT months.month, months.bookedHours, months.bookingCount, months.consultantCount,
+           proofs_of_work.approved_at_ms AS approvedAtMs, users.name AS approvedByName
+         FROM (
+           SELECT DATE_FORMAT(date, '%Y-%m') AS month, SUM(hours) AS bookedHours, COUNT(*) AS bookingCount,
+             COUNT(DISTINCT consultant_id) AS consultantCount
+           FROM bookings WHERE order_id = ? GROUP BY DATE_FORMAT(date, '%Y-%m')
+         ) AS months
+         LEFT JOIN proofs_of_work ON proofs_of_work.order_id = ? AND proofs_of_work.month = months.month
+         LEFT JOIN users ON users.id = proofs_of_work.approved_by_user_id
+         ORDER BY months.month DESC`,
+        [orderId, orderId],
+      );
+      return rows.map((row) => ({ ...row }));
     },
     listAssignedOrders: async (consultantId) => {
       const [rows] = await db.query<OrderSummaryRow[]>(

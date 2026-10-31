@@ -3,6 +3,7 @@ import axios from 'axios'
 import { authReducer, signedOut } from '../features/auth/authSlice.ts'
 import { bookingsReducer } from '../features/bookings/bookingsSlice.ts'
 import { budgetReducer } from '../features/budget/budgetSlice.ts'
+import { purchasingReducer } from '../features/purchasing/purchasingSlice.ts'
 import { apiClient } from '../shared/api/apiClient.ts'
 import { clearSessionToken, readSessionToken } from '../shared/api/sessionToken.ts'
 
@@ -10,6 +11,7 @@ const appReducer = combineReducers({
   auth: authReducer,
   bookings: bookingsReducer,
   budget: budgetReducer,
+  purchasing: purchasingReducer,
 })
 
 // Signing out empties everything else, so the next user on this device never sees the last user's data.

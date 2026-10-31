@@ -142,6 +142,15 @@ describe("consultant identity", () => {
     expect((await send("POST", "/bookings", { body: { ...newBooking, date: "2026-10-28" } })).status).toBe(401);
   });
 
+  test("the booking assistant uses the consultant's own date", async () => {
+    const response = await send("POST", "/ai/parse-booking", {
+      token: await signIn("user-consultant"),
+      body: { sentence: "9 to 5", today: "2026-11-03" },
+    });
+
+    expect(((await response.json()) as { date: string }).date).toBe("2026-11-03");
+  });
+
   test("only a consultant can book", async () => {
     const response = await send("POST", "/bookings", {
       token: await signIn("user-project-lead"),
@@ -159,6 +168,9 @@ describe("every route except sign-in needs a session", () => {
     ["GET", `/orders/${ORDER_ID}/budget`],
     ["GET", `/orders/${ORDER_ID}/bookings`],
     ["GET", "/consultants/consultant-1/bookings"],
+    ["GET", "/purchasing/supplier-overview"],
+    ["GET", `/orders/${ORDER_ID}/proofs-of-work`],
+    ["POST", `/orders/${ORDER_ID}/proofs-of-work/2026-10/approve`],
     ["POST", "/bookings"],
     ["POST", "/ai/parse-booking"],
   ])("%s %s is rejected with 401, before any handler or validation", async (method, path) => {
@@ -195,6 +207,53 @@ describe("role checks", () => {
 
     expect(Object.keys(budget as object).sort()).toEqual(["freePersonDays", "orderId", "orderedPersonDays", "usedPersonDays"]);
     expect(((await (await send("GET", "/orders", { token })).json()) as unknown[]).length).toBe(2);
+  });
+
+  test("purchasing reads totals per supplier, with no person in them", async () => {
+    const consultantToken = await signIn("user-consultant");
+    await send("POST", "/bookings", { token: consultantToken, body: { ...newBooking, date: "2026-08-03" } });
+
+    const response = await send("GET", "/purchasing/supplier-overview", { token: await signIn("user-purchasing") });
+    const body = JSON.stringify(await response.json());
+
+    expect(response.status).toBe(200);
+    expect(body).toContain("usedPersonDays");
+    expect(body).not.toContain("Hoffmann");
+    expect(body).not.toContain("consultant");
+    expect(body).not.toContain("2026-08-03");
+  });
+
+  test("only purchasing may read the supplier overview", async () => {
+    for (const user of ["user-consultant", "user-project-lead"]) {
+      const response = await send("GET", "/purchasing/supplier-overview", { token: await signIn(user) });
+
+      expect(response.status).toBe(403);
+    }
+  });
+
+  test("only a project lead may read or approve a proof of work", async () => {
+    for (const user of ["user-consultant", "user-purchasing"]) {
+      const token = await signIn(user);
+
+      expect((await send("GET", `/orders/${ORDER_ID}/proofs-of-work`, { token })).status).toBe(403);
+      expect((await send("POST", `/orders/${ORDER_ID}/proofs-of-work/2026-10/approve`, { token })).status).toBe(403);
+    }
+  });
+
+  test("a project lead cannot approve an order they do not lead", async () => {
+    const response = await send("POST", `/orders/${OTHER_ORDER_ID}/proofs-of-work/2026-10/approve`, {
+      token: await signIn("user-project-lead"),
+    });
+
+    expect(response.status).toBe(403);
+  });
+
+  test("a malformed month is rejected with 400", async () => {
+    const response = await send("POST", `/orders/${ORDER_ID}/proofs-of-work/october/approve`, {
+      token: await signIn("user-project-lead"),
+    });
+
+    expect(response.status).toBe(400);
   });
 
   test("a consultant cannot use the project lead's route", async () => {

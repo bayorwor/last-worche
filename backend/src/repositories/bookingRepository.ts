@@ -1,5 +1,7 @@
 // What the services need from storage. Services depend on these types, not on MySQL.
 import type { DayBooking, Order } from "../domain/booking.ts";
+import type { ProofOfWorkTotals } from "../domain/proofOfWork.ts";
+import type { OrderTotals } from "../domain/purchasing.ts";
 
 export type NewBooking = {
   orderId: string;
@@ -19,6 +21,13 @@ export const RECENT_BOOKINGS_LIMIT = 10;
 
 export type OrderSummary = { id: string; title: string };
 
+export type MonthApproval = {
+  orderId: string;
+  month: string; // YYYY-MM
+  approvedByUserId: string;
+  approvedAtMs: number;
+};
+
 export type BookingTransaction = {
   // Locks the order until the transaction ends, so its budget cannot change in the meantime.
   findOrderForUpdate(orderId: string): Promise<Order | null>;
@@ -29,10 +38,15 @@ export type BookingTransaction = {
   lockConsultant(consultantId: string): Promise<void>;
   findBookingsOnDate(consultantId: string, date: string): Promise<DayBooking[]>;
   saveBooking(booking: NewBooking): Promise<StoredBooking>;
+  isMonthApproved(orderId: string, month: string): Promise<boolean>;
+  countBookingsInMonth(orderId: string, month: string): Promise<number>;
+  approveMonth(approval: MonthApproval): Promise<void>;
 };
 
 export type BookingRepository = {
   listOrders(): Promise<OrderSummary[]>;
+  listOrderTotals(): Promise<OrderTotals[]>;
+  listProofsOfWork(orderId: string): Promise<ProofOfWorkTotals[]>;
   listAssignedOrders(consultantId: string): Promise<OrderSummary[]>;
   listOrdersLedBy(userId: string): Promise<OrderSummary[]>;
   isConsultantAssigned(consultantId: string, orderId: string): Promise<boolean>;

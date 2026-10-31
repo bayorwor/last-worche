@@ -1,9 +1,16 @@
 // A BookingRepository that keeps data in memory, so unit tests run without a database.
 import type { Order } from "../domain/booking.ts";
-import { RECENT_BOOKINGS_LIMIT, type BookingRepository, type NewBooking, type StoredBooking } from "./bookingRepository.ts";
+import { monthOf } from "../domain/proofOfWork.ts";
+import {
+  RECENT_BOOKINGS_LIMIT,
+  type BookingRepository,
+  type MonthApproval,
+  type NewBooking,
+  type StoredBooking,
+} from "./bookingRepository.ts";
 
 export type InMemoryAssignment = { consultantId: string; orderId: string };
-export type InMemoryOrder = Order & { projectLeadId?: string };
+export type InMemoryOrder = Order & { projectLeadId?: string; supplierId?: string; supplierName?: string };
 
 function newestFirst(first: StoredBooking, second: StoredBooking) {
   return `${second.date} ${second.startTime}`.localeCompare(`${first.date} ${first.startTime}`);
@@ -11,6 +18,10 @@ function newestFirst(first: StoredBooking, second: StoredBooking) {
 
 export function createInMemoryBookingRepository(orders: InMemoryOrder[], assignments: InMemoryAssignment[]): BookingRepository {
   const bookings: StoredBooking[] = [];
+  const approvals: MonthApproval[] = [];
+
+  // Stands in for the names of the users table.
+  const LEAD_NAMES: Record<string, string> = { "lead-1": "A. Weber", "lead-2": "J. Schneider" };
 
   const findOrder = async (orderId: string) => orders.find((order) => order.id === orderId) ?? null;
   const sumBookedHours = async (orderId: string) =>
@@ -23,6 +34,33 @@ export function createInMemoryBookingRepository(orders: InMemoryOrder[], assignm
 
   return {
     listOrders: async () => orders.map(toSummary),
+    listProofsOfWork: async (orderId) => {
+      const orderBookings = bookings.filter((booking) => booking.orderId === orderId);
+      const months = [...new Set(orderBookings.map((booking) => monthOf(booking.date)))].sort().reverse();
+      return months.map((month) => {
+        const monthBookings = orderBookings.filter((booking) => monthOf(booking.date) === month);
+        const approval = approvals.find((a) => a.orderId === orderId && a.month === month);
+        return {
+          month,
+          bookedHours: monthBookings.reduce((total, booking) => total + booking.hours, 0),
+          bookingCount: monthBookings.length,
+          consultantCount: new Set(monthBookings.map((booking) => booking.consultantId)).size,
+          approvedAtMs: approval?.approvedAtMs ?? null,
+          approvedByName: approval ? (LEAD_NAMES[approval.approvedByUserId] ?? approval.approvedByUserId) : null,
+        };
+      });
+    },
+    listOrderTotals: async () =>
+      Promise.all(
+        orders.map(async (order) => ({
+          orderId: order.id,
+          title: `Order ${order.id}`,
+          orderedPersonDays: order.orderedPersonDays,
+          supplierId: order.supplierId ?? "supplier-1",
+          supplierName: order.supplierName ?? "Supplier",
+          bookedHours: await sumBookedHours(order.id),
+        })),
+      ),
     listOrdersLedBy: async (userId) => orders.filter((order) => order.projectLeadId === userId).map(toSummary),
     isConsultantAssigned,
     isOrderLedBy: async (userId, orderId) => orders.some((order) => order.id === orderId && order.projectLeadId === userId),
@@ -49,6 +87,12 @@ export function createInMemoryBookingRepository(orders: InMemoryOrder[], assignm
         isConsultantAssigned,
         sumBookedHours,
         lockConsultant: async () => {},
+        isMonthApproved: async (orderId, month) => approvals.some((a) => a.orderId === orderId && a.month === month),
+        countBookingsInMonth: async (orderId, month) =>
+          bookings.filter((booking) => booking.orderId === orderId && monthOf(booking.date) === month).length,
+        approveMonth: async (approval) => {
+          approvals.push(approval);
+        },
         findBookingsOnDate: async (consultantId, date) =>
           bookings
             .filter((booking) => booking.consultantId === consultantId && booking.date === date)

@@ -2,7 +2,7 @@ import { DataTable } from '../../../shared/components/DataTable.tsx'
 import { useTranslation } from '../../../shared/i18n/languageContext.ts'
 import type { Booking } from '../bookingTypes.ts'
 
-export function ConfirmedBookingsTable({ bookings }: { bookings: Booking[] }) {
+export function OwnBookingsTable({ bookings }: { bookings: Booking[] }) {
   const { t, formatDate, formatHours } = useTranslation()
 
   if (bookings.length === 0) {

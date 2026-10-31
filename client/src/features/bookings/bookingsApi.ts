@@ -7,6 +7,11 @@ export async function requestAssignedOrders(): Promise<OrderSummary[]> {
   return data
 }
 
+export async function requestOwnBookings(consultantId: string): Promise<Booking[]> {
+  const { data } = await apiClient.get<Booking[]>(`/consultants/${encodeURIComponent(consultantId)}/bookings`)
+  return data
+}
+
 export async function requestBookingProposal(sentence: string): Promise<BookingProposal> {
   const { data } = await apiClient.post<BookingProposal>('/ai/parse-booking', { sentence })
   return data

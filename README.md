@@ -47,7 +47,7 @@ cd backend && bun test
 cd client && bun test
 ```
 
-These tests need no database, so the 11 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
+These tests need no database, so the 13 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
 
 ## Demo users
 
@@ -56,7 +56,7 @@ Open <http://localhost:5173> and choose a user on the sign-in screen. No passwor
 | Role | Demo user to choose | What to try |
 |---|---|---|
 | Consultant | L. Hoffmann | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, choose *Vorschlag prüfen / Check proposal*, then *Buchung bestätigen / Confirm booking*. To see a rejection, choose order 4500012346 first: it has too little budget left. |
-| Project lead | A. Weber | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days. |
+| Project lead | A. Weber | Open order 4500012345: after a 7 h booking, used goes from 84 to 84.875 person-days, and the booking appears in the list below it. |
 | Purchasing | K. Vogel | See the supplier overview with aggregated values only. These are sample values for now. |
 
 With the default `AI_MOCK=true`, the one-sentence booking returns a fixed proposal of 09:00–17:00 with 7 hours for today, whatever the sentence says. Confirming it a second time is rejected as an overlap, which shows that rule. To book other times, use the API as shown in the [backend README](backend/README.md).
@@ -69,7 +69,7 @@ Where the technical jury finds the evidence for each [technical criterion](https
 |---|---|
 | 1 · Persistence and data model | Schema in [migrations.ts](backend/src/repositories/migrations.ts), sample data in [seedData.ts](backend/src/repositories/seedData.ts), queries in [mysqlBookingRepository.ts](backend/src/repositories/mysqlBookingRepository.ts), [ER diagram](docs/domain.md) |
 | 2 · Business rules and unit tests | Rules in [booking.ts](backend/src/domain/booking.ts), tests in [booking.test.ts](backend/src/domain/booking.test.ts) and [bookingService.test.ts](backend/src/services/bookingService.test.ts), simultaneous bookings in [mysqlBookingRepository.test.ts](backend/src/repositories/mysqlBookingRepository.test.ts) |
-| 3 · Roles, permissions and privacy | [Permission concept](docs/roles-and-privacy.md), role views in the [mockup](docs/mockup/index.html) and in [client/src/features](client/src/features) |
+| 3 · Roles, permissions and privacy | [Permission concept](docs/roles-and-privacy.md), guards in [authentication.ts](backend/src/middlewares/authentication.ts), allowed roles per route in [bookingRoutes.ts](backend/src/routes/bookingRoutes.ts), row-level scope in [bookingService.ts](backend/src/services/bookingService.ts), rejections tested in [app.test.ts](backend/src/app.test.ts), role views in the [mockup](docs/mockup/index.html) and in [client/src/features](client/src/features) |
 | 4 · Architecture and engineering | **A** · structure in [backend/src](backend/src) and [client/src](client/src) · **B** · [ADRs](docs/adr/) · **C** · Git history · **F** · [mockup](docs/mockup/index.html) |
 
 Building block D (API documentation) is not delivered: the API is described below, but not in a machine-readable form. Building block E (containers) is not delivered, as decided in [ADR-0011](docs/adr/0011-mysql-without-docker.md).
@@ -112,10 +112,12 @@ flowchart LR
 | `GET /api/auth/demo-users` | The demo users to choose from | |
 | `POST /api/auth/sign-in` | Start a session for a demo user, and receive a signed token | `401` unknown user |
 | `GET /api/auth/me` | Who the session belongs to | `401` no valid session |
-| `GET /api/orders` | Orders as ID and title. A consultant sees only their assigned orders | `401` |
-| `POST /api/bookings` | Check the rules, then store a booking | `400` invalid input, `404` unknown order, `422` rule violated, with `rule` and `values` so the client can explain it in either language |
-| `GET /api/orders/:orderId/budget` | Ordered, used and free person-days | `404` unknown order |
-| `POST /api/ai/parse-booking` | Turn one sentence into a booking proposal, without storing it | `400` invalid input, `503` AI service unavailable, with a `code` |
+| `GET /api/orders` | Orders as ID and title, for all roles: a consultant sees their assigned orders, a project lead the orders they lead, purchasing all orders | `401` no session |
+| `GET /api/consultants/:consultantId/bookings` | A consultant's own 10 latest bookings, for the consultant role | `401`, `403` another consultant |
+| `GET /api/orders/:orderId/bookings` | The 10 latest single bookings of an order, for the project lead of that order | `401`, `403` other roles or orders, `404` unknown order |
+| `POST /api/bookings` | Check the rules, then store a booking, for the consultant role. The consultant comes from the session | `401`, `403` other roles, `400` invalid input, `404` unknown order, `422` rule violated, with `rule` and `values` so the client can explain it in either language |
+| `GET /api/orders/:orderId/budget` | Ordered, used and free person-days, for all roles within their orders | `401`, `403` an order outside your scope, `404` unknown order |
+| `POST /api/ai/parse-booking` | Turn one sentence into a booking proposal, without storing it, for the consultant role | `401`, `403` other roles, `400` invalid input, `503` AI service unavailable, with a `code` |
 
 ### Configuration
 
@@ -142,7 +144,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | Core flow | Choose an assigned order, book time on it, see the effect on its budget | Manual booking form, without the AI sentence |
 | Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person; 10-hour day; 11-hour rest | Vacation and public holidays, order period |
 | Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, demo users, with migrations | Proofs of work |
-| Roles | Demo sign-in with a signed session, one view per role, written permission concept. The consultant ID comes from the session | Permission checks on all routes ([ADR-0002](docs/adr/0002-identity-and-sign-in.md)) |
+| Roles | Demo sign-in with a signed session, one view per role, server-side role checks on every route and row-level scope | Single sign-on per customer ([ADR-0002](docs/adr/0002-identity-and-sign-in.md)) |
 | Budget | Ordered, used and free person-days | Forecast and early warning |
 | Purchasing | Screen with sample values | Aggregated supplier endpoint |
 | Languages | Client screens and server errors in German and English | Emails, which need a stored language per user |

@@ -4,6 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:tes
 import type { Pool } from "mysql2/promise";
 import { BusinessRuleError } from "../domain/errors.ts";
 import { createBookingService, type BookingService } from "../services/bookingService.ts";
+import { createProofOfWorkService } from "../services/proofOfWorkService.ts";
 import { createPurchasingService } from "../services/purchasingService.ts";
 import { openDatabase } from "./database.ts";
 import { createMysqlBookingRepository } from "./mysqlBookingRepository.ts";
@@ -29,6 +30,7 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
   });
 
   beforeEach(async () => {
+    await db.query("DELETE FROM proofs_of_work");
     await db.query("DELETE FROM bookings");
   });
 
@@ -104,6 +106,60 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
     expect(suppliers[0]).toMatchObject({ orderedPersonDays: 140, usedPersonDays: 0.875, freePersonDays: 139.125 });
     expect(JSON.stringify(suppliers)).not.toContain("Hoffmann");
     expect(JSON.stringify(suppliers)).not.toContain("consultant");
+  });
+
+  describe("proof of work", () => {
+    const lead = { id: DEMO_PROJECT_LEAD_ID, name: "A. Weber", email: "a.weber@client.example", role: "project_lead" as const, consultantId: null };
+
+    test("adds up each month from the bookings, and records the approval", async () => {
+      await service.createBooking({ ...booking, hours: 7 });
+      await service.createBooking({ ...booking, consultantId: "consultant-2", hours: 7 });
+      await service.createBooking({ ...booking, date: "2026-09-15", hours: 8 });
+      const proofs = createProofOfWorkService(createMysqlBookingRepository(db));
+
+      expect(await proofs.listFor(lead, SEED_ORDER_ID)).toMatchObject([
+        { month: "2026-10", personDays: 1.75, bookingCount: 2, consultantCount: 2, status: "open", approvedByName: null },
+        { month: "2026-09", personDays: 1, bookingCount: 1, consultantCount: 1, status: "open" },
+      ]);
+
+      const approved = await proofs.approveFor(lead, SEED_ORDER_ID, "2026-10");
+
+      expect(approved[0]).toMatchObject({ month: "2026-10", status: "approved", approvedByName: "A. Weber" });
+      expect(approved[1]).toMatchObject({ month: "2026-09", status: "open" });
+    });
+
+    test("rejects a new booking in the approved month, and accepts one in another month", async () => {
+      await service.createBooking({ ...booking, hours: 7 });
+      await createProofOfWorkService(createMysqlBookingRepository(db)).approveFor(lead, SEED_ORDER_ID, "2026-10");
+
+      await expect(service.createBooking({ ...booking, date: "2026-10-28", hours: 7 })).rejects.toThrow(
+        "Proof of work already approved — contact the project lead.",
+      );
+      await service.createBooking({ ...booking, date: "2026-11-02", hours: 7 });
+    });
+
+    test("approving at the same moment succeeds only once", async () => {
+      await service.createBooking({ ...booking, hours: 7 });
+      const proofs = createProofOfWorkService(createMysqlBookingRepository(db));
+
+      const results = await Promise.allSettled(Array.from({ length: 5 }, () => proofs.approveFor(lead, SEED_ORDER_ID, "2026-10")));
+
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    });
+
+    test("a booking and an approval at the same moment both finish cleanly, in one order or the other", async () => {
+      await service.createBooking({ ...booking, hours: 7 });
+      const proofs = createProofOfWorkService(createMysqlBookingRepository(db));
+
+      await Promise.allSettled([
+        service.createBooking({ ...booking, date: "2026-10-28", hours: 7 }),
+        proofs.approveFor(lead, SEED_ORDER_ID, "2026-10"),
+      ]);
+
+      const [october] = await proofs.listFor(lead, SEED_ORDER_ID);
+      expect(october?.status).toBe("approved");
+      expect(october?.bookingCount === 1 || october?.bookingCount === 2).toBe(true);
+    });
   });
 
   test("rejects a consultant not assigned to the order", async () => {

@@ -8,6 +8,16 @@ export type OrderBooking = {
   description: string
 }
 
+export type ProofOfWork = {
+  month: string
+  personDays: number
+  bookingCount: number
+  consultantCount: number
+  status: 'open' | 'approved'
+  approvedAtMs: number | null
+  approvedByName: string | null
+}
+
 export type OrderBudget = {
   orderId: string
   orderedPersonDays: number

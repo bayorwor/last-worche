@@ -1,5 +1,6 @@
 // What the services need from storage. Services depend on these types, not on MySQL.
 import type { DayBooking, Order } from "../domain/booking.ts";
+import type { OrderTotals } from "../domain/purchasing.ts";
 
 export type NewBooking = {
   orderId: string;
@@ -33,6 +34,7 @@ export type BookingTransaction = {
 
 export type BookingRepository = {
   listOrders(): Promise<OrderSummary[]>;
+  listOrderTotals(): Promise<OrderTotals[]>;
   listAssignedOrders(consultantId: string): Promise<OrderSummary[]>;
   listOrdersLedBy(userId: string): Promise<OrderSummary[]>;
   isConsultantAssigned(consultantId: string, orderId: string): Promise<boolean>;

@@ -4,6 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:tes
 import type { Pool } from "mysql2/promise";
 import { BusinessRuleError } from "../domain/errors.ts";
 import { createBookingService, type BookingService } from "../services/bookingService.ts";
+import { createPurchasingService } from "../services/purchasingService.ts";
 import { openDatabase } from "./database.ts";
 import { createMysqlBookingRepository } from "./mysqlBookingRepository.ts";
 import { DEMO_PROJECT_LEAD_ID, NEAR_LIMIT_ORDER_ID, SEED_ORDER_ID } from "./seedData.ts";
@@ -89,6 +90,20 @@ describe.skipIf(!databaseUrl)("mysqlBookingRepository", () => {
       BusinessRuleError,
     );
     await service.createBooking({ ...booking, startTime: "12:00", endTime: "13:00", hours: 1 });
+  });
+
+  test("purchasing totals add up per supplier, with no person in them", async () => {
+    await service.createBooking({ ...booking, hours: 7 });
+
+    const suppliers = await createPurchasingService(createMysqlBookingRepository(db)).getSupplierOverview();
+
+    expect(suppliers.map(({ supplierName, orderCount }) => [supplierName, orderCount])).toEqual([
+      ["Consultis GmbH", 1],
+      ["Nordlicht Agentur", 2],
+    ]);
+    expect(suppliers[0]).toMatchObject({ orderedPersonDays: 140, usedPersonDays: 0.875, freePersonDays: 139.125 });
+    expect(JSON.stringify(suppliers)).not.toContain("Hoffmann");
+    expect(JSON.stringify(suppliers)).not.toContain("consultant");
   });
 
   test("rejects a consultant not assigned to the order", async () => {

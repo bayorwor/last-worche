@@ -159,6 +159,7 @@ describe("every route except sign-in needs a session", () => {
     ["GET", `/orders/${ORDER_ID}/budget`],
     ["GET", `/orders/${ORDER_ID}/bookings`],
     ["GET", "/consultants/consultant-1/bookings"],
+    ["GET", "/purchasing/supplier-overview"],
     ["POST", "/bookings"],
     ["POST", "/ai/parse-booking"],
   ])("%s %s is rejected with 401, before any handler or validation", async (method, path) => {
@@ -195,6 +196,28 @@ describe("role checks", () => {
 
     expect(Object.keys(budget as object).sort()).toEqual(["freePersonDays", "orderId", "orderedPersonDays", "usedPersonDays"]);
     expect(((await (await send("GET", "/orders", { token })).json()) as unknown[]).length).toBe(2);
+  });
+
+  test("purchasing reads totals per supplier, with no person in them", async () => {
+    const consultantToken = await signIn("user-consultant");
+    await send("POST", "/bookings", { token: consultantToken, body: { ...newBooking, date: "2026-08-03" } });
+
+    const response = await send("GET", "/purchasing/supplier-overview", { token: await signIn("user-purchasing") });
+    const body = JSON.stringify(await response.json());
+
+    expect(response.status).toBe(200);
+    expect(body).toContain("usedPersonDays");
+    expect(body).not.toContain("Hoffmann");
+    expect(body).not.toContain("consultant");
+    expect(body).not.toContain("2026-08-03");
+  });
+
+  test("only purchasing may read the supplier overview", async () => {
+    for (const user of ["user-consultant", "user-project-lead"]) {
+      const response = await send("GET", "/purchasing/supplier-overview", { token: await signIn(user) });
+
+      expect(response.status).toBe(403);
+    }
   });
 
   test("a consultant cannot use the project lead's route", async () => {

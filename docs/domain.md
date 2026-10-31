@@ -24,6 +24,7 @@ Entities we **build now** are marked `(now)`, entities of the **next expansion s
 ```mermaid
 erDiagram
     SUPPLIER ||--o{ CONSULTANT : "employs (now)"
+    SUPPLIER ||--o{ ORDER : "receives (now)"
     ORDER }o--|| ACCOUNTING_OBJECT : "is booked on (now)"
     CONSULTANT }o--o{ ORDER : "is assigned to (now)"
     ORDER ||--o{ BOOKING : "has (now)"

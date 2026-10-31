@@ -1,6 +1,7 @@
 // MySQL implementation of BookingRepository. Database column names stay inside this file.
 import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import type { DayBooking } from "../domain/booking.ts";
+import type { OrderTotals } from "../domain/purchasing.ts";
 import {
   RECENT_BOOKINGS_LIMIT,
   type BookingRepository,
@@ -16,6 +17,7 @@ type OrderSummaryRow = RowDataPacket & OrderSummary;
 type DayBookingRow = RowDataPacket & DayBooking;
 type OrderBookingRow = RowDataPacket & OrderBooking;
 type StoredBookingRow = RowDataPacket & StoredBooking;
+type OrderTotalsRow = RowDataPacket & OrderTotals;
 
 const BOOKING_COLUMNS = `bookings.id, bookings.order_id AS orderId, bookings.consultant_id AS consultantId, bookings.date,
   TIME_FORMAT(bookings.start_time, '%H:%i') AS startTime, TIME_FORMAT(bookings.end_time, '%H:%i') AS endTime,
@@ -82,6 +84,18 @@ export function createMysqlBookingRepository(db: Pool): BookingRepository {
     listOrders: async () => {
       const [rows] = await db.query<OrderSummaryRow[]>("SELECT id, title FROM orders ORDER BY id");
       return rows.map(({ id, title }) => ({ id, title }));
+    },
+    listOrderTotals: async () => {
+      const [rows] = await db.query<OrderTotalsRow[]>(
+        `SELECT orders.id AS orderId, orders.title, orders.ordered_person_days AS orderedPersonDays,
+           suppliers.id AS supplierId, suppliers.name AS supplierName, COALESCE(SUM(bookings.hours), 0) AS bookedHours
+         FROM orders
+         JOIN suppliers ON suppliers.id = orders.supplier_id
+         LEFT JOIN bookings ON bookings.order_id = orders.id
+         GROUP BY orders.id, orders.title, orders.ordered_person_days, suppliers.id, suppliers.name
+         ORDER BY suppliers.name, orders.id`,
+      );
+      return rows.map((row) => ({ ...row }));
     },
     listAssignedOrders: async (consultantId) => {
       const [rows] = await db.query<OrderSummaryRow[]>(

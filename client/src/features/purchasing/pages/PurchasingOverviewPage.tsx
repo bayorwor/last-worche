@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/storeHooks.ts'
 import { Button } from '../../../shared/components/Button.tsx'
+import { InfoNote } from '../../../shared/components/InfoNote.tsx'
 import { MetricTile } from '../../../shared/components/MetricTile.tsx'
 import { PageLoader } from '../../../shared/components/PageLoader.tsx'
 import { PageTitle } from '../../../shared/components/PageTitle.tsx'
@@ -46,7 +47,7 @@ export default function PurchasingOverviewPage() {
             aside={<StatusChip tone="neutral">{t('purchasing.personalDataHidden')}</StatusChip>}
           >
             <SupplierSummaryTable suppliers={suppliers} />
-            <p className="mt-4 border-l-3 border-signal pl-3 text-sm text-muted">{t('purchasing.privacyNote')}</p>
+            <InfoNote>{t('purchasing.privacyNote')}</InfoNote>
           </Panel>
           <Panel title={t('purchasing.ordersPanelTitle')}>
             <OrderTotalsTable suppliers={suppliers} />

@@ -142,6 +142,15 @@ describe("consultant identity", () => {
     expect((await send("POST", "/bookings", { body: { ...newBooking, date: "2026-10-28" } })).status).toBe(401);
   });
 
+  test("the booking assistant uses the consultant's own date", async () => {
+    const response = await send("POST", "/ai/parse-booking", {
+      token: await signIn("user-consultant"),
+      body: { sentence: "9 to 5", today: "2026-11-03" },
+    });
+
+    expect(((await response.json()) as { date: string }).date).toBe("2026-11-03");
+  });
+
   test("only a consultant can book", async () => {
     const response = await send("POST", "/bookings", {
       token: await signIn("user-project-lead"),

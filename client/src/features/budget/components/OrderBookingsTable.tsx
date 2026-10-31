@@ -20,8 +20,8 @@ export function OrderBookingsTable({ orderId, bookings }: OrderBookingsTableProp
           headers={[
             t('budget.columnDate'),
             t('budget.columnConsultant'),
-            t('budget.columnActivity'),
             t('budget.columnDuration'),
+            t('budget.columnActivity'),
           ]}
         >
           {bookings.map((booking) => (
@@ -33,8 +33,8 @@ export function OrderBookingsTable({ orderId, bookings }: OrderBookingsTableProp
                 </span>
               </td>
               <td className="whitespace-nowrap">{booking.consultantName}</td>
-              <td>{booking.description}</td>
               <td className="font-bold whitespace-nowrap">{formatHours(booking.hours)}</td>
+              <td>{booking.description}</td>
             </tr>
           ))}
         </DataTable>

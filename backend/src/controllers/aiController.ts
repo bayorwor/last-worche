@@ -6,8 +6,8 @@ import { parseBookingSentence } from "../services/bookingAssistantService.ts";
 export function createAiController() {
   return {
     async parseBooking(req: Request, res: Response) {
-      const { sentence } = req.body as ParseBookingRequest;
-      res.json(await parseBookingSentence(sentence));
+      const { sentence, today } = req.body as ParseBookingRequest;
+      res.json(await parseBookingSentence(sentence, today));
     },
   };
 }

@@ -253,6 +253,19 @@ export function createMysqlBookingRepository(db: Pool): BookingRepository {
       );
       return rows.map((row) => ({ ...row }));
     },
+    listBookingsOfMonth: async (orderId, month) => {
+      const [rows] = await db.query<OrderBookingRow[]>(
+        `SELECT ${BOOKING_COLUMNS}, consultants.name AS consultantName FROM bookings
+         JOIN consultants ON consultants.id = bookings.consultant_id
+         WHERE bookings.order_id = ? AND DATE_FORMAT(bookings.date, '%Y-%m') = ?
+         ORDER BY bookings.date, bookings.start_time`,
+        [orderId, month],
+      );
+      return rows.map((row) => ({ ...row }));
+    },
+    ping: async () => {
+      await db.query("SELECT 1");
+    },
     findOrder: (orderId) => findOrder(db, orderId),
     findProjectEndDate: async (orderId) => {
       const [rows] = await db.query<ProjectEndRow[]>("SELECT project_end_date AS projectEndDate FROM orders WHERE id = ?", [orderId]);

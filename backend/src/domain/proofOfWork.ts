@@ -39,3 +39,34 @@ export function toProofOfWork({ bookedHours, ...totals }: ProofOfWorkTotals) {
     status: totals.approvedAtMs === null ? ("open" as const) : ("approved" as const),
   };
 }
+
+export function assertProofApprovedForExport(isApproved: boolean, month: string) {
+  if (!isApproved) {
+    throw new BusinessRuleError("proof-not-approved", `The proof of work for ${month} is not approved yet.`, { month });
+  }
+}
+
+export type ProofCsvRow = {
+  date: string;
+  consultantName: string;
+  startTime: string;
+  endTime: string;
+  hours: number;
+  description: string;
+};
+
+// A spreadsheet runs a cell that starts with one of these as a formula, so such text is marked as plain text.
+function csvCell(value: string | number) {
+  const text = String(value);
+  const safeText = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return `"${safeText.replaceAll('"', '""')}"`;
+}
+
+// The approved month as a file for finance, which is where only approved hours go. Semicolons, as German Excel expects.
+export function toProofCsv(orderId: string, month: string, rows: ProofCsvRow[]) {
+  const header = ["Order", "Month", "Date", "Consultant", "Start", "End", "Hours", "PD", "Description"];
+  const lines = rows.map((row) =>
+    [orderId, month, row.date, row.consultantName, row.startTime, row.endTime, row.hours, row.hours / HOURS_PER_PERSON_DAY, row.description].map(csvCell).join(";"),
+  );
+  return [header.map(csvCell).join(";"), ...lines].join("\r\n");
+}

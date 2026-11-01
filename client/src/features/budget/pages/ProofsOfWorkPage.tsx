@@ -1,4 +1,6 @@
 import { useAppDispatch, useAppSelector } from '../../../app/storeHooks.ts'
+import { downloadFile } from '../../../shared/utils/downloadFile.ts'
+import { requestProofCsv } from '../budgetApi.ts'
 import { approveProofOfWork } from '../budgetSlice.ts'
 import { ProofOfWorkPanel } from '../components/ProofOfWorkPanel.tsx'
 import { useSelectedOrderId } from '../useSelectedOrderId.ts'
@@ -12,11 +14,17 @@ export default function ProofsOfWorkPage() {
   if (!orderId || !proofs) {
     return null
   }
+
+  async function download(month: string) {
+    downloadFile(await requestProofCsv(orderId as string, month), `proof-of-work-${orderId}-${month}.csv`)
+  }
+
   return (
     <ProofOfWorkPanel
       proofs={proofs}
       isApproving={approvalStatus === 'loading'}
       onApprove={(month) => dispatch(approveProofOfWork({ orderId, month }))}
+      onDownload={download}
     />
   )
 }

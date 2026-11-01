@@ -99,3 +99,23 @@ describe("proofOfWorkService", () => {
     await expect(proofs.listFor(lead, "missing")).rejects.toThrow(NotFoundError);
   });
 });
+
+describe("exportCsvFor", () => {
+  test("gives the bookings of an approved month", async () => {
+    await bookings.createBooking(booking);
+    await proofs.approveFor(lead, ORDER_ID, "2026-10");
+
+    expect(await proofs.exportCsvFor(lead, ORDER_ID, "2026-10")).toContain('"2026-10-27"');
+  });
+
+  test("rejects a month that is not approved", async () => {
+    await bookings.createBooking(booking);
+
+    await expect(proofs.exportCsvFor(lead, ORDER_ID, "2026-10")).rejects.toThrow(BusinessRuleError);
+  });
+
+  test("only the order's own lead may export it", async () => {
+    await expect(proofs.exportCsvFor(otherLead, ORDER_ID, "2026-10")).rejects.toThrow(ForbiddenError);
+    await expect(proofs.exportCsvFor(purchasing, ORDER_ID, "2026-10")).rejects.toThrow(ForbiddenError);
+  });
+});

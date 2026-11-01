@@ -9,9 +9,10 @@ type ProofOfWorkPanelProps = {
   proofs: ProofOfWork[]
   isApproving: boolean
   onApprove: (month: string) => void
+  onDownload: (month: string) => void
 }
 
-export function ProofOfWorkPanel({ proofs, isApproving, onApprove }: ProofOfWorkPanelProps) {
+export function ProofOfWorkPanel({ proofs, isApproving, onApprove, onDownload }: ProofOfWorkPanelProps) {
   const { t, formatMonth, formatPersonDays } = useTranslation()
   // Approval is final, so it takes a second click to confirm.
   const [confirmingMonth, setConfirmingMonth] = useState<string | null>(null)
@@ -41,7 +42,12 @@ export function ProofOfWorkPanel({ proofs, isApproving, onApprove }: ProofOfWork
               {t('budget.proofTotals', { consultants: proof.consultantCount, bookings: proof.bookingCount })}
             </p>
             {proof.status === 'approved' && (
-              <p className="mt-1 text-sm text-muted">{t('budget.proofApprovedBy', { name: proof.approvedByName ?? '' })}</p>
+              <>
+                <p className="mt-1 text-sm text-muted">{t('budget.proofApprovedBy', { name: proof.approvedByName ?? '' })}</p>
+                <Button variant="ghost" className="mt-3" onClick={() => onDownload(proof.month)}>
+                  {t('budget.proofDownload')}
+                </Button>
+              </>
             )}
             {proof.status === 'open' && confirmingMonth !== proof.month && (
               <Button variant="signal" className="mt-3" disabled={isApproving} onClick={() => setConfirmingMonth(proof.month)}>

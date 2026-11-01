@@ -39,6 +39,7 @@ export const de = {
   'navigation.suppliers': 'Lieferanten',
   'navigation.orders': 'Aufträge',
   'navigation.followUps': 'Nachbestellungen',
+  'navigation.invoiceCheck': 'Rechnungsprüfung',
 
   'layout.sideColumnLabel': 'Profil und letzte Aktivitäten',
 
@@ -160,6 +161,7 @@ export const de = {
   'budget.proofConfirmQuestion': 'Diesen Monat endgültig genehmigen?',
   'budget.proofConfirm': 'Ja, genehmigen',
   'budget.proofCancel': 'Abbrechen',
+  'budget.proofDownload': 'Für die Buchhaltung herunterladen (CSV)',
 
   'forecast.panelTitle': 'Prognose',
   'forecast.chipWarning': 'Nachbestellen',
@@ -193,6 +195,17 @@ export const de = {
   'forecast.scenarioApply': 'Durchrechnen',
   'forecast.scenarioReset': 'Zurücksetzen',
   'forecast.scenarioNote': 'Nur eine Was-wäre-wenn-Rechnung: Es wird nichts gespeichert. Ein neuer Berater zählt mit 8 h am Tag.',
+
+  'invoice.panelTitle': 'Rechnung gegen den Leistungsnachweis prüfen',
+  'invoice.month': 'Monat',
+  'invoice.invoiced': 'Laut Rechnung (PT)',
+  'invoice.approved': 'Freigegeben',
+  'invoice.difference': 'Differenz',
+  'invoice.check': 'Rechnung prüfen',
+  'invoice.statusConsistent': 'Stimmig — bereit zur Zahlung',
+  'invoice.statusOver': 'Über den freigegebenen Stunden',
+  'invoice.statusUnder': 'Unter den freigegebenen Stunden',
+  'invoice.note': 'Verglichen wird nur die Summe des freigegebenen Monats. Gespeichert wird nichts.',
 
   'followUp.panelTitle': 'Nachbestellungen der Projektleitungen',
   'followUp.none': 'Keine Anfragen.',
@@ -254,6 +267,10 @@ export const de = {
   'errors.invalidScenarioWeeks': 'Szenario abgelehnt: Geben Sie 1 bis 52 Wochen an. Die Prognose bleibt unverändert.',
   'errors.ruleFollowUpOpen': 'Für Auftrag {orderId} gibt es schon eine offene Anfrage.',
   'errors.ruleFollowUpConfirmed': 'Diese Anfrage ist schon bestätigt.',
+  'errors.ruleInvoiceNoProof': 'Kein freigegebener Leistungsnachweis für Auftrag {orderId}, {month}. Bitten Sie die Projektleitung um die Freigabe.',
+  'errors.invalidMonth': 'Bitte wählen Sie einen gültigen Monat.',
+  'errors.invalidInvoice': 'Bitte geben Sie den Rechnungsbetrag in Personentagen an.',
+  'errors.tooManyRequests': 'Zu viele Versuche. Bitte warten Sie eine Minute.',
   'errors.fromServer': '{message}',
 } as const
 

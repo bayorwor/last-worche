@@ -53,6 +53,11 @@ export function createInMemoryBookingRepository(
 
   return {
     listOrders: async () => orders.map(toSummary),
+    listBookingsOfMonth: async (orderId, month) =>
+      bookings
+        .filter((booking) => booking.orderId === orderId && monthOf(booking.date) === month)
+        .map((booking) => ({ ...booking, consultantName: booking.consultantId })),
+    ping: async () => {},
     findProjectEndDate: async (orderId) => orders.find(({ id }) => id === orderId)?.projectEndDate ?? "2099-12-31",
     listBookedDays: async (orderId) =>
       bookings

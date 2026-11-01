@@ -507,3 +507,37 @@ describe("time tracking interface", () => {
     expect((await send2("demo-consultis-key", [{ ...row, startTime: "late" }])).status).toBe(400);
   });
 });
+
+describe("invoice check", () => {
+  test("only purchasing may use it, and a month with no approved proof is rejected", async () => {
+    const body = { orderId: ORDER_ID, month: "2030-01", invoicedPersonDays: 10 };
+
+    expect((await send("POST", "/purchasing/invoice-check", { token: await signIn("user-project-lead"), body })).status).toBe(403);
+    const response = await send("POST", "/purchasing/invoice-check", { token: await signIn("user-purchasing"), body });
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({ rule: "invoice-no-approved-proof" });
+  });
+
+  test("compares the invoice with an approved month", async () => {
+    const consultant = await signIn("user-consultant");
+    await send("POST", "/bookings", { token: consultant, body: { ...newBooking, date: "2027-02-01", hours: 8 } });
+    await send("POST", `/orders/${ORDER_ID}/proofs-of-work/2027-02/approve`, { token: await signIn("user-project-lead") });
+
+    const response = await send("POST", "/purchasing/invoice-check", {
+      token: await signIn("user-purchasing"),
+      body: { orderId: ORDER_ID, month: "2027-02", invoicedPersonDays: 3.5 },
+    });
+
+    expect(await response.json()).toEqual({ status: "over-approved", approvedPersonDays: 1, invoicedPersonDays: 3.5, differencePersonDays: 2.5 });
+  });
+
+  test("a project lead can download that approved month, and purchasing cannot", async () => {
+    const path = `/orders/${ORDER_ID}/proofs-of-work/2027-02/export.csv`;
+    const response = await send("GET", path, { token: await signIn("user-project-lead") });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/csv");
+    expect(await response.text()).toContain("2027-02-01");
+    expect((await send("GET", path, { token: await signIn("user-purchasing") })).status).toBe(403);
+  });
+});

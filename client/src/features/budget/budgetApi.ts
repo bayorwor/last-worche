@@ -35,3 +35,8 @@ export async function requestOrderForecast(orderId: string, scenario: ForecastSc
 export async function requestFollowUpOrder(orderId: string, personDays: number, neededByDate: string): Promise<void> {
   await apiClient.post(`/orders/${encodeURIComponent(orderId)}/follow-up-requests`, { personDays, neededByDate })
 }
+
+export async function requestProofCsv(orderId: string, month: string): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>(`/orders/${encodeURIComponent(orderId)}/proofs-of-work/${month}/export.csv`, { responseType: 'blob' })
+  return data
+}

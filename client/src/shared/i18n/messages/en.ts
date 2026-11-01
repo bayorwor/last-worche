@@ -40,6 +40,7 @@ export const en: Record<MessageKey, string> = {
   'navigation.suppliers': 'Suppliers',
   'navigation.orders': 'Orders',
   'navigation.followUps': 'Follow-up requests',
+  'navigation.invoiceCheck': 'Invoice check',
 
   'layout.sideColumnLabel': 'Profile and recent activity',
 
@@ -161,6 +162,7 @@ export const en: Record<MessageKey, string> = {
   'budget.proofConfirmQuestion': 'Approve this month for good?',
   'budget.proofConfirm': 'Yes, approve',
   'budget.proofCancel': 'Cancel',
+  'budget.proofDownload': 'Download for finance (CSV)',
 
   'forecast.panelTitle': 'Forecast',
   'forecast.chipWarning': 'Order more',
@@ -194,6 +196,17 @@ export const en: Record<MessageKey, string> = {
   'forecast.scenarioApply': 'Calculate',
   'forecast.scenarioReset': 'Reset',
   'forecast.scenarioNote': 'Only a what-if calculation: nothing is saved. A new consultant counts as 8 h per day.',
+
+  'invoice.panelTitle': 'Check an invoice against the proof of work',
+  'invoice.month': 'Month',
+  'invoice.invoiced': 'On the invoice (PD)',
+  'invoice.approved': 'Approved',
+  'invoice.difference': 'Difference',
+  'invoice.check': 'Check invoice',
+  'invoice.statusConsistent': 'Consistent — ready for payment',
+  'invoice.statusOver': 'Over approved hours',
+  'invoice.statusUnder': 'Under approved hours',
+  'invoice.note': 'Only the total of the approved month is compared. Nothing is stored.',
 
   'followUp.panelTitle': "Project leads' follow-up requests",
   'followUp.none': 'No requests.',
@@ -255,5 +268,9 @@ export const en: Record<MessageKey, string> = {
   'errors.invalidScenarioWeeks': 'Scenario rejected: enter 1 to 52 weeks. The forecast stays unchanged.',
   'errors.ruleFollowUpOpen': 'Order {orderId} already has an open follow-up request.',
   'errors.ruleFollowUpConfirmed': 'This follow-up request is already confirmed.',
+  'errors.ruleInvoiceNoProof': 'No approved proof of work for order {orderId}, {month} — ask the project lead to approve it first.',
+  'errors.invalidMonth': 'Please choose a valid month.',
+  'errors.invalidInvoice': 'Please enter the invoiced amount in person-days.',
+  'errors.tooManyRequests': 'Too many attempts. Please wait a minute.',
   'errors.fromServer': '{message}',
 }

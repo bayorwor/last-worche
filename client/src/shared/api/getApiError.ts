@@ -24,6 +24,7 @@ const RULE_MESSAGE_KEYS: Record<string, MessageKey> = {
   'assigned-order': 'errors.ruleAssignedOrder',
   'no-overlap': 'errors.ruleOverlap',
   'order-period': 'errors.ruleOrderPeriod',
+  'invoice-no-approved-proof': 'errors.ruleInvoiceNoProof',
   'follow-up-open': 'errors.ruleFollowUpOpen',
   'follow-up-confirmed': 'errors.ruleFollowUpConfirmed',
   vacation: 'errors.ruleVacation',
@@ -40,6 +41,8 @@ const RULE_MESSAGE_KEYS: Record<string, MessageKey> = {
 const FIELD_MESSAGE_KEYS: Record<string, MessageKey> = {
   email: 'errors.invalidEmail',
   name: 'errors.invalidName',
+  month: 'errors.invalidMonth',
+  invoicedPersonDays: 'errors.invalidInvoice',
   extraConsultants: 'errors.invalidScenarioConsultants',
   extraFromDate: 'errors.invalidScenarioDate',
   projectEndShiftWeeks: 'errors.invalidScenarioWeeks',
@@ -79,6 +82,9 @@ export function getApiError(error: unknown): ApiError {
   if (status === 400) {
     const invalidField = String(data?.details?.[0]?.path?.[0])
     return { key: FIELD_MESSAGE_KEYS[invalidField] ?? 'errors.invalidInput' }
+  }
+  if (status === 429) {
+    return { key: 'errors.tooManyRequests' }
   }
   if (status === 401 && data?.code === 'invalid-code') {
     return { key: 'errors.invalidCode' }

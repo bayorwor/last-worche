@@ -25,3 +25,10 @@ export type FollowUpRequest = {
   neededByDate: string
   status: 'open' | 'confirmed'
 }
+
+export type InvoiceCheckResult = {
+  status: 'consistent' | 'over-approved' | 'under-approved'
+  approvedPersonDays: number
+  invoicedPersonDays: number
+  differencePersonDays: number
+}

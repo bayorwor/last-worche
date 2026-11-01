@@ -1,6 +1,6 @@
 // Use cases for proofs of work. Only the project lead of an order may read or approve them.
 import { ForbiddenError, NotFoundError } from "../domain/errors.ts";
-import { assertProofCanBeApproved, toProofOfWork } from "../domain/proofOfWork.ts";
+import { assertProofApprovedForExport, assertProofCanBeApproved, toProofCsv, toProofOfWork } from "../domain/proofOfWork.ts";
 import type { User } from "../domain/user.ts";
 import type { BookingRepository } from "../repositories/bookingRepository.ts";
 
@@ -22,6 +22,14 @@ export function createProofOfWorkService(repository: BookingRepository, now: () 
     async listFor(user: User, orderId: string) {
       await assertLeadsOrder(user, orderId);
       return listProofs(orderId);
+    },
+
+    async exportCsvFor(user: User, orderId: string, month: string) {
+      await assertLeadsOrder(user, orderId);
+
+      const proofs = await listProofs(orderId);
+      assertProofApprovedForExport(proofs.some((proof) => proof.month === month && proof.status === "approved"), month);
+      return toProofCsv(orderId, month, await repository.listBookingsOfMonth(orderId, month));
     },
 
     // Locks the order first, like a new booking does. A booking and an approval of the same order therefore

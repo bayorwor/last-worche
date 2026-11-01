@@ -78,6 +78,9 @@ export type BookingRepository = {
   isOrderLedBy(userId: string, orderId: string): Promise<boolean>;
   listRecentBookingsOfConsultant(consultantId: string): Promise<StoredBooking[]>;
   listRecentBookingsOfOrder(orderId: string): Promise<OrderBooking[]>;
+  listBookingsOfMonth(orderId: string, month: string): Promise<OrderBooking[]>;
+  // Answers whether the database can be reached, for the health check.
+  ping(): Promise<void>;
   findOrder(orderId: string): Promise<Order | null>;
   findProjectEndDate(orderId: string): Promise<string | null>;
   listBookedDays(orderId: string): Promise<BookedDay[]>;

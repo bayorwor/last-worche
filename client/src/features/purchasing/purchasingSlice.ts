@@ -1,8 +1,8 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { FALLBACK_API_ERROR, getApiError, type ApiError } from '../../shared/api/getApiError.ts'
 import type { RequestStatus } from '../../shared/api/requestStatus.ts'
-import { requestFollowUpConfirmation, requestFollowUpRequests, requestSupplierOverview } from './purchasingApi.ts'
-import type { FollowUpRequest, SupplierOverview } from './purchasingTypes.ts'
+import { requestFollowUpConfirmation, requestFollowUpRequests, requestInvoiceCheck, requestSupplierOverview } from './purchasingApi.ts'
+import type { FollowUpRequest, InvoiceCheckResult, SupplierOverview } from './purchasingTypes.ts'
 
 type PurchasingState = {
   suppliers: SupplierOverview[]
@@ -10,6 +10,9 @@ type PurchasingState = {
   error: ApiError | null
   followUps: FollowUpRequest[]
   followUpStatus: RequestStatus
+  invoiceResult: InvoiceCheckResult | null
+  invoiceStatus: RequestStatus
+  invoiceError: ApiError | null
 }
 
 const initialState: PurchasingState = {
@@ -18,6 +21,9 @@ const initialState: PurchasingState = {
   error: null,
   followUps: [],
   followUpStatus: 'idle',
+  invoiceResult: null,
+  invoiceStatus: 'idle',
+  invoiceError: null,
 }
 
 export const fetchSupplierOverview = createAsyncThunk<SupplierOverview[], void, { rejectValue: ApiError }>(
@@ -55,6 +61,17 @@ export const confirmFollowUp = createAsyncThunk<FollowUpRequest[], number, { rej
   },
 )
 
+export const checkInvoice = createAsyncThunk<InvoiceCheckResult, { orderId: string; month: string; invoicedPersonDays: number }, { rejectValue: ApiError }>(
+  'purchasing/checkInvoice',
+  async ({ orderId, month, invoicedPersonDays }, { rejectWithValue }) => {
+    try {
+      return await requestInvoiceCheck(orderId, month, invoicedPersonDays)
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
 const purchasingSlice = createSlice({
   name: 'purchasing',
   initialState,
@@ -78,6 +95,19 @@ const purchasingSlice = createSlice({
       })
       .addCase(fetchFollowUps.rejected, (state, action) => {
         state.error = action.payload ?? FALLBACK_API_ERROR
+      })
+      .addCase(checkInvoice.pending, (state) => {
+        state.invoiceStatus = 'loading'
+        state.invoiceResult = null
+        state.invoiceError = null
+      })
+      .addCase(checkInvoice.fulfilled, (state, action) => {
+        state.invoiceStatus = 'succeeded'
+        state.invoiceResult = action.payload
+      })
+      .addCase(checkInvoice.rejected, (state, action) => {
+        state.invoiceStatus = 'failed'
+        state.invoiceError = action.payload ?? FALLBACK_API_ERROR
       })
       .addCase(confirmFollowUp.pending, (state) => {
         state.followUpStatus = 'loading'

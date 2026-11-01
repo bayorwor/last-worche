@@ -16,7 +16,7 @@ import type { BookingRepository, NewBooking } from "../repositories/bookingRepos
 
 export type BookingService = ReturnType<typeof createBookingService>;
 
-export function createBookingService(repository: BookingRepository) {
+export function createBookingService(repository: BookingRepository, now: () => number = Date.now) {
   // A project lead reaches the orders they lead, a consultant their assigned orders,
   // and purchasing all orders, because this only covers aggregated values.
   async function canReadOrderAggregates(user: User, orderId: string) {
@@ -57,7 +57,9 @@ export function createBookingService(repository: BookingRepository) {
           request,
         );
 
-        return transaction.saveBooking(request);
+        const booking = await transaction.saveBooking(request);
+        await transaction.recordBookingCreated(request, now());
+        return booking;
       });
     },
 

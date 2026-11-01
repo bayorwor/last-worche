@@ -46,7 +46,7 @@ These work the same for every platform, because they test the backend and the cl
 (cd backend && bun test) && (cd client && bun test)
 ```
 
-Every line must end in `0 fail`. The backend tests against real MySQL are reported as skipped, so run them as well before a promotion. They **delete all bookings** in the database they use, so create a separate one, once:
+Every line must end in `0 fail`. The backend tests against real MySQL are reported as skipped, so run them as well before a promotion. They **delete all bookings and activity** in the database they use, so create a separate one, once:
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS lastworche_tests; GRANT ALL PRIVILEGES ON lastworche_tests.* TO 'lastworche'@'localhost';"
@@ -185,7 +185,7 @@ The apps hold a copy of the client and do not update by themselves. Run `bun run
 
 ## 4. The checklist for every platform
 
-Start with fresh data, because step 10 locks a month and the bookings stay. To reset:
+Start with fresh data, because step 10 locks a month, step 15 changes a name, and the bookings stay. To reset:
 
 ```bash
 mysql -u root -p -e "DROP DATABASE lastworche"
@@ -199,17 +199,25 @@ Then restart the backend. To sign in: enter the email, choose *Send code*, then 
 | 1 | Nobody | Open the app | The sign-in screen with the logo, in German if your device's time zone is in Germany, Austria, Switzerland or Liechtenstein, otherwise in English unless your browser is set to German |
 | 2 | Nobody | Enter `not-an-email`, then *Send code* | An error, and you stay on the same screen |
 | 3 | `a.weber@client.example` | Enter a wrong 6-digit code | An error, and the boxes empty themselves |
-| 4 | `l.hoffmann@consultis.example` | Sign in | The consultant screen with 2 orders to choose from, and your recent bookings |
-| 5 | Same | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, then *Check proposal* and *Confirm booking* | *Booking saved*, the booking at the top of the list, and today's hours at 7.0 h |
-| 6 | Same | Do step 5 again | **Rejected:** overlaps with an existing booking |
+| 4 | `l.hoffmann@consultis.example` | Sign in | The consultant screen with 2 orders to choose from, the tabs *Book time* and *My bookings*, and *You signed in* under *Recent activity* |
+| 5 | Same | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, then *Check proposal* and *Confirm booking* | *Booking saved*, the booking at the top of *Recent activity* and of the *My bookings* tab, and today's hours at 7.0 h |
+| 6 | Same | Do step 5 again | **Rejected:** overlaps with an existing booking, and no new entry under *Recent activity* |
 | 7 | Same | Choose order 4500012346, and do step 5 again | **Rejected:** only 0.5 PD left |
 | 8 | Same | Reload the page, then choose *Sign out* | Still signed in after the reload, then back on the sign-in screen |
-| 9 | `a.weber@client.example` | Look at order 4500012345 | Used is 84.875 PD and free is 55.125 PD, with the new booking in the list |
-| 10 | Same | Under *Proofs of work*, choose *Approve proof of work* for the current month, then *Yes, approve* | The month shows *Approved* and *Approved by A. Weber* |
+| 9 | `a.weber@client.example` | Look at order 4500012345 | *Budget* tab: used is 84.875 PD and free is 55.125 PD. *Bookings* tab: the new booking. *Recent activity*: L. Hoffmann booked 7.0 h |
+| 10 | Same | On the *Proofs of work* tab, choose *Approve proof of work* for the current month, then *Yes, approve* | The month shows *Approved* and *Approved by A. Weber*, and *You approved* appears under *Recent activity* |
 | 11 | `m.krueger@consultis.example` | Do step 5 | One order to choose from, then **rejected:** proof of work already approved |
 | 12 | `j.schneider@client.example` | Sign in | Only order 4500012347 |
-| 13 | `k.vogel@client.example` | Look at the screen | Totals per supplier and order, 4500012346 marked *Follow-up order needed*, and **no person's name anywhere** |
+| 13 | `k.vogel@client.example` | Look at the screen | Totals on the *Suppliers* and *Orders* tabs, 4500012346 marked *Follow-up order needed*. *Recent activity* shows the approved month without a name and no bookings. **No other person's name anywhere** |
 | 14 | Any | Choose *DE*, then *EN*, including while an error is showing | All text changes, including the error, and your choice is still there after a reload |
+| 15 | `m.krueger@consultis.example` | Under *My profile*, choose *Edit*, clear the name and save, then enter `Mira Krüger` and save | An error for the empty name, then *Profile saved*, the new name at the top of the page, and still there after a reload. Email and role cannot be edited |
+| 16 | `a.weber@client.example` | Open the *Bookings* tab | The new name on that consultant's bookings |
+
+### Screen sizes
+
+- **1280 px wide or more:** tabs on the left, the page in the middle, and profile and activity on the right. When the page scrolls, the side columns stay in view, and the right column scrolls by itself.
+- **1024 to 1279 px:** tabs on the left, with profile and activity below the page.
+- **Below 1024 px:** tabs in a row above the page, with profile and activity below it.
 
 ### Extra checks on phones and apps
 

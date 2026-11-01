@@ -13,7 +13,7 @@ bun test            # unit tests, no database needed
 bun run typecheck
 ```
 
-To also run the tests against real MySQL, set `TEST_DATABASE_URL`. **These tests delete all bookings in that database.**
+To also run the tests against real MySQL, set `TEST_DATABASE_URL`. **These tests delete all bookings and activity in that database.**
 
 ```bash
 TEST_DATABASE_URL=mysql://lastworche:lastworche@localhost:3306/lastworche bun test

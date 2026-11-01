@@ -34,6 +34,7 @@ const RULE_MESSAGE_KEYS: Record<string, MessageKey> = {
 // Which input field the server's validation complained about first.
 const FIELD_MESSAGE_KEYS: Record<string, MessageKey> = {
   email: 'errors.invalidEmail',
+  name: 'errors.invalidName',
   code: 'errors.invalidCode',
   description: 'errors.descriptionRequired',
   hours: 'errors.invalidDuration',

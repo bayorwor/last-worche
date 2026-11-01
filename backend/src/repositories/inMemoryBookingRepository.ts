@@ -1,6 +1,7 @@
 // A BookingRepository that keeps data in memory, so unit tests run without a database.
 import type { Order } from "../domain/booking.ts";
 import { monthOf } from "../domain/proofOfWork.ts";
+import { createInMemoryActivityRepository, type InMemoryActivityRepository } from "./inMemoryActivityRepository.ts";
 import {
   RECENT_BOOKINGS_LIMIT,
   type BookingRepository,
@@ -16,7 +17,11 @@ function newestFirst(first: StoredBooking, second: StoredBooking) {
   return `${second.date} ${second.startTime}`.localeCompare(`${first.date} ${first.startTime}`);
 }
 
-export function createInMemoryBookingRepository(orders: InMemoryOrder[], assignments: InMemoryAssignment[]): BookingRepository {
+export function createInMemoryBookingRepository(
+  orders: InMemoryOrder[],
+  assignments: InMemoryAssignment[],
+  activities: InMemoryActivityRepository = createInMemoryActivityRepository(),
+): BookingRepository {
   const bookings: StoredBooking[] = [];
   const approvals: MonthApproval[] = [];
 
@@ -101,6 +106,13 @@ export function createInMemoryBookingRepository(orders: InMemoryOrder[], assignm
           const stored = { id: bookings.length + 1, ...booking };
           bookings.push(stored);
           return stored;
+        },
+        recordActivity: activities.record,
+        recordBookingCreated: async ({ consultantId, orderId, date, hours }, occurredAtMs) => {
+          const actorUserId = activities.findUserIdOfConsultant(consultantId);
+          if (actorUserId) {
+            await activities.record({ type: "booking_created", actorUserId, occurredAtMs, orderId, period: date, hours });
+          }
         },
       }),
   };

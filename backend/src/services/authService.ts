@@ -4,6 +4,7 @@ import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import jwt from "jsonwebtoken";
 import { NotFoundError, UnauthorizedError } from "../domain/errors.ts";
 import { USER_ROLES, type User, type UserRole } from "../domain/user.ts";
+import type { ActivityRepository } from "../repositories/activityRepository.ts";
 import type { UserRepository } from "../repositories/userRepository.ts";
 import { buildSignInCodeEmail, type EmailLanguage } from "../templates/signInCodeEmail.ts";
 import type { Email } from "./emailService.ts";
@@ -22,13 +23,14 @@ type AuthOptions = {
   showCodes: boolean;
   testAccountsEnabled: boolean;
   sendEmail: (email: Email) => Promise<void>;
+  activities: Pick<ActivityRepository, "record">;
   now?: () => number;
 };
 
 export type AuthService = ReturnType<typeof createAuthService>;
 
 export function createAuthService(users: UserRepository, options: AuthOptions) {
-  const { sessionSecret, showCodes, testAccountsEnabled, sendEmail, now = Date.now } = options;
+  const { sessionSecret, showCodes, testAccountsEnabled, sendEmail, activities, now = Date.now } = options;
 
   // Keyed with the server's secret, because six digits alone are quick to guess from a stolen hash.
   function hashCode(userId: string, code: string) {
@@ -37,6 +39,17 @@ export function createAuthService(users: UserRepository, options: AuthOptions) {
 
   function isSameHash(first: string, second: string) {
     return timingSafeEqual(Buffer.from(first), Buffer.from(second));
+  }
+
+  function recordAccountActivity(type: "signed_in" | "profile_updated", userId: string) {
+    return activities.record({ type, actorUserId: userId, occurredAtMs: now(), orderId: null, period: null, hours: null });
+  }
+
+  // The token holds the name from when it was issued, so the database decides what the profile shows.
+  async function getProfile(userId: string) {
+    const user = await users.findUserById(userId);
+    if (!user) throw new UnauthorizedError("Please sign in again.");
+    return user;
   }
 
   function createSession(user: User) {
@@ -102,7 +115,20 @@ export function createAuthService(users: UserRepository, options: AuthOptions) {
       // Only the request that really removes the code may sign in, so a code works exactly once.
       if (!(await users.deleteSignInCode(stored.id))) throw invalidCode;
 
+      await recordAccountActivity("signed_in", user.id);
       return createSession(user);
+    },
+
+    getProfile,
+
+    // The user comes from the session, so nobody can change another person's profile.
+    async updateProfile(userId: string, name: string) {
+      const user = await getProfile(userId);
+      if (user.name === name) return user;
+
+      await users.updateUserName(userId, name);
+      await recordAccountActivity("profile_updated", userId);
+      return getProfile(userId);
     },
 
     // Throws for a token that was changed, has expired or was signed with another secret.

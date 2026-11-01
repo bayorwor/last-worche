@@ -158,3 +158,45 @@ describe("createBooking with an order period and a consultant's calendar", () =>
     await expect(service.createBooking({ ...booking, consultantId: "consultant-2", date: "2026-11-01" })).resolves.toMatchObject({ date: "2026-11-01" });
   });
 });
+
+describe("checkBooking", () => {
+  const failedNames = (result: { checks: { name: string; passed: boolean }[] }) =>
+    result.checks.filter((check) => !check.passed).map((check) => check.name);
+
+  test("passes every rule for a valid booking, and shows the budget afterwards", async () => {
+    const result = await createService().checkBooking({ ...booking, hours: 8 });
+
+    expect(failedNames(result)).toEqual([]);
+    expect(result.checks.length).toBe(9);
+    expect(result.freePersonDaysAfter).toBe(139);
+    expect(result.suggestedSlot).toBeNull();
+  });
+
+  test("stores nothing", async () => {
+    const service = createService();
+
+    await service.checkBooking(booking);
+
+    expect(await service.getOrderBudget(ORDER_ID)).toMatchObject({ usedPersonDays: 0 });
+  });
+
+  test("reports every rule that fails, not only the first", async () => {
+    const result = await createService().checkBooking({ ...booking, orderId: OTHER_ORDER_ID, hours: 100 });
+
+    expect(failedNames(result)).toEqual(["assigned-order", "free-budget", "daily-limit"]);
+  });
+
+  test("names the failed rule and suggests a free time after an overlap", async () => {
+    const service = createService();
+    await service.createBooking({ ...booking, startTime: "09:00", endTime: "12:00", hours: 3 });
+
+    const result = await service.checkBooking({ ...booking, startTime: "10:00", endTime: "12:00", hours: 2 });
+
+    expect(result.checks.find((check) => !check.passed)).toMatchObject({ rule: "no-overlap", values: { startTime: "09:00", endTime: "12:00" } });
+    expect(result.suggestedSlot).toEqual({ startTime: "12:00", endTime: "14:00" });
+  });
+
+  test("an unknown order is not found", async () => {
+    await expect(createService().checkBooking({ ...booking, orderId: "missing" })).rejects.toThrow(NotFoundError);
+  });
+});

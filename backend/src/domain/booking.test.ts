@@ -5,6 +5,7 @@ import {
   assertFitsFreeBudget,
   assertNoOverlap,
   assertRestPeriod,
+  suggestFreeSlot,
   assertWithinDailyLimit,
   calculateBudget,
   assertInsideOrderPeriod,
@@ -14,6 +15,22 @@ import {
 import { BusinessRuleError } from "./errors.ts";
 
 const order = { id: "4500012345", orderedPersonDays: 1 };
+
+describe("suggestFreeSlot", () => {
+  const nineToFive = { startTime: "09:00", endTime: "17:00" };
+
+  test("proposes the first free time after an existing booking", () => {
+    expect(suggestFreeSlot([nineToFive], { startTime: "09:00", endTime: "12:00" })).toEqual({ startTime: "17:00", endTime: "20:00" });
+  });
+
+  test("uses a free morning when the booking fits there", () => {
+    expect(suggestFreeSlot([{ startTime: "13:00", endTime: "17:00" }], { startTime: "13:00", endTime: "15:00" })).toEqual({ startTime: "08:00", endTime: "10:00" });
+  });
+
+  test("proposes nothing when the day has no room", () => {
+    expect(suggestFreeSlot([nineToFive], nineToFive)).toBeNull();
+  });
+});
 
 describe("assertInsideOrderPeriod", () => {
   const period = { startDate: "2026-07-01", endDate: "2026-12-31" };

@@ -5,9 +5,10 @@ import { useTranslation } from '../../../shared/i18n/languageContext.ts'
 type BookingSentenceFormProps = {
   isSubmitting: boolean
   onSubmit: (sentence: string) => void
+  onEnterByHand: () => void
 }
 
-export function BookingSentenceForm({ isSubmitting, onSubmit }: BookingSentenceFormProps) {
+export function BookingSentenceForm({ isSubmitting, onSubmit, onEnterByHand }: BookingSentenceFormProps) {
   const { t } = useTranslation()
   const [sentence, setSentence] = useState('')
   const trimmedSentence = sentence.trim()
@@ -31,9 +32,14 @@ export function BookingSentenceForm({ isSubmitting, onSubmit }: BookingSentenceF
         onChange={(event) => setSentence(event.target.value)}
         className="mt-2 min-h-11 w-full border border-ink bg-paper px-3.5 py-3 text-base placeholder:text-muted"
       />
-      <Button type="submit" className="mt-3" disabled={!trimmedSentence || isSubmitting}>
-        {isSubmitting ? t('bookings.checkingProposal') : t('bookings.checkProposal')}
-      </Button>
+      <div className="mt-3 flex flex-wrap gap-2.5">
+        <Button type="submit" disabled={!trimmedSentence || isSubmitting}>
+          {isSubmitting ? t('bookings.checkingProposal') : t('bookings.checkProposal')}
+        </Button>
+        <Button variant="ghost" onClick={onEnterByHand}>
+          {t('bookings.enterByHand')}
+        </Button>
+      </div>
     </form>
   )
 }

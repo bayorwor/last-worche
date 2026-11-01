@@ -9,6 +9,7 @@ import { validateBody } from "../middlewares/validator.ts";
 export function createBookingRoutes(controller: ReturnType<typeof createBookingController>, guards: AuthGuards) {
   const router = Router();
   router.post("/bookings", guards.requireRole("consultant"), validateBody(createBookingRequestSchema), controller.createBooking);
+  router.post("/bookings/check", guards.requireRole("consultant"), validateBody(createBookingRequestSchema), controller.checkBooking);
   router.get("/orders", guards.requireAnyRole(), controller.listOrders);
   router.get("/orders/:orderId/budget", guards.requireAnyRole(), controller.getOrderBudget);
   router.get("/orders/:orderId/bookings", guards.requireRole("project_lead"), controller.listOrderBookings);

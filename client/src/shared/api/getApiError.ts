@@ -51,6 +51,12 @@ const AI_ERROR_MESSAGE_KEYS: Record<string, MessageKey> = {
   'ai-unreadable': 'errors.aiUnreadable',
 }
 
+// The message for one rejected rule. A rule without a translation yet shows the server's English text.
+export function ruleError(rule: string | undefined, values?: MessageValues, message?: string): ApiError {
+  const ruleMessageKey = rule ? RULE_MESSAGE_KEYS[rule] : undefined
+  return ruleMessageKey ? { key: ruleMessageKey, values } : { key: 'errors.fromServer', values: { message: message ?? rule ?? '' } }
+}
+
 export function getApiError(error: unknown): ApiError {
   if (!axios.isAxiosError<ApiErrorBody>(error) || !error.response) {
     return FALLBACK_API_ERROR
@@ -59,12 +65,7 @@ export function getApiError(error: unknown): ApiError {
   const { status, data } = error.response
 
   if (status === 422 && data?.rule) {
-    const ruleMessageKey = RULE_MESSAGE_KEYS[data.rule]
-    if (ruleMessageKey) {
-      return { key: ruleMessageKey, values: data.values }
-    }
-    // A rule without a translation yet: the server's English text still names why the booking failed.
-    return { key: 'errors.fromServer', values: { message: data.error ?? data.rule } }
+    return ruleError(data.rule, data.values, data.error)
   }
 
   if (status === 503 && data?.code && AI_ERROR_MESSAGE_KEYS[data.code]) {

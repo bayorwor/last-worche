@@ -156,6 +156,23 @@ describe("consultant identity", () => {
     expect(((await response.json()) as { date: string }).date).toBe("2026-11-03");
   });
 
+  test("the rule check tells a consultant what would happen, and stores nothing", async () => {
+    const token = await signIn("user-consultant");
+    const body = { ...newBooking, date: "2026-12-07" };
+
+    const response = await send("POST", "/bookings/check", { token, body });
+
+    expect(response.status).toBe(200);
+    expect(((await response.json()) as { checks: { passed: boolean }[] }).checks.every((check) => check.passed)).toBe(true);
+    expect((await send("POST", "/bookings", { token, body })).status).toBe(201);
+  });
+
+  test("only a consultant can use the rule check", async () => {
+    const response = await send("POST", "/bookings/check", { token: await signIn("user-purchasing"), body: newBooking });
+
+    expect(response.status).toBe(403);
+  });
+
   test("only a consultant can book", async () => {
     const response = await send("POST", "/bookings", {
       token: await signIn("user-project-lead"),

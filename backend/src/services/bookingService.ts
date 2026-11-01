@@ -10,14 +10,47 @@ import {
   assertRestPeriod,
   assertWithinDailyLimit,
   calculateBudget,
+  suggestFreeSlot,
 } from "../domain/booking.ts";
-import { ForbiddenError, NotFoundError } from "../domain/errors.ts";
+import { BusinessRuleError, ForbiddenError, NotFoundError } from "../domain/errors.ts";
 import { assertMonthNotApproved, monthOf } from "../domain/proofOfWork.ts";
 import type { User } from "../domain/user.ts";
 import type { OrderBudgetResponse } from "../dtos/bookingDtos.ts";
-import type { BookingRepository, NewBooking } from "../repositories/bookingRepository.ts";
+import type { BookableOrder, BookingRepository, BookingTransaction, NewBooking } from "../repositories/bookingRepository.ts";
 
 export type BookingService = ReturnType<typeof createBookingService>;
+
+// The one list of rules. Saving stops at the first rejection, and the check before saving runs them all.
+async function listBookingRules(transaction: BookingTransaction, order: BookableOrder, request: NewBooking) {
+  const { federalState, vacations } = await transaction.findConsultantCalendar(request.consultantId);
+  const bookingsOnDay = await transaction.findBookingsOnDate(request.consultantId, request.date);
+
+  return [
+    {
+      name: "assigned-order",
+      run: async () => assertAssignedToOrder(await transaction.isConsultantAssigned(request.consultantId, order.id), order),
+    },
+    { name: "order-period", run: async () => assertInsideOrderPeriod(order, request.date) },
+    {
+      name: "approved-month",
+      run: async () => assertMonthNotApproved(await transaction.isMonthApproved(order.id, monthOf(request.date))),
+    },
+    { name: "free-budget", run: async () => assertFitsFreeBudget(order, await transaction.sumBookedHours(order.id), request.hours) },
+    { name: "vacation", run: async () => assertNotOnVacation(vacations, request.date) },
+    { name: "public-holiday", run: async () => assertNotOnPublicHoliday(federalState, request.date) },
+    { name: "no-overlap", run: async () => assertNoOverlap(bookingsOnDay, request) },
+    { name: "daily-limit", run: async () => assertWithinDailyLimit(bookingsOnDay, request.hours) },
+    {
+      name: "rest-period",
+      run: async () =>
+        assertRestPeriod(
+          await transaction.findBookingsOnDate(request.consultantId, addDays(request.date, -1)),
+          await transaction.findBookingsOnDate(request.consultantId, addDays(request.date, 1)),
+          request,
+        ),
+    },
+  ];
+}
 
 export function createBookingService(repository: BookingRepository, now: () => number = Date.now) {
   // A project lead reaches the orders they lead, a consultant their assigned orders,
@@ -47,27 +80,43 @@ export function createBookingService(repository: BookingRepository, now: () => n
         // read, so a check after it could miss a booking saved while this transaction waited for a lock.
         await transaction.lockConsultant(request.consultantId);
 
-        assertAssignedToOrder(await transaction.isConsultantAssigned(request.consultantId, order.id), order);
-        assertInsideOrderPeriod(order, request.date);
-        assertMonthNotApproved(await transaction.isMonthApproved(order.id, monthOf(request.date)));
-        assertFitsFreeBudget(order, await transaction.sumBookedHours(order.id), request.hours);
-
-        const { federalState, vacations } = await transaction.findConsultantCalendar(request.consultantId);
-        assertNotOnVacation(vacations, request.date);
-        assertNotOnPublicHoliday(federalState, request.date);
-
-        const bookingsOnDay = await transaction.findBookingsOnDate(request.consultantId, request.date);
-        assertNoOverlap(bookingsOnDay, request);
-        assertWithinDailyLimit(bookingsOnDay, request.hours);
-        assertRestPeriod(
-          await transaction.findBookingsOnDate(request.consultantId, addDays(request.date, -1)),
-          await transaction.findBookingsOnDate(request.consultantId, addDays(request.date, 1)),
-          request,
-        );
+        for (const rule of await listBookingRules(transaction, order, request)) {
+          await rule.run();
+        }
 
         const booking = await transaction.saveBooking(request);
         await transaction.recordBookingCreated(request, now());
         return booking;
+      });
+    },
+
+    // Runs every rule without storing anything, so the person sees all problems at once and what the booking
+    // would do to the budget. Saving runs the same rules again, because the data can change in between.
+    checkBooking(request: NewBooking) {
+      return repository.transaction(async (transaction) => {
+        const order = await transaction.findOrderForUpdate(request.orderId);
+        if (!order) throw new NotFoundError(`Order ${request.orderId} does not exist.`);
+        await transaction.lockConsultant(request.consultantId);
+
+        const checks = [];
+        for (const rule of await listBookingRules(transaction, order, request)) {
+          try {
+            await rule.run();
+            checks.push({ name: rule.name, passed: true });
+          } catch (error) {
+            if (!(error instanceof BusinessRuleError)) throw error;
+            checks.push({ name: rule.name, passed: false, rule: error.rule, values: error.values, message: error.message });
+          }
+        }
+
+        const overlapFailed = checks.some((check) => check.name === "no-overlap" && !check.passed);
+        const bookingsOnDay = await transaction.findBookingsOnDate(request.consultantId, request.date);
+        const bookedHours = await transaction.sumBookedHours(order.id);
+        return {
+          checks,
+          freePersonDaysAfter: calculateBudget(order, bookedHours + request.hours).freePersonDays,
+          suggestedSlot: overlapFailed ? suggestFreeSlot(bookingsOnDay, request) : null,
+        };
       });
     },
 

@@ -146,3 +146,21 @@ export function assertNotOnPublicHoliday(federalState: FederalState | null, date
     });
   }
 }
+
+const SLOT_SEARCH_START = "08:00";
+const SLOT_SEARCH_END = "22:00";
+
+// The earliest free time on that day for a booking of the same length, so a person can fix an overlap
+// with one tap. Only a suggestion: the rules still check whatever the person then chooses.
+export function suggestFreeSlot(bookingsOnDay: TimeRange[], { startTime, endTime }: TimeRange): TimeRange | null {
+  const length = minutesOfDay(endTime) - minutesOfDay(startTime);
+  const toTime = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+  const candidates = [SLOT_SEARCH_START, ...bookingsOnDay.map((booking) => booking.endTime)].map(minutesOfDay).sort((a, b) => a - b);
+
+  for (const start of candidates) {
+    const slot = { startTime: toTime(start), endTime: toTime(start + length) };
+    const isFree = bookingsOnDay.every((booking) => slot.startTime >= booking.endTime || booking.startTime >= slot.endTime);
+    if (isFree && start + length <= minutesOfDay(SLOT_SEARCH_END)) return slot;
+  }
+  return null;
+}

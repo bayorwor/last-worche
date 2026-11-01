@@ -3,8 +3,8 @@ import axios from 'axios'
 import { activityReducer, fetchRecentActivity } from '../features/activity/activitySlice.ts'
 import { authReducer, saveProfile, signedOut } from '../features/auth/authSlice.ts'
 import { bookingsReducer, confirmBookingProposal } from '../features/bookings/bookingsSlice.ts'
-import { approveProofOfWork, budgetReducer } from '../features/budget/budgetSlice.ts'
-import { purchasingReducer } from '../features/purchasing/purchasingSlice.ts'
+import { approveProofOfWork, budgetReducer, requestFollowUp } from '../features/budget/budgetSlice.ts'
+import { confirmFollowUp, purchasingReducer } from '../features/purchasing/purchasingSlice.ts'
 import { apiClient } from '../shared/api/apiClient.ts'
 import { clearSessionToken, readSessionToken } from '../shared/api/sessionToken.ts'
 
@@ -23,7 +23,7 @@ const rootReducer: typeof appReducer = (state, action) =>
 // Features may not import each other, so the connection "this changes the activity list" is made here.
 const activityRefresh = createListenerMiddleware()
 activityRefresh.startListening({
-  matcher: isAnyOf(confirmBookingProposal.fulfilled, approveProofOfWork.fulfilled, saveProfile.fulfilled),
+  matcher: isAnyOf(confirmBookingProposal.fulfilled, approveProofOfWork.fulfilled, saveProfile.fulfilled, requestFollowUp.fulfilled, confirmFollowUp.fulfilled),
   effect: (_action, { dispatch }) => {
     dispatch(fetchRecentActivity())
   },

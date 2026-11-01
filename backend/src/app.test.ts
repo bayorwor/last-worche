@@ -45,6 +45,7 @@ beforeAll(() => {
     ),
     userRepository: createInMemoryUserRepository(users, roles),
     activityRepository,
+    signInLimitPerMinute: 100_000, // these tests sign in far more often than a person would
   });
   server = app.listen(0);
   baseUrl = `http://localhost:${(server.address() as AddressInfo).port}/api`;
@@ -154,6 +155,23 @@ describe("consultant identity", () => {
     });
 
     expect(((await response.json()) as { date: string }).date).toBe("2026-11-03");
+  });
+
+  test("the rule check tells a consultant what would happen, and stores nothing", async () => {
+    const token = await signIn("user-consultant");
+    const body = { ...newBooking, date: "2026-12-07" };
+
+    const response = await send("POST", "/bookings/check", { token, body });
+
+    expect(response.status).toBe(200);
+    expect(((await response.json()) as { checks: { passed: boolean }[] }).checks.every((check) => check.passed)).toBe(true);
+    expect((await send("POST", "/bookings", { token, body })).status).toBe(201);
+  });
+
+  test("only a consultant can use the rule check", async () => {
+    const response = await send("POST", "/bookings/check", { token: await signIn("user-purchasing"), body: newBooking });
+
+    expect(response.status).toBe(403);
   });
 
   test("only a consultant can book", async () => {
@@ -417,5 +435,162 @@ describe("recent activity", () => {
     expect(entries.some((entry) => entry.type === "booking_created")).toBe(false);
     expect(entries.find((entry) => entry.type === "proof_approved")).toMatchObject({ actorName: null, orderId: ORDER_ID, period: "2026-12" });
     expect(entries.filter((entry) => !entry.isOwn).every((entry) => entry.actorName === null)).toBe(true);
+  });
+});
+
+describe("forecast and follow-up requests", () => {
+  test("a project lead gets a forecast of their own order", async () => {
+    const response = await send("GET", `/orders/${ORDER_ID}/forecast`, { token: await signIn("user-project-lead") });
+
+    expect(response.status).toBe(200);
+  });
+
+  test("purchasing and consultants may not see a forecast", async () => {
+    expect((await send("GET", `/orders/${ORDER_ID}/forecast`, { token: await signIn("user-purchasing") })).status).toBe(403);
+    expect((await send("GET", `/orders/${ORDER_ID}/forecast`, { token: await signIn("user-consultant") })).status).toBe(403);
+  });
+
+  test("rejects an invalid scenario with 400", async () => {
+    const token = await signIn("user-project-lead");
+
+    expect((await send("GET", `/orders/${ORDER_ID}/forecast?extraConsultants=0`, { token })).status).toBe(400);
+    expect((await send("GET", `/orders/${ORDER_ID}/forecast?projectEndShiftWeeks=-4`, { token })).status).toBe(400);
+  });
+
+  test("purchasing confirms a lead's request, and only purchasing may", async () => {
+    const leadToken = await signIn("user-other-lead");
+    const buyerToken = await signIn("user-purchasing");
+    const body = { personDays: 5, neededByDate: "2026-12-01" };
+
+    expect((await send("POST", `/orders/${OTHER_ORDER_ID}/follow-up-requests`, { token: buyerToken, body })).status).toBe(403);
+    const created = await send("POST", `/orders/${OTHER_ORDER_ID}/follow-up-requests`, { token: leadToken, body });
+    expect(created.status).toBe(201);
+    const { id } = (await created.json()) as { id: number };
+
+    expect((await send("POST", `/purchasing/follow-up-requests/${id}/confirm`, { token: leadToken })).status).toBe(403);
+    expect((await send("POST", `/purchasing/follow-up-requests/${id}/confirm`, { token: buyerToken })).status).toBe(200);
+    expect(await (await send("GET", `/orders/${OTHER_ORDER_ID}/budget`, { token: buyerToken })).json()).toMatchObject({ orderedPersonDays: 25 });
+  });
+
+  test("purchasing's activity shows that request with no name", async () => {
+    const entries = (await (await send("GET", "/activity", { token: await signIn("user-purchasing") })).json()) as { type: string; actorName: string | null; isOwn: boolean }[];
+
+    expect(entries.find((entry) => entry.type === "follow_up_requested")).toMatchObject({ actorName: null });
+  });
+});
+
+describe("time tracking interface", () => {
+  const send2 = (key: string | null, bookings: object[]) =>
+    fetch(`${baseUrl}/integrations/time-tracking/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(key ? { "x-api-key": key } : {}) },
+      body: JSON.stringify({ bookings }),
+    });
+  const row = { ...newBooking, consultantId: "consultant-1", date: "2026-12-10" };
+
+  test("needs a supplier key", async () => {
+    expect((await send2(null, [row])).status).toBe(401);
+    expect((await send2("wrong-key", [row])).status).toBe(401);
+  });
+
+  test("a session token is not enough", async () => {
+    const response = await fetch(`${baseUrl}/integrations/time-tracking/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${await signIn("user-consultant")}` },
+      body: JSON.stringify({ bookings: [row] }),
+    });
+
+    expect(response.status).toBe(401);
+  });
+
+  test("rejects a badly formed batch with 400", async () => {
+    expect((await send2("demo-consultis-key", [])).status).toBe(400);
+    expect((await send2("demo-consultis-key", [{ ...row, startTime: "late" }])).status).toBe(400);
+  });
+});
+
+describe("invoice check", () => {
+  test("only purchasing may use it, and a month with no approved proof is rejected", async () => {
+    const body = { orderId: ORDER_ID, month: "2030-01", invoicedPersonDays: 10 };
+
+    expect((await send("POST", "/purchasing/invoice-check", { token: await signIn("user-project-lead"), body })).status).toBe(403);
+    const response = await send("POST", "/purchasing/invoice-check", { token: await signIn("user-purchasing"), body });
+    expect(response.status).toBe(422);
+    expect(await response.json()).toMatchObject({ rule: "invoice-no-approved-proof" });
+  });
+
+  test("compares the invoice with an approved month", async () => {
+    const consultant = await signIn("user-consultant");
+    await send("POST", "/bookings", { token: consultant, body: { ...newBooking, date: "2027-02-01", hours: 8 } });
+    await send("POST", `/orders/${ORDER_ID}/proofs-of-work/2027-02/approve`, { token: await signIn("user-project-lead") });
+
+    const response = await send("POST", "/purchasing/invoice-check", {
+      token: await signIn("user-purchasing"),
+      body: { orderId: ORDER_ID, month: "2027-02", invoicedPersonDays: 3.5 },
+    });
+
+    expect(await response.json()).toEqual({ status: "over-approved", approvedPersonDays: 1, invoicedPersonDays: 3.5, differencePersonDays: 2.5 });
+  });
+
+  test("a project lead can download that approved month, and purchasing cannot", async () => {
+    const path = `/orders/${ORDER_ID}/proofs-of-work/2027-02/export.csv`;
+    const response = await send("GET", path, { token: await signIn("user-project-lead") });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/csv");
+    expect(await response.text()).toContain("2027-02-01");
+    expect((await send("GET", path, { token: await signIn("user-purchasing") })).status).toBe(403);
+  });
+});
+
+describe("operation", () => {
+  test("the health check says the API and its database work", async () => {
+    const response = await send("GET", "/health");
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "ok", database: "ok" });
+  });
+
+  test("the API documentation is served", async () => {
+    expect(((await (await send("GET", "/openapi.json")).json()) as { openapi: string }).openapi).toStartWith("3.");
+    expect((await fetch(`${baseUrl}/docs/`)).status).toBe(200);
+  });
+
+  test("an unknown API address answers 404 in JSON", async () => {
+    const response = await send("GET", "/no-such-address");
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ error: expect.any(String) });
+  });
+
+  test("responses carry security headers", async () => {
+    expect((await send("GET", "/health")).headers.get("x-content-type-options")).toBe("nosniff");
+  });
+
+  test("a body that is too large is rejected, not a server error", async () => {
+    const response = await send("POST", "/auth/request-code", { body: { email: "x".repeat(2_000_000) } });
+
+    expect(response.status).toBe(413);
+  });
+
+  test("too many sign-in attempts are rejected", async () => {
+    const limitedApp = createApp({
+      bookingRepository: createInMemoryBookingRepository([], []),
+      userRepository: createInMemoryUserRepository([]),
+      activityRepository: createInMemoryActivityRepository(),
+      signInLimitPerMinute: 2,
+    });
+    const limitedServer = limitedApp.listen(0);
+    const url = `http://localhost:${(limitedServer.address() as AddressInfo).port}/api/auth/request-code`;
+    const attempt = () =>
+      fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "a@test.example" }) });
+
+    try {
+      expect((await attempt()).status).toBe(200);
+      expect((await attempt()).status).toBe(200);
+      expect((await attempt()).status).toBe(429);
+    } finally {
+      limitedServer.close();
+    }
   });
 });

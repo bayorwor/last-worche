@@ -21,6 +21,19 @@ const envSchema = z.object({
   // Signs session tokens. The default is for local development only, like the demo sign-in itself.
   JWT_SECRET: z.string().min(16).default("local-demo-secret-not-for-production"),
   TEST_ACCOUNTS_ENABLED: booleanFlag("true"),
+  // Who may send hours from their own time tracking, as supplierId:key pairs (ADR-0017). These are demo keys.
+  SUPPLIER_API_KEYS: z
+    .string()
+    .default("supplier-1:demo-consultis-key,supplier-2:demo-nordlicht-key")
+    .transform((pairs) =>
+      pairs
+        .split(",")
+        .map((pair) => pair.trim().split(":"))
+        .filter((pair): pair is [string, string] => pair.length === 2 && pair[0] !== "" && pair[1] !== "")
+        .map(([supplierId, key]) => ({ supplierId, key })),
+    ),
+  // How many sign-in requests one network address may send per minute.
+  SIGN_IN_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(30),
   AI_MOCK: booleanFlag("true"),
   OPENROUTER_API_KEY: z.string().optional(),
   OPENROUTER_MODEL: z.string().min(1).default("openrouter/auto"),

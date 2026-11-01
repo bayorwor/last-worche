@@ -6,6 +6,7 @@ const formatters = {
   formatHours: (hours: number) => `${hours} h`,
   formatDate: (isoDate: string) => isoDate,
   formatMonth: (month: string) => month,
+  formatPersonDays: (personDays: number) => `${personDays} PD`,
 }
 
 const approval: Activity = {
@@ -33,6 +34,15 @@ describe('activityMessage', () => {
   test('addresses the reader for their own entries', () => {
     expect(activityMessage({ ...approval, isOwn: true }, formatters).key).toBe('activity.ownApproval')
     expect(activityMessage({ ...booking, isOwn: true }, formatters).key).toBe('activity.ownBooking')
+  })
+
+  test('keeps a follow-up request anonymous when the server hid the name', () => {
+    const request: Activity = { ...approval, type: 'follow_up_requested', actorName: null, hours: 20 }
+
+    expect(activityMessage(request, formatters)).toEqual({
+      key: 'activity.anonymousFollowUpRequest',
+      values: { name: '', orderId: '4500012345', personDays: '20 PD' },
+    })
   })
 
   test("shows another person's booking with its hours, day and order", () => {

@@ -5,6 +5,8 @@ import { RouteErrorPage } from './layout/RouteErrorPage.tsx'
 import { SessionLayout } from './layout/SessionLayout.tsx'
 import {
   ConsultantBookingPage,
+  FollowUpRequestsPage,
+  InvoiceCheckPage,
   OrderBookingsPage,
   OrderBudgetPage,
   OrderTotalsPage,
@@ -63,6 +65,8 @@ export const appRouter = createBrowserRouter([
                     children: [
                       { index: true, element: <SupplierTotalsPage /> },
                       { path: ROUTE_PATHS.purchasingOrders, element: <OrderTotalsPage /> },
+                      { path: ROUTE_PATHS.purchasingFollowUps, element: <FollowUpRequestsPage /> },
+                      { path: ROUTE_PATHS.purchasingInvoiceCheck, element: <InvoiceCheckPage /> },
                     ],
                   },
                 ],

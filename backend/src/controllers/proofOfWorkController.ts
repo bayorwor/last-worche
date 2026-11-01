@@ -10,6 +10,12 @@ export function createProofOfWorkController(proofOfWorkService: ProofOfWorkServi
       res.json(await proofOfWorkService.listFor(currentUser(req), req.params.orderId));
     },
 
+    async exportCsv(req: Request<{ orderId: string; month: string }>, res: Response) {
+      const month = proofMonthSchema.parse(req.params.month);
+      const csv = await proofOfWorkService.exportCsvFor(currentUser(req), req.params.orderId, month);
+      res.attachment(`proof-of-work-${req.params.orderId}-${month}.csv`).type("text/csv").send(`\uFEFF${csv}`); // the mark makes Excel read umlauts correctly
+    },
+
     async approve(req: Request<{ orderId: string; month: string }>, res: Response) {
       const month = proofMonthSchema.parse(req.params.month);
       res.json(await proofOfWorkService.approveFor(currentUser(req), req.params.orderId, month));

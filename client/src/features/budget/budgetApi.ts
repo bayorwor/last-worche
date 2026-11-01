@@ -1,6 +1,6 @@
 import { apiClient } from '../../shared/api/apiClient.ts'
 import type { OrderSummary } from '../../shared/api/orderSummary.ts'
-import type { OrderBooking, OrderBudget, ProofOfWork } from './budgetTypes.ts'
+import type { ForecastScenario, OrderBooking, OrderBudget, OrderForecast, ProofOfWork } from './budgetTypes.ts'
 
 export async function requestOrders(): Promise<OrderSummary[]> {
   const { data } = await apiClient.get<OrderSummary[]>('/orders')
@@ -24,5 +24,19 @@ export async function requestProofApproval(orderId: string, month: string): Prom
 
 export async function requestOrderBudget(orderId: string): Promise<OrderBudget> {
   const { data } = await apiClient.get<OrderBudget>(`/orders/${encodeURIComponent(orderId)}/budget`)
+  return data
+}
+
+export async function requestOrderForecast(orderId: string, scenario: ForecastScenario = {}): Promise<OrderForecast> {
+  const { data } = await apiClient.get<OrderForecast>(`/orders/${encodeURIComponent(orderId)}/forecast`, { params: scenario })
+  return data
+}
+
+export async function requestFollowUpOrder(orderId: string, personDays: number, neededByDate: string): Promise<void> {
+  await apiClient.post(`/orders/${encodeURIComponent(orderId)}/follow-up-requests`, { personDays, neededByDate })
+}
+
+export async function requestProofCsv(orderId: string, month: string): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>(`/orders/${encodeURIComponent(orderId)}/proofs-of-work/${month}/export.csv`, { responseType: 'blob' })
   return data
 }

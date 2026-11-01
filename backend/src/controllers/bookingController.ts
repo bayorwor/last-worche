@@ -12,6 +12,11 @@ export function createBookingController(bookingService: BookingService) {
       res.status(201).json(booking);
     },
 
+    async checkBooking(req: Request, res: Response) {
+      const request = req.body as CreateBookingRequest;
+      res.json(await bookingService.checkBooking({ ...request, consultantId: currentConsultantId(req) }));
+    },
+
     async listOrders(req: Request, res: Response) {
       res.json(await bookingService.listOrdersFor(currentUser(req)));
     },

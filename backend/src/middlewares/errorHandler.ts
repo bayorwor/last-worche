@@ -1,8 +1,12 @@
 // Turns every error into a JSON response, so no layer below has to know about HTTP status codes.
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
-import { BusinessRuleError, ForbiddenError, NotFoundError, UnauthorizedError } from "../domain/errors.ts";
+import { BusinessRuleError, ForbiddenError, NotFoundError, TooManyRequestsError, UnauthorizedError } from "../domain/errors.ts";
 import { AiServiceError } from "../services/bookingAssistantService.ts";
+
+function isBodyTooLarge(error: unknown) {
+  return (error as { type?: string }).type === "entity.too.large"; // from express.json()
+}
 
 // Express recognises error middleware by its four parameters, so `_next` must stay.
 export function errorHandler(error: unknown, _req: Request, res: Response, _next: NextFunction) {
@@ -18,6 +22,10 @@ export function errorHandler(error: unknown, _req: Request, res: Response, _next
     res.status(404).json({ error: error.message });
   } else if (error instanceof BusinessRuleError) {
     res.status(422).json({ error: error.message, rule: error.rule, values: error.values });
+  } else if (error instanceof TooManyRequestsError) {
+    res.status(429).json({ error: error.message });
+  } else if (isBodyTooLarge(error)) {
+    res.status(413).json({ error: "This request is too large." });
   } else if (error instanceof AiServiceError) {
     res.status(503).json({ error: error.message, code: error.code });
   } else {

@@ -18,3 +18,6 @@ export const bookingProposalSchema = z.object({
 });
 
 export type BookingProposal = z.infer<typeof bookingProposalSchema>;
+
+// Set when the sentence clearly names one of the person's orders. Otherwise they choose from the list.
+export type BookingProposalResponse = BookingProposal & { suggestedOrderId: string | null };

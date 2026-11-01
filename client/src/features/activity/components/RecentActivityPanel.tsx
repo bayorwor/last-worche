@@ -10,7 +10,7 @@ import { fetchRecentActivity } from '../activitySlice.ts'
 // scopeKey says what this role's list covers. The server decides what is really in it.
 export function RecentActivityPanel({ scopeKey }: { scopeKey: MessageKey }) {
   const dispatch = useAppDispatch()
-  const { t, formatDate, formatDateTime, formatHours, formatMonth } = useTranslation()
+  const { t, formatDate, formatDateTime, formatHours, formatMonth, formatPersonDays } = useTranslation()
   const { entries, status, error } = useAppSelector((state) => state.activity)
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export function RecentActivityPanel({ scopeKey }: { scopeKey: MessageKey }) {
       {status === 'succeeded' && entries.length === 0 && <p className="text-sm text-muted">{t('activity.none')}</p>}
       <ul className="grid gap-3">
         {entries.map((entry) => {
-          const { key, values } = activityMessage(entry, { formatDate, formatHours, formatMonth })
+          const { key, values } = activityMessage(entry, { formatDate, formatHours, formatMonth, formatPersonDays })
           return (
             <li key={entry.id} className="border-t border-line pt-3 text-sm first:border-t-0 first:pt-0">
               <p>{t(key, values)}</p>

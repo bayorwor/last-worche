@@ -62,7 +62,7 @@ One command, from the repository root:
 
 On Windows, see the [PowerShell commands](docs/testing.md#windows-and-linux-commands). To test by hand, on any platform, use the [testing guide](docs/testing.md).
 
-These tests need no database, so the 26 tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings in that database, including the sample ones.
+These tests need no database, so the tests against real MySQL are reported as skipped. To include them, set `TEST_DATABASE_URL` as described in the [backend README](backend/README.md). They delete all bookings and activity in that database, including the sample ones.
 
 ## Demo users
 
@@ -83,7 +83,7 @@ To change user, choose *Abmelden / Sign out* at the top of the page. Labels are 
 | Consultant | S. Tanriver | `s.tanriver@nordlicht.example` | Works for another supplier, on orders 4500012346 and 4500012347. |
 | Project lead | J. Schneider | `j.schneider@client.example` | Leads only order 4500012347, and cannot see A. Weber's orders. |
 
-With the default `AI_MOCK=true`, the one-sentence booking returns a fixed proposal of 09:00–17:00 with 7 hours for today, whatever the sentence says. Confirming it a second time is rejected as an overlap, which shows that rule. To book other times, use the API as shown in the [backend README](backend/README.md).
+With the default `AI_MOCK=true`, plain rules read the one-sentence booking, in German and English, such as `gestern 9 bis 5 am Portal, 1 h Mittag`. You can correct the proposal, or choose *Von Hand eingeben / Enter by hand*, and the server checks all rules before you confirm. Bookings on a public holiday of the consultant's federal state are rejected: L. Hoffmann works in Bavaria, M. Krüger in Hamburg and S. Tanriver in North Rhine-Westphalia.
 
 ## For teammates: which branch to test
 
@@ -129,11 +129,11 @@ Where the technical jury finds the evidence for each [technical criterion](https
 | Criterion | Evidence |
 |---|---|
 | 1 · Persistence and data model | Schema in [migrations.ts](backend/src/repositories/migrations.ts), sample data in [seedData.ts](backend/src/repositories/seedData.ts), queries in [mysqlBookingRepository.ts](backend/src/repositories/mysqlBookingRepository.ts), [ER diagram](docs/domain.md) |
-| 2 · Business rules and unit tests | Rules in [booking.ts](backend/src/domain/booking.ts) and [proofOfWork.ts](backend/src/domain/proofOfWork.ts), tests in [booking.test.ts](backend/src/domain/booking.test.ts) and [bookingService.test.ts](backend/src/services/bookingService.test.ts), simultaneous bookings in [mysqlBookingRepository.test.ts](backend/src/repositories/mysqlBookingRepository.test.ts) |
-| 3 · Roles, permissions and privacy | [Permission concept](docs/roles-and-privacy.md), guards in [authentication.ts](backend/src/middlewares/authentication.ts), allowed roles per route in [bookingRoutes.ts](backend/src/routes/bookingRoutes.ts), row-level scope in [bookingService.ts](backend/src/services/bookingService.ts), totals with no personal data for purchasing in [purchasing.ts](backend/src/domain/purchasing.ts), rejections tested in [app.test.ts](backend/src/app.test.ts), recent activity per role in [activityService.ts](backend/src/services/activityService.ts) and [activity.ts](backend/src/domain/activity.ts), role views in the [mockup](docs/mockup/index.html) and in [client/src/features](client/src/features) |
-| 4 · Architecture and engineering | **A** · structure in [backend/src](backend/src) and [client/src](client/src) · **B** · [ADRs](docs/adr/) · **C** · Git history · **F** · [mockup](docs/mockup/index.html) |
+| 2 · Business rules and unit tests | Rules in [booking.ts](backend/src/domain/booking.ts), [proofOfWork.ts](backend/src/domain/proofOfWork.ts), [publicHolidays.ts](backend/src/domain/publicHolidays.ts), [followUp.ts](backend/src/domain/followUp.ts) and [invoiceCheck.ts](backend/src/domain/invoiceCheck.ts), forecast in [forecast.ts](backend/src/domain/forecast.ts), tests in [booking.test.ts](backend/src/domain/booking.test.ts), [forecast.test.ts](backend/src/domain/forecast.test.ts) and [bookingService.test.ts](backend/src/services/bookingService.test.ts), simultaneous bookings in [mysqlBookingRepository.test.ts](backend/src/repositories/mysqlBookingRepository.test.ts) |
+| 3 · Roles, permissions and privacy | [Permission concept](docs/roles-and-privacy.md), guards in [authentication.ts](backend/src/middlewares/authentication.ts), allowed roles per route in [bookingRoutes.ts](backend/src/routes/bookingRoutes.ts) and [forecastRoutes.ts](backend/src/routes/forecastRoutes.ts), row-level scope in [bookingService.ts](backend/src/services/bookingService.ts), totals with no personal data for purchasing in [purchasing.ts](backend/src/domain/purchasing.ts), rejections tested in [app.test.ts](backend/src/app.test.ts), recent activity per role in [activityService.ts](backend/src/services/activityService.ts) and [activity.ts](backend/src/domain/activity.ts), role views in the [mockup](docs/mockup/index.html) and in [client/src/features](client/src/features) |
+| 4 · Architecture and engineering | **A** · structure in [backend/src](backend/src) and [client/src](client/src) · **B** · [ADRs](docs/adr/) · **C** · Git history · **D** · [OpenAPI document](backend/src/docs/openapiDocument.ts), with Swagger UI at <http://localhost:3000/api/docs> and a [test](backend/src/docs/openapiDocument.test.ts) that compares it with the routes · **F** · [mockup](docs/mockup/index.html) |
 
-Building block D (API documentation) is not delivered: the API is described below, but not in a machine-readable form. Building block E (containers) is not delivered, as decided in [ADR-0011](docs/adr/0011-mysql-without-docker.md).
+Building block E (containers) is not delivered, as decided in [ADR-0011](docs/adr/0011-mysql-without-docker.md).
 
 ## Tech stack
 
@@ -144,6 +144,7 @@ Building block D (API documentation) is not delivered: the API is described belo
 | Database | MySQL 8.4 or newer (`mysql2`), installed on the machine | [ADR-0006](docs/adr/0006-mysql-database.md), [ADR-0011](docs/adr/0011-mysql-without-docker.md) |
 | Frontend | React 19, Vite, React Router, Redux Toolkit, axios, Tailwind CSS 4 | [ADR-0001](docs/adr/0001-technology-stack.md) |
 | Languages | German and English, default from the device's time zone | [ADR-0009](docs/adr/0009-languages-and-location-default.md) |
+| API documentation | OpenAPI 3.1, Swagger UI | [openapiDocument.ts](backend/src/docs/openapiDocument.ts) |
 | Tests and lint | `bun test`, oxlint | [ADR-0001](docs/adr/0001-technology-stack.md) |
 | AI | OpenRouter, with a mock switch | [ADR-0007](docs/adr/0007-openrouter-ai-gateway.md) |
 | Email | nodemailer over SMTP, with a mock switch | [ADR-0008](docs/adr/0008-email-with-nodemailer.md) |
@@ -168,6 +169,8 @@ flowchart LR
 
 ### API
 
+With the backend running, the interactive documentation is at <http://localhost:3000/api/docs>, and the machine-readable form at <http://localhost:3000/api/openapi.json>.
+
 | Method and path | Purpose | Errors |
 |---|---|---|
 | `GET /api/auth/roles` | All roles, with names and descriptions in German and English | |
@@ -185,7 +188,16 @@ flowchart LR
 | `GET /api/orders/:orderId/bookings` | The 10 latest single bookings of an order, for the project lead of that order | `401`, `403` other roles or orders, `404` unknown order |
 | `POST /api/bookings` | Check the rules, then store a booking, for the consultant role. The consultant comes from the session | `401`, `403` other roles, `400` invalid input, `404` unknown order, `422` rule violated, with `rule` and `values` so the client can explain it in either language |
 | `GET /api/orders/:orderId/budget` | Ordered, used and free person-days, for all roles within their orders | `401`, `403` an order outside your scope, `404` unknown order |
-| `POST /api/ai/parse-booking` | Turn one sentence into a booking proposal, without storing it, for the consultant role | `401`, `403` other roles, `400` invalid input, `503` AI service unavailable, with a `code` |
+| `POST /api/ai/parse-booking` | Turn one sentence into a booking proposal, without storing it, for the consultant role. Plain rules read it when AI is off or fails | `401`, `403` other roles, `400` invalid input, `503` the sentence could not be read, with a `code` |
+| `POST /api/bookings/check` | Run every rule without storing anything, and say what the booking would do to the budget, for the consultant role | `401`, `403` other roles, `400` invalid input, `404` unknown order |
+| `GET /api/orders/:orderId/forecast` | When the budget runs out, the warning and its assumptions, for the project lead of that order. `extraConsultants`, `extraFromDate` and `projectEndShiftWeeks` add a what-if scenario, which is not stored | `400` invalid scenario, `401`, `403`, `404` |
+| `POST /api/orders/:orderId/follow-up-requests` | Ask purchasing for more budget, for the project lead of that order | `400`, `401`, `403`, `404`, `422` a request is already open |
+| `GET /api/purchasing/follow-up-requests` | All follow-up requests, for the purchasing role | `401`, `403` other roles |
+| `POST /api/purchasing/follow-up-requests/:id/confirm` | Confirm a request, which raises the order's budget, for the purchasing role | `401`, `403`, `404`, `422` already confirmed |
+| `POST /api/purchasing/invoice-check` | Compare an invoice with an approved month, for the purchasing role | `400`, `401`, `403`, `404`, `422` no approved proof of work |
+| `GET /api/orders/:orderId/proofs-of-work/:month/export.csv` | An approved month as a file for finance, for the project lead of that order | `400`, `401`, `403`, `404`, `422` not approved |
+| `POST /api/integrations/time-tracking/bookings` | A batch from a supplier's own time tracking, all or nothing, with `X-Api-Key` instead of a session ([ADR-0017](docs/adr/0017-supplier-interface.md)) | `400`, `401` no valid key, `422` with the row and the rule |
+| `GET /api/health` | Whether the API and its database work | `503` no database |
 
 ### Configuration
 
@@ -198,7 +210,9 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 | `CORS_ORIGINS` | `capacitor://localhost,http://localhost` | Web addresses allowed to call the API. The defaults are the iOS and Android apps |
 | `JWT_SECRET` | a value for local development only | Signs session tokens |
 | `TEST_ACCOUNTS_ENABLED` | `true` | `true` lists the test accounts on the sign-in screen. Use `false` on any shared server |
-| `AI_MOCK` | `true` | `true` returns a fixed AI proposal, `false` calls OpenRouter |
+| `SUPPLIER_API_KEYS` | two demo keys | Who may use the time tracking interface, as `supplierId:key` pairs. Use long random keys on any shared server |
+| `SIGN_IN_LIMIT_PER_MINUTE` | `30` | How many sign-in requests one network address may send per minute |
+| `AI_MOCK` | `true` | `true` reads the sentence with plain rules, `false` calls OpenRouter, and uses the plain rules if that fails |
 | `OPENROUTER_API_KEY` | not set | Only needed with `AI_MOCK=false` |
 | `OPENROUTER_MODEL` | `openrouter/auto` | Model to use. `openrouter/auto` lets OpenRouter pick one per request. |
 | `MAIL_MOCK` | `true` | `true` sends no email and shows sign-in codes on the screen, which lets anyone sign in as anyone. `false` sends them, and is required on any shared server |
@@ -211,15 +225,17 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 
 | Area | Built | Planned |
 |---|---|---|
-| Core flow | Choose an assigned order, book time on it, see the effect on its budget | Manual booking form, without the AI sentence |
-| Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person; 10-hour day; 11-hour rest; no bookings in an approved month | Vacation and public holidays, order period |
-| Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, roles, users, proofs of work, with migrations | Vacation days, framework agreements |
-| Roles | Sign-in with a 6-digit code by email, roles and users stored in the database, one view per role, server-side role checks on every route and row-level scope | Limits per network address, single sign-on per customer ([ADR-0002](docs/adr/0002-identity-and-sign-in.md), [ADR-0014](docs/adr/0014-email-code-sign-in.md)) |
+| Core flow | Book in one sentence or by hand, correct the proposal, see every rule's result from the server before saving, and see the effect on the budget | Changing a stored booking |
+| Business rules | Free budget of an order, safe for simultaneous bookings; booking only on assigned orders; overlapping bookings of one person; 10-hour day; 11-hour rest; no bookings in an approved month; order period; approved vacation; public holidays of the consultant's federal state | Sick leave |
+| Data model | Orders, bookings, consultants, suppliers, accounting objects, assignments, roles, users, proofs of work, vacations, shutdowns, follow-up requests, activity log, with migrations | Framework agreements, stored invoices |
+| Roles | Sign-in with a 6-digit code by email, roles and users stored in the database, one view per role, server-side role checks on every route and row-level scope | Single sign-on per customer ([ADR-0002](docs/adr/0002-identity-and-sign-in.md), [ADR-0014](docs/adr/0014-email-code-sign-in.md)) |
 | Profile and activity | Tabs per role in a sidebar, and on large screens a right column with profile editing and recent activity. Changing the email address is not built ([ADR-0015](docs/adr/0015-activity-log.md)) | Changing the email with a code sent to the new address, deleting old activity |
-| Budget | Ordered, used and free person-days | Forecast and early warning |
-| Proof of work | A project lead approves a month per order, which locks it | Passing approved hours on to finance |
+| Budget | Ordered, used and free person-days; forecast with vacations, holidays and shutdowns; early warning; what-if scenarios; a follow-up request that purchasing confirms ([ADR-0016](docs/adr/0016-budget-forecast.md)) | Budget warnings by email |
+| Proof of work | A project lead approves a month per order, which locks it, and downloads it as a file for finance. Purchasing checks an invoice against it | A direct connection to a finance system |
 | Mobile | Responsive screens in a phone browser, iOS app in the simulator | The apps on physical phones, Android ([testing guide](docs/testing.md#which-platforms-are-tested)) |
-| Purchasing | Totals per supplier and order from the database, with no personal data | Framework agreements |
+| Purchasing | Totals per supplier and order from the database, with no personal data; follow-up requests; invoice check | Framework agreements |
+| Interface | Batches from a supplier's own time tracking, with a key per supplier ([ADR-0017](docs/adr/0017-supplier-interface.md)) | OAuth 2.0 client credentials |
+| Operation | API documentation, sign-in limits per network address, security headers, a size limit for requests, a health check, and a clean shutdown | Limits shared across several servers |
 | Languages | Client screens, server errors and sign-in emails in German and English | Other emails, which need a stored language per user |
 | Email | Sign-in codes, with a mock switch. Real sending is not tested yet | After Sprint One: budget warnings, proof of work, rejected bookings, the single sign-on process ([ADR-0008](docs/adr/0008-email-with-nodemailer.md)) |
 
@@ -228,7 +244,7 @@ All values have safe defaults. See [backend/.env.example](backend/.env.example) 
 - [Product vision](docs/product-vision.md): who it is for, core flow, what we leave out
 - [Domain model](docs/domain.md): glossary and ER diagram
 - [Roles and privacy](docs/roles-and-privacy.md): role matrix and personal data
-- Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md) · [0012 Branching workflow](docs/adr/0012-branching-workflow.md) · [0013 Email and password sign-in](docs/adr/0013-email-and-password-sign-in.md) (replaced) · [0014 Sign-in with a code by email](docs/adr/0014-email-code-sign-in.md) · [0015 Activity log](docs/adr/0015-activity-log.md)
+- Decisions: [0001 Technology stack](docs/adr/0001-technology-stack.md) · [0002 Identity and sign-in](docs/adr/0002-identity-and-sign-in.md) · [0003 Operation and scaling](docs/adr/0003-operation-and-scaling.md) · [0004 Code structure](docs/adr/0004-code-structure.md) · [0005 AI booking assistant](docs/adr/0005-ai-booking-assistant.md) (replaced) · [0006 MySQL database](docs/adr/0006-mysql-database.md) · [0007 OpenRouter for AI](docs/adr/0007-openrouter-ai-gateway.md) · [0008 Email with nodemailer](docs/adr/0008-email-with-nodemailer.md) · [0009 Languages and location default](docs/adr/0009-languages-and-location-default.md) · [0010 Simple database migrations](docs/adr/0010-simple-database-migrations.md) · [0011 MySQL without Docker](docs/adr/0011-mysql-without-docker.md) · [0012 Branching workflow](docs/adr/0012-branching-workflow.md) · [0013 Email and password sign-in](docs/adr/0013-email-and-password-sign-in.md) (replaced) · [0014 Sign-in with a code by email](docs/adr/0014-email-code-sign-in.md) · [0015 Activity log](docs/adr/0015-activity-log.md) · [0016 Budget forecast](docs/adr/0016-budget-forecast.md) · [0017 Supplier interface](docs/adr/0017-supplier-interface.md)
 - [Mockup](docs/mockup/index.html) and its [visual direction](docs/mockup/README.md)
 - [Brand assets](docs/brand/README.md): logo files and where each is used
 - [Testing guide](docs/testing.md): how to test on every platform, with one checklist

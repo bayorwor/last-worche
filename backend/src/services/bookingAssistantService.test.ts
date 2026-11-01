@@ -24,7 +24,7 @@ describe("readProposal", () => {
 });
 
 describe("parseBookingSentence", () => {
-  test("AI_MOCK returns a fixed proposal without calling a service", async () => {
+  test("AI_MOCK reads the sentence with plain rules, without calling a service", async () => {
     const proposal = await parseBookingSentence("9 bis 5, 1 h Mittag", "2026-10-30");
 
     expect(proposal).toEqual({
@@ -33,6 +33,20 @@ describe("parseBookingSentence", () => {
       endTime: "17:00",
       hours: 7,
       description: "9 bis 5, 1 h Mittag",
+      suggestedOrderId: null,
     });
+  });
+
+  test("suggests the one assigned order the sentence names", async () => {
+    const orders = [
+      { id: "1", title: "Customer portal" },
+      { id: "2", title: "Reporting" },
+    ];
+
+    expect(await parseBookingSentence("9 bis 5 am Portal", "2026-10-30", orders)).toMatchObject({ suggestedOrderId: "1" });
+  });
+
+  test("rejects a sentence that names no times", async () => {
+    await expect(parseBookingSentence("Am Portal gearbeitet", "2026-10-30")).rejects.toThrow(AiServiceError);
   });
 });

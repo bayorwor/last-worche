@@ -14,6 +14,16 @@ const app = createApp({
   activityRepository: createMysqlActivityRepository(db),
 });
 
-app.listen(env.PORT, () => {
+const server = app.listen(env.PORT, () => {
   console.log(`lastWorche API listening on http://localhost:${env.PORT}`);
 });
+
+// Finishes the requests in progress before stopping, so a restart cannot cut a booking in half.
+function shutDown() {
+  server.close(async () => {
+    await db.end();
+    process.exit(0);
+  });
+}
+process.on("SIGTERM", shutDown);
+process.on("SIGINT", shutDown);

@@ -101,6 +101,29 @@ export const ORDER_SUPPLIERS = [
 // One working week, right after this consultant's bookings on the near-limit order.
 export const SECOND_LEAD_ORDER_DAYS = ["2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18"];
 
+// When each order may be booked on. The project of the first order runs a month longer than the order,
+// which is what the budget forecast warns about (stories #12 and #14).
+export const ORDER_PERIODS = [
+  { orderId: SEED_ORDER_ID, startDate: "2026-07-01", endDate: "2026-12-31", projectEndDate: "2027-01-29" },
+  { orderId: NEAR_LIMIT_ORDER_ID, startDate: "2026-07-01", endDate: "2026-12-31", projectEndDate: "2026-12-31" },
+  { orderId: SECOND_LEAD_ORDER_ID, startDate: "2026-09-01", endDate: "2027-03-31", projectEndDate: "2027-03-31" },
+];
+
+// Different states, to show that a holiday only counts where the consultant works (story #8).
+export const CONSULTANT_STATES = [
+  { consultantId: DEMO_CONSULTANT_ID, federalState: "BY" },
+  { consultantId: "consultant-2", federalState: "HH" },
+  { consultantId: "consultant-3", federalState: "NW" },
+];
+
+export const VACATIONS = [
+  { consultantId: DEMO_CONSULTANT_ID, startDate: "2026-12-21", endDate: "2026-12-24" },
+  { consultantId: "consultant-2", startDate: "2026-11-16", endDate: "2026-11-20" },
+];
+
+// The client's company holidays, when nobody books. The forecast counts them as lost days (story #10).
+export const SHUTDOWNS = [{ startDate: "2026-12-24", endDate: "2027-01-01" }];
+
 // Migration 004 gives these their start and end times.
 type DemoBooking = Omit<NewBooking, "startTime" | "endTime">;
 

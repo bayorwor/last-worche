@@ -21,5 +21,7 @@ export const ROLE_NAVIGATION: Record<UserRole, NavigationItem[]> = {
   purchasing: [
     { path: ROUTE_PATHS.purchasing, labelKey: 'navigation.suppliers' },
     { path: ROUTE_PATHS.purchasingOrders, labelKey: 'navigation.orders' },
+    { path: ROUTE_PATHS.purchasingFollowUps, labelKey: 'navigation.followUps' },
+    { path: ROUTE_PATHS.purchasingInvoiceCheck, labelKey: 'navigation.invoiceCheck' },
   ],
 }

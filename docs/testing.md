@@ -10,7 +10,7 @@ How to test lastWorche on every platform. It has three steps:
 
 | Platform | How to test it | Status |
 |---|---|---|
-| macOS, Chrome | [Computer browser](#computer-browser) | **Tested** |
+| macOS, Chrome | [Computer browser](#computer-browser) | **Tested**, all 22 steps on a fresh clone, on 1 Nov 2026 |
 | macOS, Safari or Firefox | [Computer browser](#computer-browser) | Not tested yet |
 | Windows, Edge or Chrome | [Computer browser](#computer-browser), with the [Windows commands](#windows-and-linux-commands) | Not tested yet |
 | Linux, Chrome or Firefox | [Computer browser](#computer-browser), with the [Linux commands](#windows-and-linux-commands) | Not tested yet |
@@ -185,14 +185,14 @@ The apps hold a copy of the client and do not update by themselves. Run `bun run
 
 ## 4. The checklist for every platform
 
-Start with fresh data, because step 10 locks a month, step 15 changes a name, and the bookings stay. To reset:
+Start with fresh data, because step 10 locks a month, step 15 changes a name, step 19 raises a budget, and the bookings stay. Test on a working day: L. Hoffmann works in Bavaria and M. Krüger in Hamburg, so their public holidays reject bookings for today, as they should. To reset:
 
 ```bash
 mysql -u root -p -e "DROP DATABASE lastworche"
 mysql -u root -p < backend/setup-database.sql
 ```
 
-Then restart the backend. To sign in: enter the email, choose *Send code*, then *Use code*. All users are fictional, and the [README](../README.md#demo-users) lists them. The labels below are in English, and *DE* switches to German.
+Then restart the backend. To sign in: enter the email, choose *Send code*, then *Use code*. All users are fictional, and the [README](../README.md#demo-users) lists them. To try the interface for a supplier's time tracking, see the [backend README](../backend/README.md#time-tracking-interface). The labels below are in English, and *DE* switches to German.
 
 | # | Sign in as | Do this | You should see |
 |---|---|---|---|
@@ -200,18 +200,24 @@ Then restart the backend. To sign in: enter the email, choose *Send code*, then 
 | 2 | Nobody | Enter `not-an-email`, then *Send code* | An error, and you stay on the same screen |
 | 3 | `a.weber@client.example` | Enter a wrong 6-digit code | An error, and the boxes empty themselves |
 | 4 | `l.hoffmann@consultis.example` | Sign in | The consultant screen with 2 orders to choose from, the tabs *Book time* and *My bookings*, and *You signed in* under *Recent activity* |
-| 5 | Same | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, then *Check proposal* and *Confirm booking* | *Booking saved*, the booking at the top of *Recent activity* and of the *My bookings* tab, and today's hours at 7.0 h |
-| 6 | Same | Do step 5 again | **Rejected:** overlaps with an existing booking, and no new entry under *Recent activity* |
-| 7 | Same | Choose order 4500012346, and do step 5 again | **Rejected:** only 0.5 PD left |
+| 5 | Same | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, then *Check proposal*. Check the form shows 09:00, 17:00 and a 60-minute break, and *All 9 rules passed*. Choose *Confirm booking* | *Booking saved*, the booking at the top of *Recent activity* and of the *My bookings* tab, and today's hours at 7.0 h |
+| 6 | Same | Enter the same sentence, then *Check proposal* | **Rule failed:** overlaps with an existing booking. *Confirm booking* cannot be chosen, and there is no new entry under *Recent activity* |
+| 7 | Same | Choose order 4500012346 for that proposal | **Rule failed:** only 0.5 PD left |
 | 8 | Same | Reload the page, then choose *Sign out* | Still signed in after the reload, then back on the sign-in screen |
 | 9 | `a.weber@client.example` | Look at order 4500012345 | *Budget* tab: used is 84.875 PD and free is 55.125 PD. *Bookings* tab: the new booking. *Recent activity*: L. Hoffmann booked 7.0 h |
 | 10 | Same | On the *Proofs of work* tab, choose *Approve proof of work* for the current month, then *Yes, approve* | The month shows *Approved* and *Approved by A. Weber*, and *You approved* appears under *Recent activity* |
-| 11 | `m.krueger@consultis.example` | Do step 5 | One order to choose from, then **rejected:** proof of work already approved |
+| 11 | `m.krueger@consultis.example` | Enter the sentence from step 5, then *Check proposal* | One order to choose from, and **rule failed:** proof of work already approved |
 | 12 | `j.schneider@client.example` | Sign in | Only order 4500012347 |
 | 13 | `k.vogel@client.example` | Look at the screen | Totals on the *Suppliers* and *Orders* tabs, 4500012346 marked *Follow-up order needed*. *Recent activity* shows the approved month without a name and no bookings. **No other person's name anywhere** |
 | 14 | Any | Choose *DE*, then *EN*, including while an error is showing | All text changes, including the error, and your choice is still there after a reload |
 | 15 | `m.krueger@consultis.example` | Under *My profile*, choose *Edit*, clear the name and save, then enter `Mira Krüger` and save | An error for the empty name, then *Profile saved*, the new name at the top of the page, and still there after a reload. Email and role cannot be edited |
 | 16 | `a.weber@client.example` | Open the *Bookings* tab | The new name on that consultant's bookings |
+| 17 | `l.hoffmann@consultis.example` | Choose *Enter by hand*, enter an activity, then change the date to `24.12.2026`, then `25.12.2026`, then `15.01.2027`, then choose *Discard* | **Rule failed**, in turn: approved vacation, Christmas Day is a public holiday, outside the order period |
+| 18 | `a.weber@client.example` | On the *Budget* tab, look at *Forecast* | The run-out week, the pace, a chart, *Order more by week …* and the assumptions. Enter `0` under *Extra consultants*, and *Calculate*: an error, and the forecast stays. Enter `1` and `4` under *Project longer*, and *Calculate*: a second dashed line and a comparison table |
+| 19 | Same | Choose *Ask purchasing*. Then sign in as `k.vogel@client.example`, open *Follow-up requests*, and choose *Confirm*, then *Yes, raise the budget* | The request shows *Confirmed*. Back as A. Weber: ordered budget raised, and the warning gone |
+| 20 | `k.vogel@client.example` | Open *Invoice check*. Choose order 4500012345 and the current month, and check `5`. Then choose a month with no approval | The difference and *Over approved hours* or *Consistent*, then **rejected:** no approved proof of work |
+| 21 | `a.weber@client.example` | On the *Proofs of work* tab, choose *Download for finance (CSV)* on the approved month | A file with that month's bookings |
+| 22 | Nobody | Open <http://localhost:3000/api/docs> | The API documentation, listing every address |
 
 ### Screen sizes
 
@@ -248,7 +254,7 @@ SMTP_PASSWORD=your-password
 
 The code should now arrive by email only, and the *Test mode* box should be gone. If nothing arrives, look in the backend's log for `Sending a sign-in code failed`.
 
-**Real AI.** Set `AI_MOCK=false` and `OPENROUTER_API_KEY`. The one-sentence booking should then read the times from your sentence, instead of always proposing 09:00–17:00.
+**Real AI.** Set `AI_MOCK=false` and `OPENROUTER_API_KEY`. The language model should then read your sentence, also when it is worded freely. If the service fails, plain rules read the sentence instead, and the backend's log says so.
 
 ## Report what you find
 

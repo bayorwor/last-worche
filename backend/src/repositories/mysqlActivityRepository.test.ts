@@ -1,10 +1,11 @@
 // Runs against a real MySQL database, and only when TEST_DATABASE_URL is set. Deletes all bookings and activity there.
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
-import type { Pool } from "mysql2/promise";
+import type { Pool, RowDataPacket } from "mysql2/promise";
 import { BusinessRuleError } from "../domain/errors.ts";
 import type { User } from "../domain/user.ts";
 import { createActivityService, type ActivityService } from "../services/activityService.ts";
 import { createBookingService } from "../services/bookingService.ts";
+import { createFollowUpService } from "../services/followUpService.ts";
 import { createProofOfWorkService } from "../services/proofOfWorkService.ts";
 import { openDatabase } from "./database.ts";
 import { createMysqlActivityRepository } from "./mysqlActivityRepository.ts";
@@ -69,5 +70,81 @@ describe.skipIf(!databaseUrl)("mysqlActivityRepository", () => {
 
     expect(await activity.listFor(purchasing)).toMatchObject([{ type: "proof_approved", isOwn: false, actorName: null, period: "2026-10" }]);
     expect((await activity.listFor(consultant)).map((entry) => entry.type)).toEqual(["booking_created"]);
+  });
+});
+
+describe.skipIf(!databaseUrl)("a supplier's batch against real MySQL", () => {
+  let db: Pool;
+
+  beforeAll(async () => {
+    db = await openDatabase(databaseUrl as string);
+  });
+
+  beforeEach(async () => {
+    await db.query("DELETE FROM activity_log");
+    await db.query("DELETE FROM proofs_of_work");
+    await db.query("DELETE FROM bookings");
+  });
+
+  afterAll(async () => {
+    await db.end();
+  });
+
+  async function bookingCount() {
+    const [rows] = await db.query<RowDataPacket[]>("SELECT COUNT(*) AS total FROM bookings");
+    return rows[0]?.total as number;
+  }
+
+  test("stores a valid batch, each row logged for its consultant", async () => {
+    const service = createBookingService(createMysqlBookingRepository(db));
+
+    await service.importBookings("supplier-1", [booking, { ...booking, consultantId: "consultant-2" }]);
+
+    expect(await bookingCount()).toBe(2);
+    expect((await createActivityService(createMysqlActivityRepository(db)).listFor(lead)).length).toBe(2);
+  });
+
+  test("one bad row leaves nothing from the batch, and no activity", async () => {
+    const service = createBookingService(createMysqlBookingRepository(db));
+    const badRow = { ...booking, consultantId: "consultant-3" };
+
+    await expect(service.importBookings("supplier-1", [booking, badRow])).rejects.toThrow("Row 2");
+
+    expect(await bookingCount()).toBe(0);
+    expect(await createActivityService(createMysqlActivityRepository(db)).listFor(lead)).toEqual([]);
+  });
+
+  test("the same batch sent again is rejected as a duplicate", async () => {
+    const service = createBookingService(createMysqlBookingRepository(db));
+    await service.importBookings("supplier-1", [booking]);
+
+    await expect(service.importBookings("supplier-1", [booking])).rejects.toThrow("already sent");
+    expect(await bookingCount()).toBe(1);
+  });
+});
+
+describe.skipIf(!databaseUrl)("a follow-up request against real MySQL", () => {
+  let db: Pool;
+
+  beforeAll(async () => {
+    db = await openDatabase(databaseUrl as string);
+  });
+
+  afterAll(async () => {
+    await db.query("DELETE FROM follow_up_requests");
+    await db.query("UPDATE orders SET ordered_person_days = 140, end_date = '2026-12-31' WHERE id = ?", [SEED_ORDER_ID]);
+    await db.end();
+  });
+
+  test("confirming raises the budget and extends the order to the project end", async () => {
+    const repository = createMysqlBookingRepository(db);
+    const followUps = createFollowUpService(repository);
+    const { id } = await followUps.request(lead, SEED_ORDER_ID, 20, "2026-12-01");
+
+    await followUps.confirm(purchasing, id);
+
+    const [rows] = await db.query<RowDataPacket[]>("SELECT ordered_person_days AS budget, end_date AS endDate FROM orders WHERE id = ?", [SEED_ORDER_ID]);
+    expect(rows[0]).toMatchObject({ budget: 160, endDate: "2027-01-29" });
+    expect(await followUps.listAll()).toMatchObject([{ id, status: "confirmed" }]);
   });
 });

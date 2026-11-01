@@ -1,7 +1,7 @@
 import { apiClient } from '../../shared/api/apiClient.ts'
 import type { OrderSummary } from '../../shared/api/orderSummary.ts'
 import { todayIsoDate } from '../../shared/utils/todayIsoDate.ts'
-import type { Booking, BookingProposal } from './bookingTypes.ts'
+import type { Booking, BookingCheckResult, BookingProposal } from './bookingTypes.ts'
 
 export async function requestAssignedOrders(): Promise<OrderSummary[]> {
   const { data } = await apiClient.get<OrderSummary[]>('/orders')
@@ -15,6 +15,11 @@ export async function requestOwnBookings(consultantId: string): Promise<Booking[
 
 export async function requestBookingProposal(sentence: string): Promise<BookingProposal> {
   const { data } = await apiClient.post<BookingProposal>('/ai/parse-booking', { sentence, today: todayIsoDate() })
+  return data
+}
+
+export async function requestBookingCheck(proposal: BookingProposal, orderId: string): Promise<BookingCheckResult> {
+  const { data } = await apiClient.post<BookingCheckResult>('/bookings/check', { ...proposal, orderId })
   return data
 }
 

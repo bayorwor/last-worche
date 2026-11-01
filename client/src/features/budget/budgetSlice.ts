@@ -3,13 +3,15 @@ import { FALLBACK_API_ERROR, getApiError, type ApiError } from '../../shared/api
 import type { OrderSummary } from '../../shared/api/orderSummary.ts'
 import type { RequestStatus } from '../../shared/api/requestStatus.ts'
 import {
+  requestFollowUpOrder,
   requestOrderBookings,
   requestOrderBudget,
+  requestOrderForecast,
   requestOrders,
   requestProofApproval,
   requestProofsOfWork,
 } from './budgetApi.ts'
-import type { OrderBooking, OrderBudget, ProofOfWork } from './budgetTypes.ts'
+import type { ForecastScenario, OrderBooking, OrderBudget, OrderForecast, ProofOfWork } from './budgetTypes.ts'
 
 type BudgetState = {
   orders: OrderSummary[]
@@ -17,6 +19,10 @@ type BudgetState = {
   budgetsByOrderId: Record<string, OrderBudget>
   bookingsByOrderId: Record<string, OrderBooking[]>
   proofsByOrderId: Record<string, ProofOfWork[]>
+  forecastsByOrderId: Record<string, OrderForecast>
+  forecastStatus: RequestStatus
+  forecastError: ApiError | null
+  followUpStatus: RequestStatus
   approvalStatus: RequestStatus
   status: RequestStatus
   error: ApiError | null
@@ -27,6 +33,10 @@ const initialState: BudgetState = {
   budgetsByOrderId: {},
   bookingsByOrderId: {},
   proofsByOrderId: {},
+  forecastsByOrderId: {},
+  forecastStatus: 'idle',
+  forecastError: null,
+  followUpStatus: 'idle',
   approvalStatus: 'idle',
   status: 'idle',
   error: null,
@@ -87,9 +97,37 @@ export const fetchOrderBudget = createAsyncThunk<OrderBudget, string, { rejectVa
   },
 )
 
+export const fetchOrderForecast = createAsyncThunk<OrderForecast, { orderId: string; scenario?: ForecastScenario }, { rejectValue: ApiError }>(
+  'budget/fetchOrderForecast',
+  async ({ orderId, scenario }, { rejectWithValue }) => {
+    try {
+      return await requestOrderForecast(orderId, scenario)
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
+export const requestFollowUp = createAsyncThunk<void, { orderId: string; personDays: number; neededByDate: string }, { rejectValue: ApiError }>(
+  'budget/requestFollowUp',
+  async ({ orderId, personDays, neededByDate }, { dispatch, rejectWithValue }) => {
+    try {
+      await requestFollowUpOrder(orderId, personDays, neededByDate)
+      await dispatch(fetchOrderForecast({ orderId }))
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
 // Everything the project lead's tabs show about one order.
 export const loadOrder = createAsyncThunk<void, string>('budget/loadOrder', async (orderId, { dispatch }) => {
-  await Promise.all([dispatch(fetchOrderBudget(orderId)), dispatch(fetchOrderBookings(orderId)), dispatch(fetchProofsOfWork(orderId))])
+  await Promise.all([
+    dispatch(fetchOrderBudget(orderId)),
+    dispatch(fetchOrderBookings(orderId)),
+    dispatch(fetchProofsOfWork(orderId)),
+    dispatch(fetchOrderForecast({ orderId })),
+  ])
 })
 
 const budgetSlice = createSlice({
@@ -133,6 +171,30 @@ const budgetSlice = createSlice({
       .addCase(approveProofOfWork.rejected, (state, action) => {
         state.approvalStatus = 'failed'
         state.error = action.payload ?? FALLBACK_API_ERROR
+      })
+      .addCase(fetchOrderForecast.pending, (state) => {
+        state.forecastStatus = 'loading'
+        state.forecastError = null
+      })
+      .addCase(fetchOrderForecast.fulfilled, (state, action) => {
+        state.forecastStatus = 'succeeded'
+        state.forecastsByOrderId[action.meta.arg.orderId] = action.payload
+      })
+      // The last forecast stays on screen: an invalid scenario must not change it.
+      .addCase(fetchOrderForecast.rejected, (state, action) => {
+        state.forecastStatus = 'failed'
+        state.forecastError = action.payload ?? FALLBACK_API_ERROR
+      })
+      .addCase(requestFollowUp.pending, (state) => {
+        state.followUpStatus = 'loading'
+        state.forecastError = null
+      })
+      .addCase(requestFollowUp.fulfilled, (state) => {
+        state.followUpStatus = 'succeeded'
+      })
+      .addCase(requestFollowUp.rejected, (state, action) => {
+        state.followUpStatus = 'failed'
+        state.forecastError = action.payload ?? FALLBACK_API_ERROR
       })
       .addCase(fetchOrderBudget.pending, (state) => {
         state.status = 'loading'

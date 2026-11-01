@@ -9,6 +9,8 @@ export const ROUTE_PATHS = {
   projectLeadProofs: '/project-lead/proofs-of-work',
   purchasing: '/purchasing',
   purchasingOrders: '/purchasing/orders',
+  purchasingFollowUps: '/purchasing/follow-up-requests',
+  purchasingInvoiceCheck: '/purchasing/invoice-check',
 } as const
 
 export const ROLE_HOME_PATHS: Record<UserRole, string> = {

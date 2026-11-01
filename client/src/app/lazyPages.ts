@@ -10,4 +10,6 @@ export const OrderBookingsPage = lazy(() => import('../features/budget/pages/Ord
 export const ProofsOfWorkPage = lazy(() => import('../features/budget/pages/ProofsOfWorkPage.tsx'))
 export const PurchasingOverviewPage = lazy(() => import('../features/purchasing/pages/PurchasingOverviewPage.tsx'))
 export const SupplierTotalsPage = lazy(() => import('../features/purchasing/pages/SupplierTotalsPage.tsx'))
+export const FollowUpRequestsPage = lazy(() => import('../features/purchasing/pages/FollowUpRequestsPage.tsx'))
+export const InvoiceCheckPage = lazy(() => import('../features/purchasing/pages/InvoiceCheckPage.tsx'))
 export const OrderTotalsPage = lazy(() => import('../features/purchasing/pages/OrderTotalsPage.tsx'))

@@ -17,6 +17,7 @@ import {
   SECOND_LEAD_ORDER,
   SECOND_LEAD_ORDER_CONSULTANT_ID,
   SECOND_LEAD_ORDER_DAYS,
+  SHUTDOWNS,
   SUPPLIERS,
   TEST_PASSWORD,
   TEST_USERS,
@@ -320,6 +321,41 @@ export const MIGRATIONS: Migration[] = [
       await db.query("INSERT INTO vacations (consultant_id, start_date, end_date) VALUES ?", [
         VACATIONS.map(({ consultantId, startDate, endDate }) => [consultantId, startDate, endDate]),
       ]);
+    },
+  },
+  {
+    // Company holidays for the forecast, and follow-up requests from a project lead to purchasing (stories #10, #14).
+    name: "012-shutdowns-and-follow-ups",
+    async run(db) {
+      await db.query(`
+        CREATE TABLE shutdowns (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          start_date DATE NOT NULL,
+          end_date DATE NOT NULL
+        )
+      `);
+      await db.query("INSERT INTO shutdowns (start_date, end_date) VALUES ?", [SHUTDOWNS.map(({ startDate, endDate }) => [startDate, endDate])]);
+
+      await db.query(`
+        CREATE TABLE follow_up_requests (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          order_id VARCHAR(32) NOT NULL,
+          requested_by_user_id VARCHAR(64) NOT NULL,
+          person_days DECIMAL(8, 3) NOT NULL,
+          needed_by_date DATE NOT NULL,
+          status ENUM('open', 'confirmed') NOT NULL DEFAULT 'open',
+          requested_at_ms BIGINT NOT NULL,
+          confirmed_by_user_id VARCHAR(64) NULL,
+          confirmed_at_ms BIGINT NULL,
+          FOREIGN KEY (order_id) REFERENCES orders(id),
+          FOREIGN KEY (requested_by_user_id) REFERENCES users(id),
+          FOREIGN KEY (confirmed_by_user_id) REFERENCES users(id)
+        )
+      `);
+      await db.query(`
+        ALTER TABLE activity_log MODIFY type
+          ENUM('signed_in', 'profile_updated', 'booking_created', 'proof_approved', 'follow_up_requested', 'follow_up_confirmed') NOT NULL
+      `);
     },
   },
 ];

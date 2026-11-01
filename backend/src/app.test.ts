@@ -436,3 +436,44 @@ describe("recent activity", () => {
     expect(entries.filter((entry) => !entry.isOwn).every((entry) => entry.actorName === null)).toBe(true);
   });
 });
+
+describe("forecast and follow-up requests", () => {
+  test("a project lead gets a forecast of their own order", async () => {
+    const response = await send("GET", `/orders/${ORDER_ID}/forecast`, { token: await signIn("user-project-lead") });
+
+    expect(response.status).toBe(200);
+  });
+
+  test("purchasing and consultants may not see a forecast", async () => {
+    expect((await send("GET", `/orders/${ORDER_ID}/forecast`, { token: await signIn("user-purchasing") })).status).toBe(403);
+    expect((await send("GET", `/orders/${ORDER_ID}/forecast`, { token: await signIn("user-consultant") })).status).toBe(403);
+  });
+
+  test("rejects an invalid scenario with 400", async () => {
+    const token = await signIn("user-project-lead");
+
+    expect((await send("GET", `/orders/${ORDER_ID}/forecast?extraConsultants=0`, { token })).status).toBe(400);
+    expect((await send("GET", `/orders/${ORDER_ID}/forecast?projectEndShiftWeeks=-4`, { token })).status).toBe(400);
+  });
+
+  test("purchasing confirms a lead's request, and only purchasing may", async () => {
+    const leadToken = await signIn("user-other-lead");
+    const buyerToken = await signIn("user-purchasing");
+    const body = { personDays: 5, neededByDate: "2026-12-01" };
+
+    expect((await send("POST", `/orders/${OTHER_ORDER_ID}/follow-up-requests`, { token: buyerToken, body })).status).toBe(403);
+    const created = await send("POST", `/orders/${OTHER_ORDER_ID}/follow-up-requests`, { token: leadToken, body });
+    expect(created.status).toBe(201);
+    const { id } = (await created.json()) as { id: number };
+
+    expect((await send("POST", `/purchasing/follow-up-requests/${id}/confirm`, { token: leadToken })).status).toBe(403);
+    expect((await send("POST", `/purchasing/follow-up-requests/${id}/confirm`, { token: buyerToken })).status).toBe(200);
+    expect(await (await send("GET", `/orders/${OTHER_ORDER_ID}/budget`, { token: buyerToken })).json()).toMatchObject({ orderedPersonDays: 25 });
+  });
+
+  test("purchasing's activity shows that request with no name", async () => {
+    const entries = (await (await send("GET", "/activity", { token: await signIn("user-purchasing") })).json()) as { type: string; actorName: string | null; isOwn: boolean }[];
+
+    expect(entries.find((entry) => entry.type === "follow_up_requested")).toMatchObject({ actorName: null });
+  });
+});

@@ -121,6 +121,9 @@ export const VACATIONS = [
   { consultantId: "consultant-2", startDate: "2026-11-16", endDate: "2026-11-20" },
 ];
 
+// The client's company holidays, when nobody books. The forecast counts them as lost days (story #10).
+export const SHUTDOWNS = [{ startDate: "2026-12-24", endDate: "2027-01-01" }];
+
 // Migration 004 gives these their start and end times.
 type DemoBooking = Omit<NewBooking, "startTime" | "endTime">;
 

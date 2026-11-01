@@ -1,6 +1,8 @@
 // What the services need from storage. Services depend on these types, not on MySQL.
 import type { NewActivity } from "../domain/activity.ts";
 import type { ConsultantCalendar, DateRange, DayBooking, Order } from "../domain/booking.ts";
+import type { BookedDay } from "../domain/forecast.ts";
+import type { FollowUpRequest, FollowUpStatus } from "../domain/followUp.ts";
 import type { ProofOfWorkTotals } from "../domain/proofOfWork.ts";
 import type { OrderTotals } from "../domain/purchasing.ts";
 
@@ -31,6 +33,14 @@ export type MonthApproval = {
   approvedAtMs: number;
 };
 
+export type NewFollowUpRequest = {
+  orderId: string;
+  requestedByUserId: string;
+  personDays: number;
+  neededByDate: string;
+  requestedAtMs: number;
+};
+
 export type BookingTransaction = {
   // Locks the order until the transaction ends, so its budget cannot change in the meantime.
   findOrderForUpdate(orderId: string): Promise<BookableOrder | null>;
@@ -47,6 +57,11 @@ export type BookingTransaction = {
   approveMonth(approval: MonthApproval): Promise<void>;
   // Part of the transaction, so a rejected booking or approval is never logged.
   recordActivity(activity: NewActivity): Promise<void>;
+  hasOpenFollowUp(orderId: string): Promise<boolean>;
+  saveFollowUp(request: NewFollowUpRequest): Promise<number>;
+  // Locks the request, so two clicks cannot raise a budget twice.
+  findFollowUpForUpdate(id: number): Promise<{ orderId: string; personDays: number; status: FollowUpStatus } | null>;
+  confirmFollowUp(id: number, confirmedByUserId: string, confirmedAtMs: number): Promise<void>;
   recordBookingCreated(booking: NewBooking, occurredAtMs: number): Promise<void>;
 };
 
@@ -61,6 +76,12 @@ export type BookingRepository = {
   listRecentBookingsOfConsultant(consultantId: string): Promise<StoredBooking[]>;
   listRecentBookingsOfOrder(orderId: string): Promise<OrderBooking[]>;
   findOrder(orderId: string): Promise<Order | null>;
+  findProjectEndDate(orderId: string): Promise<string | null>;
+  listBookedDays(orderId: string): Promise<BookedDay[]>;
+  findConsultantCalendars(consultantIds: string[]): Promise<Record<string, ConsultantCalendar>>;
+  listShutdowns(): Promise<DateRange[]>;
+  listFollowUps(): Promise<FollowUpRequest[]>;
+  findOpenFollowUpOfOrder(orderId: string): Promise<FollowUpRequest | null>;
   sumBookedHours(orderId: string): Promise<number>;
   // Commits if `work` succeeds and rolls everything back if it throws.
   transaction<T>(work: (transaction: BookingTransaction) => Promise<T>): Promise<T>;

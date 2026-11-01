@@ -2,6 +2,7 @@
 import type { ConsultantCalendar, DateRange, Order } from "../domain/booking.ts";
 import type { FollowUpRequest } from "../domain/followUp.ts";
 import type { LockedFrameworkAgreement } from "../domain/frameworkAgreement.ts";
+import type { StoredInvoice } from "../domain/invoiceCheck.ts";
 import { monthOf } from "../domain/proofOfWork.ts";
 import { createInMemoryActivityRepository, type InMemoryActivityRepository } from "./inMemoryActivityRepository.ts";
 import {
@@ -37,6 +38,7 @@ export function createInMemoryBookingRepository(
   const bookings: StoredBooking[] = [];
   const approvals: MonthApproval[] = [];
   const followUps: FollowUpRequest[] = [];
+  const invoices: StoredInvoice[] = [];
 
   // Stands in for the names of the users table.
   const LEAD_NAMES: Record<string, string> = { "lead-1": "A. Weber", "lead-2": "J. Schneider" };
@@ -116,6 +118,7 @@ export function createInMemoryBookingRepository(
             : [],
         ),
       ),
+    listInvoices: async () => [...invoices].reverse(),
     listOrdersLedBy: async (userId) => orders.filter((order) => order.projectLeadId === userId).map(toSummary),
     isConsultantAssigned,
     isOrderLedBy: async (userId, orderId) => orders.some((order) => order.id === orderId && order.projectLeadId === userId),
@@ -186,6 +189,12 @@ export function createInMemoryBookingRepository(
         findFrameworkAgreementOfOrderForUpdate: async (orderId) => orders.find(({ id }) => id === orderId)?.frameworkAgreement ?? null,
         sumOrderedPersonDaysOfAgreement: async (agreementId) =>
           orders.filter((order) => order.frameworkAgreement?.id === agreementId).reduce((total, order) => total + order.orderedPersonDays, 0),
+        hasInvoice: async (orderId, month) => invoices.some((invoice) => invoice.orderId === orderId && invoice.month === month),
+        saveInvoice: async ({ recordedByUserId: _recordedByUserId, ...invoice }) => {
+          const id = invoices.length + 1;
+          invoices.push({ ...invoice, id, orderTitle: `Order ${invoice.orderId}` });
+          return id;
+        },
         recordBookingCreated: async ({ consultantId, orderId, date, hours }, occurredAtMs) => {
           const actorUserId = activities.findUserIdOfConsultant(consultantId);
           if (actorUserId) {

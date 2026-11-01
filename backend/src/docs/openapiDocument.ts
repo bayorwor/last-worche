@@ -139,6 +139,12 @@ export const openapiDocument = {
         requestBody: body({ type: "object", required: ["orderId", "month", "invoicedPersonDays"], properties: { orderId: { type: "string" }, month: { type: "string", example: "2026-10" }, invoicedPersonDays: { type: "number" } } }),
       }),
     },
+    "/purchasing/invoices": {
+      get: operation("Stored invoices, each with its difference from the approved month", "Purchasing", "purchasing", { "200": ok("The invoices"), "401": errors["401"], "403": errors["403"] }),
+      post: operation("Store an invoice against an approved month, one per order and month", "Purchasing", "purchasing", { "201": ok("The invoices"), "400": errors["400"], "401": errors["401"], "403": errors["403"], "404": errors["404"], "422": errors["422"] }, {
+        requestBody: body({ type: "object", required: ["orderId", "month", "invoiceNumber", "invoicedPersonDays"], properties: { orderId: { type: "string" }, month: { type: "string", example: "2026-10" }, invoiceNumber: { type: "string", maxLength: 64 }, invoicedPersonDays: { type: "number" } } }),
+      }),
+    },
     "/purchasing/follow-up-requests": {
       get: operation("Project leads' requests for more budget", "Purchasing", "purchasing", { "200": ok("The requests"), "401": errors["401"], "403": errors["403"] }),
     },

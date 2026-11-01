@@ -405,4 +405,29 @@ export const MIGRATIONS: Migration[] = [
       );
     },
   },
+  {
+    // Invoices purchasing has checked against an approved month. One per order and month, and no person in them.
+    name: "014-invoices",
+    async run(db) {
+      await db.query(`
+        CREATE TABLE invoices (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          order_id VARCHAR(32) NOT NULL,
+          month CHAR(7) NOT NULL,
+          invoice_number VARCHAR(64) NOT NULL,
+          invoiced_person_days DECIMAL(10, 3) NOT NULL,
+          approved_person_days DECIMAL(10, 3) NOT NULL,
+          recorded_by_user_id VARCHAR(64) NOT NULL,
+          recorded_at_ms BIGINT NOT NULL,
+          UNIQUE KEY one_invoice_per_order_and_month (order_id, month),
+          FOREIGN KEY (order_id) REFERENCES orders(id),
+          FOREIGN KEY (recorded_by_user_id) REFERENCES users(id)
+        )
+      `);
+      await db.query(`
+        ALTER TABLE activity_log MODIFY type
+          ENUM('signed_in', 'profile_updated', 'booking_created', 'proof_approved', 'follow_up_requested', 'follow_up_confirmed', 'follow_up_declined', 'invoice_recorded') NOT NULL
+      `);
+    },
+  },
 ];

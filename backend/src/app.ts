@@ -53,7 +53,7 @@ export function createApp({ bookingRepository, userRepository, activityRepositor
   app.use("/api/auth", createAuthRoutes(createAuthController(authService), guards));
   app.use("/api", createBookingRoutes(createBookingController(bookingService), guards));
   app.use("/api", createProofOfWorkRoutes(createProofOfWorkController(createProofOfWorkService(bookingRepository)), guards));
-  app.use("/api/ai", createAiRoutes(createAiController(), guards));
+  app.use("/api/ai", createAiRoutes(createAiController(bookingService), guards));
   app.use("/api/activity", createActivityRoutes(createActivityController(createActivityService(activityRepository)), guards));
   app.use("/api/purchasing", createPurchasingRoutes(createPurchasingController(createPurchasingService(bookingRepository)), guards));
 

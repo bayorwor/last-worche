@@ -1,8 +1,18 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { FALLBACK_API_ERROR, getApiError, type ApiError } from '../../shared/api/getApiError.ts'
 import type { RequestStatus } from '../../shared/api/requestStatus.ts'
-import { requestFollowUpConfirmation, requestFollowUpRequests, requestInvoiceCheck, requestSupplierOverview } from './purchasingApi.ts'
-import type { FollowUpRequest, InvoiceCheckResult, SupplierOverview } from './purchasingTypes.ts'
+import {
+  requestFollowUpConfirmation,
+  requestFollowUpDecline,
+  requestFollowUpRequests,
+  requestFrameworkAgreements,
+  requestInvoiceCheck,
+  requestInvoices,
+  requestInvoiceSave,
+  requestSupplierOverview,
+  type NewInvoice,
+} from './purchasingApi.ts'
+import type { FollowUpRequest, FrameworkAgreement, InvoiceCheckResult, StoredInvoice, SupplierOverview } from './purchasingTypes.ts'
 
 type PurchasingState = {
   suppliers: SupplierOverview[]
@@ -10,8 +20,12 @@ type PurchasingState = {
   error: ApiError | null
   followUps: FollowUpRequest[]
   followUpStatus: RequestStatus
+  followUpError: ApiError | null
+  frameworkAgreements: FrameworkAgreement[]
+  invoices: StoredInvoice[]
   invoiceResult: InvoiceCheckResult | null
   invoiceStatus: RequestStatus
+  invoiceSaveStatus: RequestStatus
   invoiceError: ApiError | null
 }
 
@@ -21,8 +35,12 @@ const initialState: PurchasingState = {
   error: null,
   followUps: [],
   followUpStatus: 'idle',
+  followUpError: null,
+  frameworkAgreements: [],
+  invoices: [],
   invoiceResult: null,
   invoiceStatus: 'idle',
+  invoiceSaveStatus: 'idle',
   invoiceError: null,
 }
 
@@ -55,6 +73,50 @@ export const confirmFollowUp = createAsyncThunk<FollowUpRequest[], number, { rej
       const followUps = await requestFollowUpConfirmation(id)
       dispatch(fetchSupplierOverview())
       return followUps
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
+export const declineFollowUp = createAsyncThunk<FollowUpRequest[], number, { rejectValue: ApiError }>(
+  'purchasing/declineFollowUp',
+  async (id, { rejectWithValue }) => {
+    try {
+      return await requestFollowUpDecline(id)
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
+export const fetchFrameworkAgreements = createAsyncThunk<FrameworkAgreement[], void, { rejectValue: ApiError }>(
+  'purchasing/fetchFrameworkAgreements',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await requestFrameworkAgreements()
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
+export const fetchInvoices = createAsyncThunk<StoredInvoice[], void, { rejectValue: ApiError }>(
+  'purchasing/fetchInvoices',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await requestInvoices()
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
+export const recordInvoice = createAsyncThunk<StoredInvoice[], NewInvoice, { rejectValue: ApiError }>(
+  'purchasing/recordInvoice',
+  async (invoice, { rejectWithValue }) => {
+    try {
+      return await requestInvoiceSave(invoice)
     } catch (error) {
       return rejectWithValue(getApiError(error))
     }
@@ -96,8 +158,34 @@ const purchasingSlice = createSlice({
       .addCase(fetchFollowUps.rejected, (state, action) => {
         state.error = action.payload ?? FALLBACK_API_ERROR
       })
+      .addCase(fetchFrameworkAgreements.fulfilled, (state, action) => {
+        state.frameworkAgreements = action.payload
+      })
+      .addCase(fetchFrameworkAgreements.rejected, (state, action) => {
+        state.error = action.payload ?? FALLBACK_API_ERROR
+      })
+      .addCase(fetchInvoices.fulfilled, (state, action) => {
+        state.invoices = action.payload
+      })
+      .addCase(fetchInvoices.rejected, (state, action) => {
+        state.error = action.payload ?? FALLBACK_API_ERROR
+      })
+      .addCase(recordInvoice.pending, (state) => {
+        state.invoiceSaveStatus = 'loading'
+        state.invoiceError = null
+      })
+      .addCase(recordInvoice.fulfilled, (state, action) => {
+        state.invoiceSaveStatus = 'succeeded'
+        state.invoices = action.payload
+        state.invoiceResult = null
+      })
+      .addCase(recordInvoice.rejected, (state, action) => {
+        state.invoiceSaveStatus = 'failed'
+        state.invoiceError = action.payload ?? FALLBACK_API_ERROR
+      })
       .addCase(checkInvoice.pending, (state) => {
         state.invoiceStatus = 'loading'
+        state.invoiceSaveStatus = 'idle'
         state.invoiceResult = null
         state.invoiceError = null
       })
@@ -111,7 +199,7 @@ const purchasingSlice = createSlice({
       })
       .addCase(confirmFollowUp.pending, (state) => {
         state.followUpStatus = 'loading'
-        state.error = null
+        state.followUpError = null
       })
       .addCase(confirmFollowUp.fulfilled, (state, action) => {
         state.followUpStatus = 'succeeded'
@@ -119,7 +207,19 @@ const purchasingSlice = createSlice({
       })
       .addCase(confirmFollowUp.rejected, (state, action) => {
         state.followUpStatus = 'failed'
-        state.error = action.payload ?? FALLBACK_API_ERROR
+        state.followUpError = action.payload ?? FALLBACK_API_ERROR
+      })
+      .addCase(declineFollowUp.pending, (state) => {
+        state.followUpStatus = 'loading'
+        state.followUpError = null
+      })
+      .addCase(declineFollowUp.fulfilled, (state, action) => {
+        state.followUpStatus = 'succeeded'
+        state.followUps = action.payload
+      })
+      .addCase(declineFollowUp.rejected, (state, action) => {
+        state.followUpStatus = 'failed'
+        state.followUpError = action.payload ?? FALLBACK_API_ERROR
       })
   },
 })

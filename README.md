@@ -313,3 +313,8 @@ Open each pull request on GitHub, and merge it with **Create a merge commit**. P
 ## Team
 
 - [bayorwor](https://github.com/bayorwor)
+- [Abdallah Abdul-Salam](https://github.com/Gbambegu)
+- [Nora-Harriet](https://github.com/Nora-Harriet)
+- [emmanuelakutam3-ship-it](https://github.com/emmanuelakutam3-ship-it)
+- [Nawal](https://github.com/eliasunawal-code)
+- [hashimat](https://github.com/hashimat)

@@ -185,7 +185,7 @@ export const de = {
   'forecast.seriesBase': 'Prognose',
   'forecast.seriesScenario': 'Szenario',
   'forecast.tableSummary': 'Zahlen als Tabelle',
-  'forecast.assumptions': 'Annahmen: Tempo der letzten {weeks} Wochen, {consultants} aktive Berater. Bis zum Ende abgezogen: {holidays} Feiertage, {vacations} Urlaubstage, {shutdowns} Tage Betriebsruhe. Der Einkauf braucht {leadWeeks} Wochen.',
+  'forecast.assumptions': 'Annahmen: Tempo der letzten {weeks} Wochen, {consultants} aktive Berater. Bis zum Ende abgezogen: Feiertage {holidays}, Urlaubstage {vacations}, Tage Betriebsruhe {shutdowns}. Der Einkauf braucht {leadWeeks} Wochen.',
   'forecast.scenarioTitle': 'Szenario durchspielen',
   'forecast.scenarioConsultants': 'Zusätzliche Berater',
   'forecast.scenarioFrom': 'Ab Datum',

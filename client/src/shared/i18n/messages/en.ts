@@ -186,7 +186,7 @@ export const en: Record<MessageKey, string> = {
   'forecast.seriesBase': 'Forecast',
   'forecast.seriesScenario': 'Scenario',
   'forecast.tableSummary': 'Figures as a table',
-  'forecast.assumptions': 'Assumes: the pace of the last {weeks} weeks, {consultants} active consultants. Taken off until the end: {holidays} public holidays, {vacations} vacation days, {shutdowns} shutdown days. Purchasing needs {leadWeeks} weeks.',
+  'forecast.assumptions': 'Assumes: the pace of the last {weeks} weeks, {consultants} active consultants. Taken off until the end: public holidays {holidays}, vacation days {vacations}, shutdown days {shutdowns}. Purchasing needs {leadWeeks} weeks.',
   'forecast.scenarioTitle': 'Try a scenario',
   'forecast.scenarioConsultants': 'Extra consultants',
   'forecast.scenarioFrom': 'From date',

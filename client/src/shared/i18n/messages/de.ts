@@ -27,7 +27,8 @@ export const de = {
   'signIn.testAccountsTitle': 'Testzugänge',
   'signIn.testAccountsHint': 'Wählen Sie einen Zugang, um die E-Mail-Adresse einzutragen.',
 
-  'session.signedInAs': 'Angemeldet als',
+  'profileMenu.label': 'Profilmenü',
+  'profileMenu.editProfile': 'Profil bearbeiten',
   'session.signOut': 'Abmelden',
 
   'navigation.label': 'Bereiche',

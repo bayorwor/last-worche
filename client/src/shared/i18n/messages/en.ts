@@ -28,7 +28,8 @@ export const en: Record<MessageKey, string> = {
   'signIn.testAccountsTitle': 'Test accounts',
   'signIn.testAccountsHint': 'Choose an account to fill in its email address.',
 
-  'session.signedInAs': 'Signed in as',
+  'profileMenu.label': 'Profile menu',
+  'profileMenu.editProfile': 'Edit profile',
   'session.signOut': 'Sign out',
 
   'navigation.label': 'Sections',

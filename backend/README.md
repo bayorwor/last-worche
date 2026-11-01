@@ -1,6 +1,6 @@
 # backend
 
-lastWorche API, running on Bun, Express and MySQL. No API key or mail server is needed: `AI_MOCK=true` returns a fixed AI proposal, and `MAIL_MOCK=true` sends no email and shows sign-in codes on the screen.
+lastWorche API, running on Bun, Express and MySQL. No API key or mail server is needed: `AI_MOCK=true` reads one-sentence bookings with plain rules, and `MAIL_MOCK=true` sends no email and shows sign-in codes on the screen.
 
 MySQL must be installed and running. To create the database and user once, run this from the repository root: `mysql -u root -p < backend/setup-database.sql`.
 
@@ -13,7 +13,7 @@ bun test            # unit tests, no database needed
 bun run typecheck
 ```
 
-To also run the tests against real MySQL, set `TEST_DATABASE_URL`. **These tests delete all bookings in that database.**
+To also run the tests against real MySQL, set `TEST_DATABASE_URL`. **These tests delete all bookings and activity in that database.**
 
 ```bash
 TEST_DATABASE_URL=mysql://lastworche:lastworche@localhost:3306/lastworche bun test
@@ -36,6 +36,7 @@ src/
   domain/            business rules and their errors, which carry a rule name and values so the client can translate them
   repositories/      storage: the interface services use, its MySQL version, an in-memory version for tests, migrations and sample data
   config/            validated environment, mail transport
+  docs/              the API in machine-readable form, with a test that compares it with the routes
 ```
 
 ## Try it
@@ -63,3 +64,15 @@ curl -X POST localhost:3000/api/bookings -H 'Content-Type: application/json' \
 curl -X POST localhost:3000/api/ai/parse-booking -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"sentence":"9 bis 5 am Kundenportal, 1 h Mittag"}'
 ```
+
+## Time tracking interface
+
+A supplier's own system can send hours through the same rules as a booking by hand. All rows or none are stored, and a rejection names the row ([ADR-0017](../docs/adr/0017-supplier-interface.md)). The demo keys are in `.env.example`.
+
+```bash
+curl -X POST localhost:3000/api/integrations/time-tracking/bookings \
+  -H 'X-Api-Key: demo-consultis-key' -H 'Content-Type: application/json' \
+  -d '{"bookings":[{"consultantId":"consultant-1","orderId":"4500012345","date":"2026-11-04","startTime":"09:00","endTime":"17:00","hours":7,"description":"Portal development"}]}'
+```
+
+The API documentation is at <http://localhost:3000/api/docs>.

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import jwt from "jsonwebtoken";
 import { NotFoundError, UnauthorizedError } from "../domain/errors.ts";
 import type { User } from "../domain/user.ts";
+import { createInMemoryActivityRepository } from "../repositories/inMemoryActivityRepository.ts";
 import { createInMemoryUserRepository } from "../repositories/inMemoryUserRepository.ts";
 import { CODE_MAX_ATTEMPTS, CODE_RESEND_WAIT_SECONDS, CODE_VALID_MINUTES, createAuthService } from "./authService.ts";
 import type { Email } from "./emailService.ts";
@@ -14,17 +15,20 @@ const user: User = { id: "user-consultant", name: "L. Hoffmann", email: EMAIL, r
 function setUp({ showCodes = false, testAccountsEnabled = true } = {}) {
   const sentEmails: Email[] = [];
   const clock = { time: 1_000_000 };
-  const service = createAuthService(createInMemoryUserRepository([user]), {
+  const users = [{ ...user }];
+  const activities = createInMemoryActivityRepository(users);
+  const service = createAuthService(createInMemoryUserRepository(users), {
     sessionSecret: SECRET,
     showCodes,
     testAccountsEnabled,
     sendEmail: async (email) => {
       sentEmails.push(email);
     },
+    activities,
     now: () => clock.time,
   });
   const codeFromEmail = (email = sentEmails.at(-1)) => email?.text.match(/\d{6}/)?.[0] as string;
-  return { service, sentEmails, clock, codeFromEmail };
+  return { service, sentEmails, clock, codeFromEmail, activities };
 }
 
 const otherCode = (code: string) => (code === "000000" ? "000001" : "000000");
@@ -81,6 +85,7 @@ describe("requestCode", () => {
       showCodes: false,
       testAccountsEnabled: true,
       sendEmail: () => Promise.reject(new Error("Mail server down")),
+      activities: createInMemoryActivityRepository(),
     });
     const originalError = console.error;
     console.error = () => {};
@@ -213,5 +218,38 @@ describe("verifySessionToken", () => {
     const token = jwt.sign({ role: "consultant" }, "", { subject: "user-consultant", algorithm: "none" });
 
     expect(() => service.verifySessionToken(token)).toThrow(UnauthorizedError);
+  });
+});
+
+describe("profile", () => {
+  test("signing in leaves an entry in the user's activity", async () => {
+    const { service, activities } = setUp({ showCodes: true });
+    const { testCode } = await service.requestCode(EMAIL, "en");
+
+    await service.verifyCode(EMAIL, testCode as string);
+
+    expect(await activities.listOwn(user.id)).toMatchObject([{ type: "signed_in", actorName: "L. Hoffmann" }]);
+  });
+
+  test("a new name is stored, returned and logged", async () => {
+    const { service, activities } = setUp();
+
+    expect(await service.updateProfile(user.id, "Lena Hoffmann")).toMatchObject({ name: "Lena Hoffmann", email: EMAIL, role: "consultant" });
+    expect(await service.getProfile(user.id)).toMatchObject({ name: "Lena Hoffmann" });
+    expect((await activities.listOwn(user.id)).map((entry) => entry.type)).toEqual(["profile_updated"]);
+  });
+
+  test("the same name changes nothing and logs nothing", async () => {
+    const { service, activities } = setUp();
+
+    await service.updateProfile(user.id, user.name);
+
+    expect(await activities.listOwn(user.id)).toEqual([]);
+  });
+
+  test("a session for a user who no longer exists has no profile", async () => {
+    const { service } = setUp();
+
+    await expect(service.getProfile("deleted-user")).rejects.toThrow(UnauthorizedError);
   });
 });

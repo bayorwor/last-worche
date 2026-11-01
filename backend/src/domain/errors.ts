@@ -21,3 +21,5 @@ export class BusinessRuleError extends Error {
     super(message);
   }
 }
+
+export class TooManyRequestsError extends Error {}

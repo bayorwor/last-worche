@@ -1,40 +1,37 @@
+// Holds what the project lead's tabs share: the chosen order, its data and any error.
 import { useEffect, useState } from 'react'
+import { Outlet, useLocation } from 'react-router'
 import { useAppDispatch, useAppSelector } from '../../../app/storeHooks.ts'
 import { Button } from '../../../shared/components/Button.tsx'
 import { OrderSelect } from '../../../shared/components/OrderSelect.tsx'
-import { PageLoader } from '../../../shared/components/PageLoader.tsx'
 import { PageTitle } from '../../../shared/components/PageTitle.tsx'
 import { StatusMessage } from '../../../shared/components/StatusMessage.tsx'
 import { useTranslation } from '../../../shared/i18n/languageContext.ts'
-import { fetchOrderBookings, fetchOrderBudget, fetchOrders } from '../budgetSlice.ts'
-import { OrderBookingsTable } from '../components/OrderBookingsTable.tsx'
-import { OrderBudgetPanel } from '../components/OrderBudgetPanel.tsx'
+import { fetchOrders, loadOrder } from '../budgetSlice.ts'
 
 export default function ProjectLeadDashboardPage() {
   const dispatch = useAppDispatch()
   const { t } = useTranslation()
-  const { orders, budgetsByOrderId, bookingsByOrderId, status, error } = useAppSelector((state) => state.budget)
+  const { pathname } = useLocation()
+  const { orders, error } = useAppSelector((state) => state.budget)
   const [chosenOrderId, setChosenOrderId] = useState<string | null>(null)
   const selectedOrderId = chosenOrderId ?? orders[0]?.id
-  const selectedBudget = selectedOrderId ? budgetsByOrderId[selectedOrderId] : undefined
-  const selectedBookings = selectedOrderId ? bookingsByOrderId[selectedOrderId] : undefined
+  const selectedOrder = orders.find((order) => order.id === selectedOrderId)
 
   useEffect(() => {
     dispatch(fetchOrders())
   }, [dispatch])
 
-  // Asks again every time an order is opened, so the figures always include the latest bookings.
+  // Asks again whenever an order or tab is opened, so the figures always include the latest bookings.
   useEffect(() => {
     if (selectedOrderId) {
-      dispatch(fetchOrderBudget(selectedOrderId))
-      dispatch(fetchOrderBookings(selectedOrderId))
+      dispatch(loadOrder(selectedOrderId))
     }
-  }, [dispatch, selectedOrderId])
+  }, [dispatch, selectedOrderId, pathname])
 
   function retry() {
     if (selectedOrderId) {
-      dispatch(fetchOrderBudget(selectedOrderId))
-      dispatch(fetchOrderBookings(selectedOrderId))
+      dispatch(loadOrder(selectedOrderId))
     } else {
       dispatch(fetchOrders())
     }
@@ -42,7 +39,11 @@ export default function ProjectLeadDashboardPage() {
 
   return (
     <>
-      <PageTitle>{t('budget.pageTitle')}</PageTitle>
+      <PageTitle>
+        {selectedOrder
+          ? t('budget.pageTitleForOrder', { orderId: selectedOrder.id, title: selectedOrder.title })
+          : t('budget.pageTitle')}
+      </PageTitle>
       {selectedOrderId && (
         <OrderSelect
           id="budget-order"
@@ -60,10 +61,7 @@ export default function ProjectLeadDashboardPage() {
           </Button>
         </div>
       )}
-      <div className="grid gap-6">
-        {selectedBudget ? <OrderBudgetPanel budget={selectedBudget} /> : status === 'loading' && <PageLoader />}
-        {selectedOrderId && selectedBookings && <OrderBookingsTable orderId={selectedOrderId} bookings={selectedBookings} />}
-      </div>
+      <Outlet context={selectedOrderId} />
     </>
   )
 }

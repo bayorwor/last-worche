@@ -11,10 +11,13 @@
 | Accounting object | Client-side cost object (cost centre or project element) that hours are booked against. |
 | Consultant | An external person employed by a supplier who books working time on orders. |
 | Supplier | The company that delivers consultants and records their working time (e.g. Consultis GmbH). |
+| Activity entry | One thing that happened: someone signed in, changed their profile, saved a booking or approved a proof of work. Who may read it depends on the role. |
 | Booking | One entry of working time: date, start and end time, duration, description, consultant, order and accounting object. Created by a consultant, checked server-side against the business rules before it is stored, and immutable once its proof of work is approved. |
 | Free budget | Ordered person-days minus the sum of stored bookings of the order. A booking that would exceed it is rejected. |
 | Business rules | Server-side checks before storing a booking: free budget, no overlapping bookings of one person, max 10 h per day and 11 h rest (ArbZG), no bookings on approved vacation or public holidays, booking date inside the order period. |
 | Forecast | The projected week in which an order's budget is exhausted, computed from the current booking pace including vacations, public holidays and shutdowns. |
+| Follow-up request | A project lead's request for more budget on an order. Purchasing's confirmation raises the order's budget. |
+| Project end | The date the work is planned to end, which can be later than the order period. The forecast compares the run-out date with it. |
 | Proof of work (Leistungsnachweis) | Monthly list of hours per order and supplier, approved by the project lead. Immutable after approval; only approved hours go to finance. |
 
 ## Entity relationship diagram
@@ -24,19 +27,22 @@ Entities we **build now** are marked `(now)`, entities of the **next expansion s
 ```mermaid
 erDiagram
     SUPPLIER ||--o{ CONSULTANT : "employs (now)"
+    SUPPLIER ||--o{ ORDER : "receives (now)"
     ORDER }o--|| ACCOUNTING_OBJECT : "is booked on (now)"
     CONSULTANT }o--o{ ORDER : "is assigned to (now)"
     ORDER ||--o{ BOOKING : "has (now)"
     CONSULTANT ||--o{ BOOKING : "books (now)"
-    ORDER ||--o{ PROOF_OF_WORK : "is summarised in (later)"
+    ORDER ||--o{ PROOF_OF_WORK : "is summarised in (now)"
     SUPPLIER ||--o{ FRAMEWORK_AGREEMENT : "works under (later)"
+    ORDER ||--o{ FOLLOW_UP_REQUEST : "is extended by (now)"
     ORDER ||--o{ INVOICE : "is billed by (later)"
-    CONSULTANT ||--o{ VACATION_DAY : "has approved (later)"
+    CONSULTANT ||--o{ VACATION : "has approved (now)"
+    USER ||--o{ ACTIVITY_ENTRY : "causes (now)"
 ```
 
 ## Implementation status
 
-`(now)` marks what the current stage is meant to contain, and all of it is now stored: **orders, bookings, suppliers, consultants, accounting objects and assignments**, in [migrations.ts](../backend/src/repositories/migrations.ts). A booking reaches its accounting object through its order. **Users** and **roles** are stored as well: users sign in with a code sent to their email ([ADR-0014](adr/0014-email-code-sign-in.md)), and each order names its project lead.
+`(now)` marks what the current stage is meant to contain, and all of it is now stored: **orders, bookings, suppliers, consultants, accounting objects and assignments**, in [migrations.ts](../backend/src/repositories/migrations.ts). A booking reaches its accounting object through its order. **Proofs of work** are stored as one row per approved month, with their totals added up from the bookings. **Users** and **roles** are stored as well: users sign in with a code sent to their email ([ADR-0014](adr/0014-email-code-sign-in.md)), and each order names its project lead. **Vacations**, **company shutdowns**, **follow-up requests** and the **activity log** are stored too. Orders have a period and a project end, and consultants a federal state. Public holidays are calculated in [publicHolidays.ts](../backend/src/domain/publicHolidays.ts), not stored.
 
 ## Notes
 
@@ -44,5 +50,5 @@ erDiagram
 - **Bookings reference two anchors**: the order (carries the budget) and the accounting object (carries the client's internal cost view). Both are required at booking time.
 - **Assignment**: consultants are assigned to orders (n:m); the server rejects bookings for orders the consultant is not assigned to (story #15).
 - **Immutability**: approving a proof of work makes all contained bookings immutable (story #11); the server rejects changes to approved bookings.
-- **Vacation days and public holidays** are part of the next expansion stage; the rule engine will use them to reject implausible bookings (story #8).
-- **Forecast**: projected exhaustion week = free budget ÷ current booking pace, adjusted for vacations, public holidays and shutdowns; drives the early warning for follow-up orders (stories #10, #14).
+- **Vacations and public holidays** reject implausible bookings per consultant and federal state (story #8).
+- **Forecast**: walks through the coming days per consultant, at their recent pace, skipping vacations, public holidays and shutdowns; drives the early warning for follow-up orders ([ADR-0016](adr/0016-budget-forecast.md), stories #10, #14, #34).

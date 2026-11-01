@@ -1,8 +1,10 @@
-// Turns one sentence into a booking proposal using a language model through OpenRouter. The proposal
-// is not stored: the consultant confirms it and POST /api/bookings then runs the business rules.
+// Turns one sentence into a booking proposal, with a language model through OpenRouter. With AI_MOCK or when
+// that service fails, plain rules read the sentence instead. The proposal is not stored: the consultant
+// confirms it and POST /api/bookings then runs the business rules.
 import { z } from "zod";
 import { env } from "../config/dotenv.ts";
-import { bookingProposalSchema, type BookingProposal } from "../dtos/aiDtos.ts";
+import { matchOrderInSentence, parseBookingSentence as parseWithRules } from "../domain/bookingSentence.ts";
+import { bookingProposalSchema, type BookingProposal, type BookingProposalResponse } from "../dtos/aiDtos.ts";
 import { BOOKING_PARSER_SYSTEM_PROMPT, buildBookingParserMessage } from "../templates/prompts.ts";
 
 const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -23,11 +25,31 @@ export class AiServiceError extends Error {
 export async function parseBookingSentence(
   sentence: string,
   today = new Date().toISOString().slice(0, 10),
-): Promise<BookingProposal> {
-  if (env.AI_MOCK) {
-    return { date: today, startTime: "09:00", endTime: "17:00", hours: 7, description: sentence };
-  }
+  assignedOrders: { id: string; title: string }[] = [],
+): Promise<BookingProposalResponse> {
+  const proposal = env.AI_MOCK ? readWithRules(sentence, today) : await readWithAiOrRules(sentence, today);
+  return { ...proposal, suggestedOrderId: matchOrderInSentence(sentence, assignedOrders) };
+}
 
+function readWithRules(sentence: string, today: string): BookingProposal {
+  const proposal = parseWithRules(sentence, today);
+  if (!proposal) throw new AiServiceError("ai-unreadable", unreadableMessage);
+  return proposal;
+}
+
+async function readWithAiOrRules(sentence: string, today: string): Promise<BookingProposal> {
+  try {
+    return await readWithAi(sentence, today);
+  } catch (error) {
+    if (!(error instanceof AiServiceError)) throw error;
+    const proposal = parseWithRules(sentence, today);
+    if (!proposal) throw error;
+    console.error(`AI service failed (${error.code}), so plain rules read the sentence.`);
+    return proposal;
+  }
+}
+
+async function readWithAi(sentence: string, today: string): Promise<BookingProposal> {
   const response = await callOpenRouter(sentence, today);
 
   if (response.status === 429) {

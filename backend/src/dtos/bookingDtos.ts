@@ -26,6 +26,13 @@ export const createBookingRequestSchema = z
 
 export type CreateBookingRequest = z.infer<typeof createBookingRequestSchema>;
 
+// From a supplier's own time tracking, which books for several consultants, so here the consultant is part of each row.
+export const importBookingsRequestSchema = z.object({
+  bookings: z.array(z.object({ consultantId: z.string().min(1) }).and(createBookingRequestSchema)).min(1).max(500),
+});
+
+export type ImportBookingsRequest = z.infer<typeof importBookingsRequestSchema>;
+
 export type OrderBudgetResponse = {
   orderId: string;
   orderedPersonDays: number;

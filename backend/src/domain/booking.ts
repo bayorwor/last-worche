@@ -1,5 +1,6 @@
 // Business rules for bookings. Plain functions with no Express or database code, so they are easy to test.
 import { BusinessRuleError } from "./errors.ts";
+import { publicHolidayOn, type FederalState } from "./publicHolidays.ts";
 
 export const HOURS_PER_PERSON_DAY = 8;
 export const MAX_HOURS_PER_DAY = 10; // ArbZG §3
@@ -10,6 +11,17 @@ const MINUTES_PER_DAY = 24 * 60;
 export type Order = {
   id: string;
   orderedPersonDays: number;
+};
+
+export type DateRange = {
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD, the last day still counts
+};
+
+// What the rules need to know about a consultant's days off.
+export type ConsultantCalendar = {
+  federalState: FederalState | null;
+  vacations: DateRange[];
 };
 
 export type TimeRange = {
@@ -106,5 +118,68 @@ export function assertFitsFreeBudget(order: Order, bookedHours: number, newHours
       `Booking rejected: only ${freePersonDays} PD left on order ${order.id}.`,
       { orderId: order.id, freePersonDays },
     );
+  }
+}
+
+// The first and the last day still belong to the order. YYYY-MM-DD strings sort in date order.
+export function assertInsideOrderPeriod(period: DateRange, date: string) {
+  if (date < period.startDate || date > period.endDate) {
+    throw new BusinessRuleError("order-period", "Booking rejected: outside the order period.", {
+      startDate: period.startDate,
+      endDate: period.endDate,
+    });
+  }
+}
+
+export function assertNotOnVacation(vacations: DateRange[], date: string) {
+  if (vacations.some(({ startDate, endDate }) => startDate <= date && date <= endDate)) {
+    throw new BusinessRuleError("vacation", "Booking rejected: consultant is on approved vacation.");
+  }
+}
+
+export function assertNotOnPublicHoliday(federalState: FederalState | null, date: string) {
+  const holiday = publicHolidayOn(date, federalState);
+  if (holiday) {
+    throw new BusinessRuleError("public-holiday", `Booking rejected: ${holiday.nameEn} is a public holiday.`, {
+      holidayDe: holiday.nameDe,
+      holidayEn: holiday.nameEn,
+    });
+  }
+}
+
+const SLOT_SEARCH_START = "08:00";
+const SLOT_SEARCH_END = "22:00";
+
+// The earliest free time on that day for a booking of the same length, so a person can fix an overlap
+// with one tap. Only a suggestion: the rules still check whatever the person then chooses.
+export function suggestFreeSlot(bookingsOnDay: TimeRange[], { startTime, endTime }: TimeRange): TimeRange | null {
+  const length = minutesOfDay(endTime) - minutesOfDay(startTime);
+  const toTime = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+  const candidates = [SLOT_SEARCH_START, ...bookingsOnDay.map((booking) => booking.endTime)].map(minutesOfDay).sort((a, b) => a - b);
+
+  for (const start of candidates) {
+    const slot = { startTime: toTime(start), endTime: toTime(start + length) };
+    const isFree = bookingsOnDay.every((booking) => slot.startTime >= booking.endTime || booking.startTime >= slot.endTime);
+    if (isFree && start + length <= minutesOfDay(SLOT_SEARCH_END)) return slot;
+  }
+  return null;
+}
+
+// A supplier's system may send the same hours twice, so these checks apply to its batches (story #33).
+export function assertConsultantOfSupplier(consultantSupplierId: string | null, supplierId: string, consultantId: string) {
+  if (consultantSupplierId !== supplierId) {
+    throw new BusinessRuleError("import-unknown-consultant", `Consultant ${consultantId} is not known for this supplier.`, { consultantId });
+  }
+}
+
+export function assertOrderOfSupplier(orderSupplierId: string | null, supplierId: string, orderId: string) {
+  if (orderSupplierId !== supplierId) {
+    throw new BusinessRuleError("import-foreign-order", `Order ${orderId} does not belong to this supplier.`, { orderId });
+  }
+}
+
+export function assertNotDuplicate(isDuplicate: boolean) {
+  if (isDuplicate) {
+    throw new BusinessRuleError("duplicate-booking", "This booking (consultant, date, order, duration) was already sent.");
   }
 }

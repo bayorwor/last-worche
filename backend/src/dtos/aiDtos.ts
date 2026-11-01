@@ -3,6 +3,8 @@ import { z } from "zod";
 
 export const parseBookingRequestSchema = z.object({
   sentence: z.string().min(1).max(500),
+  // The day on the consultant's device. The server's own date can differ around midnight.
+  today: z.iso.date().optional(),
 });
 
 export type ParseBookingRequest = z.infer<typeof parseBookingRequestSchema>;
@@ -16,3 +18,6 @@ export const bookingProposalSchema = z.object({
 });
 
 export type BookingProposal = z.infer<typeof bookingProposalSchema>;
+
+// Set when the sentence clearly names one of the person's orders. Otherwise they choose from the list.
+export type BookingProposalResponse = BookingProposal & { suggestedOrderId: string | null };

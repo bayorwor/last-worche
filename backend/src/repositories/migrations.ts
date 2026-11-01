@@ -8,11 +8,16 @@ import {
   CONSULTANTS,
   DEMO_PROJECT_LEAD_ID,
   DEMO_USERS,
+  CONSULTANT_STATES,
+  ORDER_PERIODS,
+  ORDER_SUPPLIERS,
+  VACATIONS,
   ORDERS,
   ROLES,
   SECOND_LEAD_ORDER,
   SECOND_LEAD_ORDER_CONSULTANT_ID,
   SECOND_LEAD_ORDER_DAYS,
+  SHUTDOWNS,
   SUPPLIERS,
   TEST_PASSWORD,
   TEST_USERS,
@@ -208,6 +213,149 @@ export const MIGRATIONS: Migration[] = [
         )
       `);
       await db.query("ALTER TABLE users DROP COLUMN password_hash");
+    },
+  },
+  {
+    // An order is given to one supplier, which purchasing needs for its totals per supplier (story #13).
+    name: "008-order-supplier",
+    async run(db) {
+      await db.query("ALTER TABLE orders ADD COLUMN supplier_id VARCHAR(64) NULL");
+      for (const { orderId, supplierId } of ORDER_SUPPLIERS) {
+        await db.query("UPDATE orders SET supplier_id = ? WHERE id = ?", [supplierId, orderId]);
+      }
+      await db.query(`
+        ALTER TABLE orders
+          MODIFY supplier_id VARCHAR(64) NOT NULL,
+          ADD FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+      `);
+    },
+  },
+  {
+    // One row means that month of that order is approved. Its totals are always added up from the bookings (story #11).
+    name: "009-proofs-of-work",
+    async run(db) {
+      await db.query(`
+        CREATE TABLE proofs_of_work (
+          order_id VARCHAR(32) NOT NULL,
+          month CHAR(7) NOT NULL,
+          approved_by_user_id VARCHAR(64) NOT NULL,
+          approved_at_ms BIGINT NOT NULL,
+          PRIMARY KEY (order_id, month),
+          FOREIGN KEY (order_id) REFERENCES orders(id),
+          FOREIGN KEY (approved_by_user_id) REFERENCES users(id)
+        )
+      `);
+    },
+  },
+  {
+    // What happened, for the recent activity panel. Earlier bookings and approvals are copied in, so the panel starts with real data.
+    name: "010-activity-log",
+    async run(db) {
+      await db.query(`
+        CREATE TABLE activity_log (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          type ENUM('signed_in', 'profile_updated', 'booking_created', 'proof_approved') NOT NULL,
+          actor_user_id VARCHAR(64) NOT NULL,
+          occurred_at_ms BIGINT NOT NULL,
+          order_id VARCHAR(32) NULL,
+          period VARCHAR(10) NULL,
+          hours DECIMAL(6, 2) NULL,
+          INDEX activity_log_newest_first (occurred_at_ms),
+          FOREIGN KEY (actor_user_id) REFERENCES users(id),
+          FOREIGN KEY (order_id) REFERENCES orders(id)
+        )
+      `);
+      await db.query(`
+        INSERT INTO activity_log (type, actor_user_id, occurred_at_ms, order_id, period, hours)
+        SELECT 'booking_created', users.id, UNIX_TIMESTAMP(TIMESTAMP(bookings.date, bookings.end_time)) * 1000,
+          bookings.order_id, DATE_FORMAT(bookings.date, '%Y-%m-%d'), bookings.hours
+        FROM bookings
+        JOIN users ON users.consultant_id = bookings.consultant_id
+      `);
+      await db.query(`
+        INSERT INTO activity_log (type, actor_user_id, occurred_at_ms, order_id, period)
+        SELECT 'proof_approved', approved_by_user_id, approved_at_ms, order_id, month
+        FROM proofs_of_work
+      `);
+    },
+  },
+  {
+    // What the order period, vacation and public holiday rules check (stories #8 and #12).
+    name: "011-order-periods-and-calendars",
+    async run(db) {
+      await db.query(`
+        ALTER TABLE orders
+          ADD COLUMN start_date DATE NULL,
+          ADD COLUMN end_date DATE NULL,
+          ADD COLUMN project_end_date DATE NULL
+      `);
+      for (const { orderId, startDate, endDate, projectEndDate } of ORDER_PERIODS) {
+        await db.query("UPDATE orders SET start_date = ?, end_date = ?, project_end_date = ? WHERE id = ?", [
+          startDate,
+          endDate,
+          projectEndDate,
+          orderId,
+        ]);
+      }
+      await db.query(`
+        ALTER TABLE orders
+          MODIFY start_date DATE NOT NULL,
+          MODIFY end_date DATE NOT NULL,
+          MODIFY project_end_date DATE NOT NULL
+      `);
+
+      await db.query("ALTER TABLE consultants ADD COLUMN federal_state CHAR(2) NULL");
+      for (const { consultantId, federalState } of CONSULTANT_STATES) {
+        await db.query("UPDATE consultants SET federal_state = ? WHERE id = ?", [federalState, consultantId]);
+      }
+
+      await db.query(`
+        CREATE TABLE vacations (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          consultant_id VARCHAR(64) NOT NULL,
+          start_date DATE NOT NULL,
+          end_date DATE NOT NULL,
+          FOREIGN KEY (consultant_id) REFERENCES consultants(id)
+        )
+      `);
+      await db.query("INSERT INTO vacations (consultant_id, start_date, end_date) VALUES ?", [
+        VACATIONS.map(({ consultantId, startDate, endDate }) => [consultantId, startDate, endDate]),
+      ]);
+    },
+  },
+  {
+    // Company holidays for the forecast, and follow-up requests from a project lead to purchasing (stories #10, #14).
+    name: "012-shutdowns-and-follow-ups",
+    async run(db) {
+      await db.query(`
+        CREATE TABLE shutdowns (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          start_date DATE NOT NULL,
+          end_date DATE NOT NULL
+        )
+      `);
+      await db.query("INSERT INTO shutdowns (start_date, end_date) VALUES ?", [SHUTDOWNS.map(({ startDate, endDate }) => [startDate, endDate])]);
+
+      await db.query(`
+        CREATE TABLE follow_up_requests (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          order_id VARCHAR(32) NOT NULL,
+          requested_by_user_id VARCHAR(64) NOT NULL,
+          person_days DECIMAL(8, 3) NOT NULL,
+          needed_by_date DATE NOT NULL,
+          status ENUM('open', 'confirmed') NOT NULL DEFAULT 'open',
+          requested_at_ms BIGINT NOT NULL,
+          confirmed_by_user_id VARCHAR(64) NULL,
+          confirmed_at_ms BIGINT NULL,
+          FOREIGN KEY (order_id) REFERENCES orders(id),
+          FOREIGN KEY (requested_by_user_id) REFERENCES users(id),
+          FOREIGN KEY (confirmed_by_user_id) REFERENCES users(id)
+        )
+      `);
+      await db.query(`
+        ALTER TABLE activity_log MODIFY type
+          ENUM('signed_in', 'profile_updated', 'booking_created', 'proof_approved', 'follow_up_requested', 'follow_up_confirmed') NOT NULL
+      `);
     },
   },
 ];

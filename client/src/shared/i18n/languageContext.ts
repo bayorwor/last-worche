@@ -10,6 +10,7 @@ export type LanguageContextValue = {
   formatHours: (hours: number) => string
   formatPersonDays: (personDays: number) => string
   formatDate: (isoDate: string) => string
+  formatDateTime: (timeMs: number) => string
   formatMonth: (month: string) => string
 }
 

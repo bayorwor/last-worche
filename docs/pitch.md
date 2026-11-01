@@ -21,10 +21,10 @@ Start the app as in the [README](../README.md), and open <http://localhost:5173>
 | 1 | `l.hoffmann@consultis.example` | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, then *Check proposal* and *Confirm booking* | One sentence becomes a booking. The person confirms it, and today's hours move towards the 10-hour limit. |
 | 2 | Same | Confirm the same proposal again | **Overlap rejected.** The rule runs on the server, before anything is stored. |
 | 3 | Same | Choose order 4500012346, and confirm a proposal | **Budget rejected:** only 0.5 PD left. An order can no longer be overbooked silently. |
-| 4 | `a.weber@client.example` | Open order 4500012345 | Used went from 84 to 84.875 PD. The booking is there at once, not on next month's invoice. |
-| 5 | Same | Under *Proofs of work*, approve the current month | Approval locks the month. |
+| 4 | `a.weber@client.example` | Open order 4500012345 | Used went from 84 to 84.875 PD, and the booking is at the top of *Recent activity* at once, not on next month's invoice. |
+| 5 | Same | On the *Proofs of work* tab, approve the current month | Approval locks the month. |
 | 6 | `m.krueger@consultis.example` | Try to book | **Rejected:** "Proof of work already approved — contact the project lead." |
-| 7 | `k.vogel@client.example` | Show the supplier overview | Purchasing sees totals per supplier and order, and no person. The server enforces this. |
+| 7 | `k.vogel@client.example` | Show the supplier overview | Purchasing sees totals per supplier and order, and no person. Its *Recent activity* shows the approved month with no name. The server enforces this. |
 | 8 | Any | Switch between *DE* and *EN* | The product works in both languages, down to the rejection messages. |
 
 Steps 5 and 6 lock the current month for that order. To run the demo again, reset the data as described in the README.
@@ -34,6 +34,7 @@ Steps 5 and 6 lock the current month for that order. To run the demo again, rese
 - **Rules at booking time, on the server:** free budget, assigned orders, overlaps, the 10-hour day, 11-hour rest and approved months. Each one has tests for accepting and rejecting.
 - **Safe under pressure:** simultaneous bookings cannot get past a rule together. We test this against real MySQL.
 - **Privacy by role:** a consultant sees their own bookings, a project lead the orders they lead, and purchasing totals only.
+- **Activity by role:** each role sees recent activity next to its work, and the server decides what is in the list.
 - **Sign-in with no password:** a 6-digit code by email, so there are no passwords to store or forget.
 
 ## Be honest about what is not built
@@ -43,6 +44,7 @@ Say these before the jury asks:
 - **The budget forecast and early warning** (stories #10 and #14) are in our vision but not built. "Follow-up order needed" is a simple stand-in: 10% or less of the budget is free.
 - **Vacation, public holidays and the order period** (stories #8 and #12) are not checked yet.
 - **Real email sending** is built, but has not been tested against a mail server. The demo uses test mode, and with test mode on, anyone can sign in as anyone.
+- **Profile editing** covers the name only. Changing the email address, which people sign in with, is not built.
 - **Single sign-on** per customer is our production plan ([ADR-0002](adr/0002-identity-and-sign-in.md)), not part of the demo.
 
 ## Questions to expect

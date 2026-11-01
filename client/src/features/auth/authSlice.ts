@@ -6,6 +6,7 @@ import type { Language } from '../../shared/i18n/languages.ts'
 import {
   requestCodeVerification,
   requestCurrentUser,
+  requestProfileUpdate,
   requestRoles,
   requestSignInCode,
   requestTestAccounts,
@@ -26,6 +27,8 @@ type AuthState = {
   codeRequestStatus: RequestStatus
   verificationStatus: RequestStatus
   error: ApiError | null
+  profileStatus: RequestStatus
+  profileError: ApiError | null
 }
 
 const initialState: AuthState = {
@@ -38,6 +41,8 @@ const initialState: AuthState = {
   codeRequestStatus: 'idle',
   verificationStatus: 'idle',
   error: null,
+  profileStatus: 'idle',
+  profileError: null,
 }
 
 export const fetchRoles = createAsyncThunk<Role[], void>('auth/fetchRoles', () => requestRoles())
@@ -79,6 +84,17 @@ export const restoreSession = createAsyncThunk<SessionUser, void>('auth/restoreS
   }
 })
 
+export const saveProfile = createAsyncThunk<SessionUser, string, { rejectValue: ApiError }>(
+  'auth/saveProfile',
+  async (name, { rejectWithValue }) => {
+    try {
+      return await requestProfileUpdate(name)
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -88,6 +104,10 @@ const authSlice = createSlice({
       state.testCode = null
       state.error = null
     },
+    profileEditChanged(state) {
+      state.profileStatus = 'idle'
+      state.profileError = null
+    },
     signedOut(state) {
       state.sessionStatus = 'signedOut'
       state.user = null
@@ -96,6 +116,8 @@ const authSlice = createSlice({
       state.codeRequestStatus = 'idle'
       state.verificationStatus = 'idle'
       state.error = null
+      state.profileStatus = 'idle'
+      state.profileError = null
     },
   },
   extraReducers: (builder) => {
@@ -134,6 +156,18 @@ const authSlice = createSlice({
         state.verificationStatus = 'failed'
         state.error = action.payload ?? FALLBACK_API_ERROR
       })
+      .addCase(saveProfile.pending, (state) => {
+        state.profileStatus = 'loading'
+        state.profileError = null
+      })
+      .addCase(saveProfile.fulfilled, (state, action) => {
+        state.profileStatus = 'succeeded'
+        state.user = action.payload
+      })
+      .addCase(saveProfile.rejected, (state, action) => {
+        state.profileStatus = 'failed'
+        state.profileError = action.payload ?? FALLBACK_API_ERROR
+      })
       .addCase(restoreSession.fulfilled, (state, action) => {
         state.sessionStatus = 'signedIn'
         state.user = action.payload
@@ -145,5 +179,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { codeEntryLeft, signedOut } = authSlice.actions
+export const { codeEntryLeft, profileEditChanged, signedOut } = authSlice.actions
 export const authReducer = authSlice.reducer

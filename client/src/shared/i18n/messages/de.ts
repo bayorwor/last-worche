@@ -30,6 +30,41 @@ export const de = {
   'session.signedInAs': 'Angemeldet als',
   'session.signOut': 'Abmelden',
 
+  'navigation.label': 'Bereiche',
+  'navigation.bookTime': 'Zeit buchen',
+  'navigation.ownBookings': 'Meine Buchungen',
+  'navigation.budget': 'Budget',
+  'navigation.orderBookings': 'Buchungen',
+  'navigation.proofsOfWork': 'Leistungsnachweise',
+  'navigation.suppliers': 'Lieferanten',
+  'navigation.orders': 'Aufträge',
+
+  'layout.sideColumnLabel': 'Profil und letzte Aktivitäten',
+
+  'profile.panelTitle': 'Mein Profil',
+  'profile.name': 'Name',
+  'profile.email': 'E-Mail-Adresse',
+  'profile.emailHint': 'Mit dieser Adresse melden Sie sich an, daher lässt sie sich hier nicht ändern.',
+  'profile.role': 'Rolle',
+  'profile.edit': 'Bearbeiten',
+  'profile.save': 'Speichern',
+  'profile.saving': 'Wird gespeichert …',
+  'profile.cancel': 'Abbrechen',
+  'profile.saved': 'Profil gespeichert.',
+
+  'activity.panelTitle': 'Letzte Aktivitäten',
+  'activity.scopeConsultant': 'Nur Ihre eigenen Aktivitäten',
+  'activity.scopeProjectLead': 'Ihre Aktivitäten und Ihre Aufträge',
+  'activity.scopePurchasing': 'Ohne einzelne Buchungen und Namen',
+  'activity.none': 'Noch keine Aktivitäten.',
+  'activity.signedIn': 'Sie haben sich angemeldet',
+  'activity.profileUpdated': 'Sie haben Ihr Profil geändert',
+  'activity.ownBooking': 'Sie haben {hours} für {date} auf Auftrag {orderId} gebucht',
+  'activity.otherBooking': '{name} hat {hours} für {date} auf Auftrag {orderId} gebucht',
+  'activity.ownApproval': 'Sie haben {month} für Auftrag {orderId} freigegeben',
+  'activity.otherApproval': '{name} hat {month} für Auftrag {orderId} freigegeben',
+  'activity.anonymousApproval': 'Der Leistungsnachweis {month} für Auftrag {orderId} wurde freigegeben',
+
   'common.loading': 'Wird geladen …',
   'common.retry': 'Erneut versuchen',
 
@@ -40,6 +75,7 @@ export const de = {
   'routeError.reload': 'Seite neu laden',
 
   'bookings.pageTitle': 'Berater — Zeit buchen',
+  'bookings.ownPageTitle': 'Berater — Meine Buchungen',
   'bookings.formPanelTitle': 'Buchung erfassen — ein Satz genügt',
   'bookings.sentenceLabel': 'Was haben Sie gearbeitet?',
   'bookings.sentencePlaceholder': '9 bis 5 am Kundenportal, 1 h Mittag',
@@ -114,6 +150,7 @@ export const de = {
 
   'errors.serverUnavailable': 'Der Server ist gerade nicht erreichbar. Bitte versuchen Sie es erneut.',
   'errors.invalidCode': 'Der Code ist falsch oder abgelaufen. Bitte versuchen Sie es erneut oder fordern Sie einen neuen an.',
+  'errors.invalidName': 'Bitte geben Sie einen Namen mit 2 bis 100 Zeichen ein.',
   'errors.invalidEmail': 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
   'errors.sessionEnded': 'Ihre Sitzung ist beendet. Bitte melden Sie sich erneut an.',
   'errors.forbidden': 'Dafür fehlt Ihnen die Berechtigung.',

@@ -87,6 +87,11 @@ export const fetchOrderBudget = createAsyncThunk<OrderBudget, string, { rejectVa
   },
 )
 
+// Everything the project lead's tabs show about one order.
+export const loadOrder = createAsyncThunk<void, string>('budget/loadOrder', async (orderId, { dispatch }) => {
+  await Promise.all([dispatch(fetchOrderBudget(orderId)), dispatch(fetchOrderBookings(orderId)), dispatch(fetchProofsOfWork(orderId))])
+})
+
 const budgetSlice = createSlice({
   name: 'budget',
   initialState,

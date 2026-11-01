@@ -243,4 +243,36 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    // What happened, for the recent activity panel. Earlier bookings and approvals are copied in, so the panel starts with real data.
+    name: "010-activity-log",
+    async run(db) {
+      await db.query(`
+        CREATE TABLE activity_log (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          type ENUM('signed_in', 'profile_updated', 'booking_created', 'proof_approved') NOT NULL,
+          actor_user_id VARCHAR(64) NOT NULL,
+          occurred_at_ms BIGINT NOT NULL,
+          order_id VARCHAR(32) NULL,
+          period VARCHAR(10) NULL,
+          hours DECIMAL(6, 2) NULL,
+          INDEX activity_log_newest_first (occurred_at_ms),
+          FOREIGN KEY (actor_user_id) REFERENCES users(id),
+          FOREIGN KEY (order_id) REFERENCES orders(id)
+        )
+      `);
+      await db.query(`
+        INSERT INTO activity_log (type, actor_user_id, occurred_at_ms, order_id, period, hours)
+        SELECT 'booking_created', users.id, UNIX_TIMESTAMP(TIMESTAMP(bookings.date, bookings.end_time)) * 1000,
+          bookings.order_id, DATE_FORMAT(bookings.date, '%Y-%m-%d'), bookings.hours
+        FROM bookings
+        JOIN users ON users.consultant_id = bookings.consultant_id
+      `);
+      await db.query(`
+        INSERT INTO activity_log (type, actor_user_id, occurred_at_ms, order_id, period)
+        SELECT 'proof_approved', approved_by_user_id, approved_at_ms, order_id, month
+        FROM proofs_of_work
+      `);
+    },
+  },
 ];

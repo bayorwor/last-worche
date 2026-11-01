@@ -12,6 +12,11 @@ export function createInMemoryUserRepository(users: User[], roles: Role[] = []):
     listRoles: async () => roles,
     listUsers: async () => users,
     findUserByEmail: async (email) => users.find((user) => user.email === email) ?? null,
+    findUserById: async (userId) => users.find((user) => user.id === userId) ?? null,
+    updateUserName: async (userId, name) => {
+      const user = users.find(({ id }) => id === userId);
+      if (user) user.name = name;
+    },
     saveSignInCode: async (code) => {
       lastCodeId += 1;
       codes.set(code.userId, { ...code, id: lastCodeId, attempts: 0 });

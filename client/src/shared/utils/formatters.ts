@@ -19,6 +19,12 @@ export function formatMonth(month: string, language: Language): string {
   return formatter.format(new Date(`${month}-01T00:00:00Z`))
 }
 
+// The moment something happened, in the viewer's own time zone.
+export function formatDateTime(timeMs: number, language: Language): string {
+  const formatter = new Intl.DateTimeFormat(LOCALES[language], { dateStyle: 'medium', timeStyle: 'short' })
+  return formatter.format(new Date(timeMs))
+}
+
 // Expects YYYY-MM-DD. UTC on both sides, so the shown day never shifts with the viewer's time zone.
 export function formatDate(isoDate: string, language: Language): string {
   const formatter = new Intl.DateTimeFormat(LOCALES[language], {

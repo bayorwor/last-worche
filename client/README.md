@@ -45,7 +45,7 @@ src/
 - **File size:** no file may exceed 450 lines. `bun run lint` fails if one does. Split a growing component into smaller ones well before that.
 - **Code splitting:** every page is loaded with `lazy()` in `app/lazyPages.ts`. Page files use `export default` for this; everything else uses named exports. Never import a page anywhere else, or it ends up back in the main bundle.
 - **Imports:** a feature may import from `app/storeHooks.ts`, `shared/` and itself, but not from another feature.
-- **Pages and components:** pages talk to the store, and components receive data through props.
+- **Pages and components:** pages talk to the store, and components receive data through props. The exceptions are `ProfilePanel` and `RecentActivityPanel`, which load their own data because `AppLayout` shows them next to every page. `app/store.ts` refreshes the activity after a booking, an approval or a profile change, so those features need not import each other.
 - **Logo:** the logo files are in `public/`, made from the masters in [docs/brand](../docs/brand/README.md). Use `/logo.svg` rather than redrawing it.
 - **Naming:** components are `PascalCase.tsx` and named after what they show (`BookingProposalCard`), pages end in `Page`, other files are `camelCase.ts`, and event props start with `on`.
 - **Language:** code is in English. Text on screen is in German and English, and never written directly in a component: add it to `shared/i18n/messages/de.ts` and `en.ts`, then show it with `t('key')` from `useTranslation()`. The build fails if a language misses a key. Numbers, dates and units use the formatters from `useTranslation()`. See [ADR-0009](../docs/adr/0009-languages-and-location-default.md).

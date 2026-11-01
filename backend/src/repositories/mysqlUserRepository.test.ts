@@ -1,8 +1,9 @@
 // Runs against a real MySQL database, and only when TEST_DATABASE_URL is set.
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
-import type { Pool } from "mysql2/promise";
+import type { Pool, RowDataPacket } from "mysql2/promise";
 import { UnauthorizedError } from "../domain/errors.ts";
 import { createAuthService, type AuthService } from "../services/authService.ts";
+import { createMysqlActivityRepository } from "./mysqlActivityRepository.ts";
 import { openDatabase } from "./database.ts";
 import { createMysqlUserRepository } from "./mysqlUserRepository.ts";
 import { DEMO_PROJECT_LEAD_ID, ROLES, TEST_USERS } from "./seedData.ts";
@@ -25,6 +26,7 @@ describe.skipIf(!databaseUrl)("mysqlUserRepository", () => {
       showCodes: true,
       testAccountsEnabled: true,
       sendEmail: async () => {},
+      activities: createMysqlActivityRepository(db),
     });
   });
 
@@ -43,6 +45,22 @@ describe.skipIf(!databaseUrl)("mysqlUserRepository", () => {
     );
     const [columns] = await db.query("SHOW COLUMNS FROM users LIKE 'password_hash'");
     expect(columns).toEqual([]);
+  });
+
+  test("a new name also reaches the consultant, because project leads see that name on bookings", async () => {
+    const userId = "user-consultant-2";
+    const consultantName = async () => {
+      const [rows] = await db.query<RowDataPacket[]>("SELECT name FROM consultants WHERE id = 'consultant-2'");
+      return rows[0]?.name;
+    };
+    const originalName = await consultantName();
+
+    try {
+      expect(await service.updateProfile(userId, "Mira Krüger")).toMatchObject({ name: "Mira Krüger", role: "consultant" });
+      expect(await consultantName()).toBe("Mira Krüger");
+    } finally {
+      await service.updateProfile(userId, originalName);
+    }
   });
 
   test("a correct code signs in once and is gone afterwards", async () => {

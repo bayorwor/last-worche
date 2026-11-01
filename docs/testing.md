@@ -10,7 +10,7 @@ How to test lastWorche on every platform. It has three steps:
 
 | Platform | How to test it | Status |
 |---|---|---|
-| macOS, Chrome | [Computer browser](#computer-browser) | **Tested**, steps 1 to 22 on a fresh clone on 1 Nov 2026, and steps 1 to 25 from the working branch later that day |
+| macOS, Chrome | [Computer browser](#computer-browser) | **Tested**, steps 1 to 22 on a fresh clone on 1 Nov 2026, and steps 1 to 26 from the working branch later that day |
 | macOS, Safari or Firefox | [Computer browser](#computer-browser) | Not tested yet |
 | Windows, Edge or Chrome | [Computer browser](#computer-browser), with the [Windows commands](#windows-and-linux-commands) | Not tested yet |
 | Linux, Chrome or Firefox | [Computer browser](#computer-browser), with the [Linux commands](#windows-and-linux-commands) | Not tested yet |
@@ -203,14 +203,14 @@ Then restart the backend. To sign in: enter the email, choose *Send code*, then 
 | 5 | Same | Enter `9 bis 5 am Kundenportal, 1 h Mittag`, then *Check proposal*. Check the form shows 09:00, 17:00 and a 60-minute break, and *All 9 rules passed*. Choose *Confirm booking* | *Booking saved*, the booking at the top of *Recent activity* and of the *My bookings* tab, and today's hours at 7.0 h |
 | 6 | Same | Enter the same sentence, then *Check proposal* | **Rule failed:** overlaps with an existing booking. *Confirm booking* cannot be chosen, and there is no new entry under *Recent activity* |
 | 7 | Same | Choose order 4500012346 for that proposal | **Rule failed:** only 0.5 PD left |
-| 8 | Same | Reload the page, then choose *Sign out* | Still signed in after the reload, then back on the sign-in screen |
+| 8 | Same | Reload the page, then open the profile menu at the top right and choose *Sign out* | Still signed in after the reload, then back on the sign-in screen |
 | 9 | `a.weber@client.example` | Look at order 4500012345 | *Budget* tab: used is 84.875 PD and free is 55.125 PD. *Bookings* tab: the new booking. *Recent activity*: L. Hoffmann booked 7.0 h |
 | 10 | Same | On the *Proofs of work* tab, choose *Approve proof of work* for the current month, then *Yes, approve* | The month shows *Approved* and *Approved by A. Weber*, and *You approved* appears under *Recent activity* |
 | 11 | `m.krueger@consultis.example` | Enter the sentence from step 5, then *Check proposal* | One order to choose from, and **rule failed:** proof of work already approved |
 | 12 | `j.schneider@client.example` | Sign in | Only order 4500012347 |
 | 13 | `k.vogel@client.example` | Look at the screen | Totals on the *Suppliers* and *Orders* tabs, 4500012346 marked *Follow-up order needed*. *Recent activity* shows the approved month without a name and no bookings. **No other person's name anywhere** |
 | 14 | Any | Choose *DE*, then *EN*, including while an error is showing | All text changes, including the error, and your choice is still there after a reload |
-| 15 | `m.krueger@consultis.example` | Under *My profile*, choose *Edit*, clear the name and save, then enter `Mira Krüger` and save | An error for the empty name, then *Profile saved*, the new name at the top of the page, and still there after a reload. Email and role cannot be edited |
+| 15 | `m.krueger@consultis.example` | In the profile menu, choose *Edit profile*, clear the name and save, then enter `Mira Krüger` and save | An error for the empty name, then *Profile saved*, the new name at the top of the page, and still there after a reload. Email and role cannot be edited |
 | 16 | `a.weber@client.example` | Open the *Bookings* tab | The new name on that consultant's bookings |
 | 17 | `l.hoffmann@consultis.example` | Choose *Enter by hand*, enter an activity, then change the date to `24.12.2026`, then `25.12.2026`, then `15.01.2027`, then choose *Discard* | **Rule failed**, in turn: approved vacation, Christmas Day is a public holiday, outside the order period |
 | 18 | `a.weber@client.example` | On the *Budget* tab, look at *Forecast* | The run-out week, the pace, a chart, *Order more by week …* and the assumptions. Enter `0` under *Extra consultants*, and *Calculate*: an error, and the forecast stays. Enter `1` and `4` under *Project longer*, and *Calculate*: a second dashed line and a comparison table |
@@ -221,6 +221,7 @@ Then restart the backend. To sign in: enter the email, choose *Send code*, then 
 | 23 | `k.vogel@client.example` | Open *Framework agreements* | Two agreements with total, reserved, free and booked person-days. Orders 4500012346 and 4500012347 share one, with 10 PD free. **No person's name** |
 | 24 | Same | Open *Follow-up requests*. On order 4500012346 (15 PD), choose *Confirm*, then *Yes, raise the budget*. Then choose *Decline*, then *Yes, decline* | **Rejected:** the agreement has only 10 PD free, and the request stays open. Then it shows *Declined*, and the decline appears under *Recent activity* |
 | 25 | Same | Open *Invoice check*. Choose order 4500012345 and the month approved in step 10, enter `5`, and choose *Check invoice*. Enter an invoice number, and choose *Save invoice*. Check the same month again, enter another number, and save | The invoice under *Saved invoices* with its difference, then **rejected:** an invoice for that month is already saved |
+| 26 | Any | Tab to the profile button and press the down arrow. Move with the arrow keys, press *Escape*. Open it again and click outside it. Choose *Recent activity* | One header row at every width. The menu shows name, email and role, *Escape* returns to the button, a click outside closes it, and *Recent activity* comes into view |
 
 ### Screen sizes
 

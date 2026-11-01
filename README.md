@@ -72,7 +72,7 @@ Open <http://localhost:5173> and sign in with no password:
 2. Enter the 6-digit code. With the default `MAIL_MOCK=true` no email is sent, so the screen shows the code in a *Testmodus / Test mode* box, and *Code verwenden / Use code* enters it for you.
 3. You land on the dashboard of that user's role.
 
-To change user, choose *Abmelden / Sign out* at the top of the page. Labels are shown as German / English. All users are fictional.
+To change user, open the profile menu at the top right, and choose *Abmelden / Sign out*. Labels are shown as German / English. All users are fictional.
 
 | Role | Name | Email | What to try |
 |---|---|---|---|

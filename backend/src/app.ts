@@ -20,6 +20,7 @@ import { createActivityRoutes } from "./routes/activityRoutes.ts";
 import { createAiRoutes } from "./routes/aiRoutes.ts";
 import { createAuthRoutes } from "./routes/authRoutes.ts";
 import { createBookingRoutes } from "./routes/bookingRoutes.ts";
+import { createIntegrationRoutes } from "./routes/integrationRoutes.ts";
 import { createForecastRoutes } from "./routes/forecastRoutes.ts";
 import { createProofOfWorkRoutes } from "./routes/proofOfWorkRoutes.ts";
 import { createPurchasingRoutes } from "./routes/purchasingRoutes.ts";
@@ -58,6 +59,7 @@ export function createApp({ bookingRepository, userRepository, activityRepositor
   app.use("/api", createBookingRoutes(createBookingController(bookingService), guards));
   app.use("/api", createProofOfWorkRoutes(createProofOfWorkController(createProofOfWorkService(bookingRepository)), guards));
   app.use("/api", createForecastRoutes(createForecastController(createForecastService(bookingRepository), createFollowUpService(bookingRepository)), guards));
+  app.use("/api/integrations", createIntegrationRoutes(bookingService, env.SUPPLIER_API_KEYS));
   app.use("/api/ai", createAiRoutes(createAiController(bookingService), guards));
   app.use("/api/activity", createActivityRoutes(createActivityController(createActivityService(activityRepository)), guards));
   app.use("/api/purchasing", createPurchasingRoutes(createPurchasingController(createPurchasingService(bookingRepository)), guards));

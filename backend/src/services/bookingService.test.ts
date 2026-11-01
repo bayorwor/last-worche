@@ -200,3 +200,72 @@ describe("checkBooking", () => {
     await expect(createService().checkBooking({ ...booking, orderId: "missing" })).rejects.toThrow(NotFoundError);
   });
 });
+
+describe("importBookings", () => {
+  const row = { orderId: ORDER_ID, consultantId: "consultant-1", date: "2026-10-27", startTime: "09:00", endTime: "12:00", hours: 3, description: "Work" };
+
+  function createImportService() {
+    return createBookingService(
+      createInMemoryBookingRepository(
+        [
+          { id: ORDER_ID, orderedPersonDays: 140, supplierId: "supplier-1" },
+          { id: OTHER_ORDER_ID, orderedPersonDays: 140, supplierId: "supplier-2" },
+        ],
+        [
+          { consultantId: "consultant-1", orderId: ORDER_ID },
+          { consultantId: "consultant-2", orderId: ORDER_ID },
+          { consultantId: "consultant-3", orderId: OTHER_ORDER_ID },
+        ],
+        undefined,
+        {},
+        { "consultant-1": "supplier-1", "consultant-2": "supplier-1", "consultant-3": "supplier-2" },
+      ),
+    );
+  }
+
+  test("stores a valid batch, which then counts like any other booking", async () => {
+    const service = createImportService();
+
+    const result = await service.importBookings("supplier-1", [row, { ...row, consultantId: "consultant-2" }]);
+
+    expect(result.imported).toBe(2);
+    expect(await service.getOrderBudget(ORDER_ID)).toMatchObject({ usedPersonDays: 0.75 });
+  });
+
+  test("rejects an unknown consultant", async () => {
+    await expect(createImportService().importBookings("supplier-1", [{ ...row, consultantId: "nobody" }])).rejects.toThrow("Row 1: Consultant nobody");
+  });
+
+  test("rejects a consultant of another supplier", async () => {
+    await expect(createImportService().importBookings("supplier-2", [row])).rejects.toThrow("not known for this supplier");
+  });
+
+  test("rejects an order of another supplier", async () => {
+    const foreignOrder = { ...row, orderId: OTHER_ORDER_ID };
+
+    await expect(createImportService().importBookings("supplier-1", [foreignOrder])).rejects.toThrow("does not belong to this supplier");
+  });
+
+  test("rejects an unknown order", async () => {
+    await expect(createImportService().importBookings("supplier-1", [{ ...row, orderId: "missing" }])).rejects.toThrow(BusinessRuleError);
+  });
+
+  test("rejects the same booking sent a second time", async () => {
+    const service = createImportService();
+    await service.importBookings("supplier-1", [row]);
+
+    await expect(service.importBookings("supplier-1", [row])).rejects.toThrow("already sent");
+  });
+
+  test("rejects a duplicate inside one batch", async () => {
+    const elsewhereInTheDay = { ...row, startTime: "13:00", endTime: "16:00" };
+
+    await expect(createImportService().importBookings("supplier-1", [row, elsewhereInTheDay])).rejects.toThrow("Row 2");
+  });
+
+  test("applies the business rules to each row, naming the row", async () => {
+    const tooLong = { ...row, startTime: "07:00", endTime: "19:00", hours: 11 };
+
+    await expect(createImportService().importBookings("supplier-1", [tooLong])).rejects.toThrow("Row 1: Booking rejected: more than 10 h");
+  });
+});

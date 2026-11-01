@@ -27,6 +27,7 @@ type OrderTotalsRow = RowDataPacket & OrderTotals;
 type ProofOfWorkRow = RowDataPacket & ProofOfWorkTotals;
 type CountRow = RowDataPacket & { total: number };
 type BookedDayRow = RowDataPacket & BookedDay;
+type SupplierIdRow = RowDataPacket & { supplier_id: string };
 type FollowUpRow = RowDataPacket & FollowUpRequest;
 type ConsultantCalendarRow = RowDataPacket & { id: string; federal_state: ConsultantCalendar["federalState"] };
 type ConsultantVacationRow = RowDataPacket & DateRange & { consultant_id: string };
@@ -128,6 +129,21 @@ function createTransaction(connection: PoolConnection): BookingTransaction {
       );
     },
     recordActivity: (activity) => insertActivity(connection, activity),
+    findConsultantSupplierId: async (consultantId) => {
+      const [rows] = await connection.query<SupplierIdRow[]>("SELECT supplier_id FROM consultants WHERE id = ?", [consultantId]);
+      return rows[0]?.supplier_id ?? null;
+    },
+    findOrderSupplierId: async (orderId) => {
+      const [rows] = await connection.query<SupplierIdRow[]>("SELECT supplier_id FROM orders WHERE id = ?", [orderId]);
+      return rows[0]?.supplier_id ?? null;
+    },
+    hasSameBooking: async ({ consultantId, date, orderId, hours }) => {
+      const [rows] = await connection.query<RowDataPacket[]>(
+        "SELECT 1 FROM bookings WHERE consultant_id = ? AND date = ? AND order_id = ? AND hours = ?",
+        [consultantId, date, orderId, hours],
+      );
+      return rows.length > 0;
+    },
     hasOpenFollowUp: async (orderId) => {
       const [rows] = await connection.query<RowDataPacket[]>("SELECT 1 FROM follow_up_requests WHERE order_id = ? AND status = 'open'", [orderId]);
       return rows.length > 0;

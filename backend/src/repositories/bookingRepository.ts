@@ -57,6 +57,9 @@ export type BookingTransaction = {
   approveMonth(approval: MonthApproval): Promise<void>;
   // Part of the transaction, so a rejected booking or approval is never logged.
   recordActivity(activity: NewActivity): Promise<void>;
+  findConsultantSupplierId(consultantId: string): Promise<string | null>;
+  findOrderSupplierId(orderId: string): Promise<string | null>;
+  hasSameBooking(booking: NewBooking): Promise<boolean>;
   hasOpenFollowUp(orderId: string): Promise<boolean>;
   saveFollowUp(request: NewFollowUpRequest): Promise<number>;
   // Locks the request, so two clicks cannot raise a budget twice.

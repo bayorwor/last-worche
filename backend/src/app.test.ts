@@ -477,3 +477,33 @@ describe("forecast and follow-up requests", () => {
     expect(entries.find((entry) => entry.type === "follow_up_requested")).toMatchObject({ actorName: null });
   });
 });
+
+describe("time tracking interface", () => {
+  const send2 = (key: string | null, bookings: object[]) =>
+    fetch(`${baseUrl}/integrations/time-tracking/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(key ? { "x-api-key": key } : {}) },
+      body: JSON.stringify({ bookings }),
+    });
+  const row = { ...newBooking, consultantId: "consultant-1", date: "2026-12-10" };
+
+  test("needs a supplier key", async () => {
+    expect((await send2(null, [row])).status).toBe(401);
+    expect((await send2("wrong-key", [row])).status).toBe(401);
+  });
+
+  test("a session token is not enough", async () => {
+    const response = await fetch(`${baseUrl}/integrations/time-tracking/bookings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${await signIn("user-consultant")}` },
+      body: JSON.stringify({ bookings: [row] }),
+    });
+
+    expect(response.status).toBe(401);
+  });
+
+  test("rejects a badly formed batch with 400", async () => {
+    expect((await send2("demo-consultis-key", [])).status).toBe(400);
+    expect((await send2("demo-consultis-key", [{ ...row, startTime: "late" }])).status).toBe(400);
+  });
+});

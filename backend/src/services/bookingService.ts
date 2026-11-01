@@ -2,6 +2,9 @@
 import {
   addDays,
   assertAssignedToOrder,
+  assertConsultantOfSupplier,
+  assertNotDuplicate,
+  assertOrderOfSupplier,
   assertFitsFreeBudget,
   assertInsideOrderPeriod,
   assertNoOverlap,
@@ -87,6 +90,39 @@ export function createBookingService(repository: BookingRepository, now: () => n
         const booking = await transaction.saveBooking(request);
         await transaction.recordBookingCreated(request, now());
         return booking;
+      });
+    },
+
+    // A batch from a supplier's own time tracking. It is one transaction, so either every row is stored or none.
+    // Each row passes the same rules as a booking made by hand, and also sees the rows before it.
+    importBookings(supplierId: string, rows: NewBooking[]) {
+      return repository.transaction(async (transaction) => {
+        // Always locked in the same order, so two batches cannot wait for each other forever.
+        const orderIds = [...new Set(rows.map(({ orderId }) => orderId))].sort();
+        const consultantIds = [...new Set(rows.map(({ consultantId }) => consultantId))].sort();
+        const orders = new Map(await Promise.all(orderIds.map(async (id) => [id, await transaction.findOrderForUpdate(id)] as const)));
+        for (const id of consultantIds) await transaction.lockConsultant(id);
+
+        const saved = [];
+        for (const [index, row] of rows.entries()) {
+          try {
+            assertConsultantOfSupplier(await transaction.findConsultantSupplierId(row.consultantId), supplierId, row.consultantId);
+            assertOrderOfSupplier(await transaction.findOrderSupplierId(row.orderId), supplierId, row.orderId);
+            assertNotDuplicate(await transaction.hasSameBooking(row));
+
+            const order = orders.get(row.orderId) as BookableOrder;
+            for (const rule of await listBookingRules(transaction, order, row)) {
+              await rule.run();
+            }
+            saved.push(await transaction.saveBooking(row));
+            await transaction.recordBookingCreated(row, now());
+          } catch (error) {
+            if (!(error instanceof BusinessRuleError)) throw error;
+            const rowNumber = index + 1;
+            throw new BusinessRuleError(error.rule, `Row ${rowNumber}: ${error.message} Nothing from this batch was stored.`, { ...error.values, row: rowNumber });
+          }
+        }
+        return { imported: saved.length, bookingIds: saved.map(({ id }) => id) };
       });
     },
 

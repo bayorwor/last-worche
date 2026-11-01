@@ -3,7 +3,10 @@ import {
   addDays,
   assertAssignedToOrder,
   assertFitsFreeBudget,
+  assertConsultantOfSupplier,
   assertNoOverlap,
+  assertNotDuplicate,
+  assertOrderOfSupplier,
   assertRestPeriod,
   suggestFreeSlot,
   assertWithinDailyLimit,
@@ -15,6 +18,27 @@ import {
 import { BusinessRuleError } from "./errors.ts";
 
 const order = { id: "4500012345", orderedPersonDays: 1 };
+
+describe("supplier batch checks", () => {
+  test("accept a consultant and an order of the sending supplier", () => {
+    expect(() => assertConsultantOfSupplier("supplier-1", "supplier-1", "consultant-1")).not.toThrow();
+    expect(() => assertOrderOfSupplier("supplier-1", "supplier-1", "4500012345")).not.toThrow();
+    expect(() => assertNotDuplicate(false)).not.toThrow();
+  });
+
+  test("reject an unknown consultant, and one of another supplier", () => {
+    expect(() => assertConsultantOfSupplier(null, "supplier-1", "nobody")).toThrow("not known for this supplier");
+    expect(() => assertConsultantOfSupplier("supplier-2", "supplier-1", "consultant-3")).toThrow(BusinessRuleError);
+  });
+
+  test("reject an order of another supplier", () => {
+    expect(() => assertOrderOfSupplier("supplier-2", "supplier-1", "4500012346")).toThrow("does not belong to this supplier");
+  });
+
+  test("reject a duplicate", () => {
+    expect(() => assertNotDuplicate(true)).toThrow("already sent");
+  });
+});
 
 describe("suggestFreeSlot", () => {
   const nineToFive = { startTime: "09:00", endTime: "17:00" };

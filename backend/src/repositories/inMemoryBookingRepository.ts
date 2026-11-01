@@ -30,6 +30,7 @@ export function createInMemoryBookingRepository(
   assignments: InMemoryAssignment[],
   activities: InMemoryActivityRepository = createInMemoryActivityRepository(),
   calendars: Record<string, ConsultantCalendar> = {},
+  consultantSuppliers: Record<string, string> = {},
 ): BookingRepository {
   const bookings: StoredBooking[] = [];
   const approvals: MonthApproval[] = [];
@@ -132,6 +133,13 @@ export function createInMemoryBookingRepository(
           return stored;
         },
         recordActivity: activities.record,
+        findConsultantSupplierId: async (consultantId) => consultantSuppliers[consultantId] ?? null,
+        findOrderSupplierId: async (orderId) => {
+          const order = orders.find(({ id }) => id === orderId);
+          return order ? (order.supplierId ?? "supplier-1") : null;
+        },
+        hasSameBooking: async ({ consultantId, date, orderId, hours }) =>
+          bookings.some((booking) => booking.consultantId === consultantId && booking.date === date && booking.orderId === orderId && booking.hours === hours),
         hasOpenFollowUp: async (orderId) => followUps.some((request) => request.orderId === orderId && request.status === "open"),
         saveFollowUp: async ({ orderId, personDays, neededByDate, requestedAtMs }) => {
           const id = followUps.length + 1;

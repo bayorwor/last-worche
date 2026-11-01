@@ -164,3 +164,22 @@ export function suggestFreeSlot(bookingsOnDay: TimeRange[], { startTime, endTime
   }
   return null;
 }
+
+// A supplier's system may send the same hours twice, so these checks apply to its batches (story #33).
+export function assertConsultantOfSupplier(consultantSupplierId: string | null, supplierId: string, consultantId: string) {
+  if (consultantSupplierId !== supplierId) {
+    throw new BusinessRuleError("import-unknown-consultant", `Consultant ${consultantId} is not known for this supplier.`, { consultantId });
+  }
+}
+
+export function assertOrderOfSupplier(orderSupplierId: string | null, supplierId: string, orderId: string) {
+  if (orderSupplierId !== supplierId) {
+    throw new BusinessRuleError("import-foreign-order", `Order ${orderId} does not belong to this supplier.`, { orderId });
+  }
+}
+
+export function assertNotDuplicate(isDuplicate: boolean) {
+  if (isDuplicate) {
+    throw new BusinessRuleError("duplicate-booking", "This booking (consultant, date, order, duration) was already sent.");
+  }
+}

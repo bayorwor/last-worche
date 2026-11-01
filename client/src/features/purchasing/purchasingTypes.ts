@@ -16,3 +16,12 @@ export type SupplierOverview = {
   needsFollowUpOrder: boolean
   orders: OrderOverview[]
 }
+
+export type FollowUpRequest = {
+  id: number
+  orderId: string
+  orderTitle: string
+  personDays: number
+  neededByDate: string
+  status: 'open' | 'confirmed'
+}

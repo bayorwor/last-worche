@@ -148,7 +148,7 @@ export function calculateForecast(input: ForecastInput) {
           orderByDate,
           orderByWeek: isoWeekOf(orderByDate),
           isOverdue: orderByDate < today,
-          followUpPersonDays: Math.ceil(-remainingAtEndPersonDays),
+          followUpPersonDays: Math.max(Math.ceil(-remainingAtEndPersonDays), 1),
         }
       : null,
     series,

@@ -103,7 +103,7 @@ describe("calculateForecast", () => {
       orderByDate: "2026-11-13",
       orderByWeek: { year: 2026, week: 46 },
       isOverdue: false,
-      followUpPersonDays: Math.ceil(-remainingAtProjectEndPersonDays),
+      followUpPersonDays: Math.max(Math.ceil(-remainingAtProjectEndPersonDays), 1),
     });
     expect(remainingAtProjectEndPersonDays).toBeLessThan(0);
   });

@@ -24,6 +24,8 @@ const RULE_MESSAGE_KEYS: Record<string, MessageKey> = {
   'assigned-order': 'errors.ruleAssignedOrder',
   'no-overlap': 'errors.ruleOverlap',
   'order-period': 'errors.ruleOrderPeriod',
+  'follow-up-open': 'errors.ruleFollowUpOpen',
+  'follow-up-confirmed': 'errors.ruleFollowUpConfirmed',
   vacation: 'errors.ruleVacation',
   'public-holiday': 'errors.rulePublicHoliday',
   'proof-approved': 'errors.ruleProofApproved',
@@ -38,6 +40,9 @@ const RULE_MESSAGE_KEYS: Record<string, MessageKey> = {
 const FIELD_MESSAGE_KEYS: Record<string, MessageKey> = {
   email: 'errors.invalidEmail',
   name: 'errors.invalidName',
+  extraConsultants: 'errors.invalidScenarioConsultants',
+  extraFromDate: 'errors.invalidScenarioDate',
+  projectEndShiftWeeks: 'errors.invalidScenarioWeeks',
   code: 'errors.invalidCode',
   description: 'errors.descriptionRequired',
   hours: 'errors.invalidDuration',

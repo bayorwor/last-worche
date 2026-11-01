@@ -1,8 +1,10 @@
 // What the services need from storage. Services depend on these types, not on MySQL.
 import type { NewActivity } from "../domain/activity.ts";
-import type { DayBooking, Order } from "../domain/booking.ts";
+import type { ConsultantCalendar, DateRange, DayBooking, Order } from "../domain/booking.ts";
 import type { ProofOfWorkTotals } from "../domain/proofOfWork.ts";
 import type { OrderTotals } from "../domain/purchasing.ts";
+
+export type BookableOrder = Order & DateRange;
 
 export type NewBooking = {
   orderId: string;
@@ -31,7 +33,8 @@ export type MonthApproval = {
 
 export type BookingTransaction = {
   // Locks the order until the transaction ends, so its budget cannot change in the meantime.
-  findOrderForUpdate(orderId: string): Promise<Order | null>;
+  findOrderForUpdate(orderId: string): Promise<BookableOrder | null>;
+  findConsultantCalendar(consultantId: string): Promise<ConsultantCalendar>;
   isConsultantAssigned(consultantId: string, orderId: string): Promise<boolean>;
   sumBookedHours(orderId: string): Promise<number>;
   // Locks the consultant until the transaction ends, so two bookings of one person on different

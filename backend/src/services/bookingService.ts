@@ -3,7 +3,10 @@ import {
   addDays,
   assertAssignedToOrder,
   assertFitsFreeBudget,
+  assertInsideOrderPeriod,
   assertNoOverlap,
+  assertNotOnPublicHoliday,
+  assertNotOnVacation,
   assertRestPeriod,
   assertWithinDailyLimit,
   calculateBudget,
@@ -45,8 +48,13 @@ export function createBookingService(repository: BookingRepository, now: () => n
         await transaction.lockConsultant(request.consultantId);
 
         assertAssignedToOrder(await transaction.isConsultantAssigned(request.consultantId, order.id), order);
+        assertInsideOrderPeriod(order, request.date);
         assertMonthNotApproved(await transaction.isMonthApproved(order.id, monthOf(request.date)));
         assertFitsFreeBudget(order, await transaction.sumBookedHours(order.id), request.hours);
+
+        const { federalState, vacations } = await transaction.findConsultantCalendar(request.consultantId);
+        assertNotOnVacation(vacations, request.date);
+        assertNotOnPublicHoliday(federalState, request.date);
 
         const bookingsOnDay = await transaction.findBookingsOnDate(request.consultantId, request.date);
         assertNoOverlap(bookingsOnDay, request);

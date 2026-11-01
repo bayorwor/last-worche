@@ -8,7 +8,10 @@ import {
   CONSULTANTS,
   DEMO_PROJECT_LEAD_ID,
   DEMO_USERS,
+  CONSULTANT_STATES,
+  ORDER_PERIODS,
   ORDER_SUPPLIERS,
+  VACATIONS,
   ORDERS,
   ROLES,
   SECOND_LEAD_ORDER,
@@ -273,6 +276,50 @@ export const MIGRATIONS: Migration[] = [
         SELECT 'proof_approved', approved_by_user_id, approved_at_ms, order_id, month
         FROM proofs_of_work
       `);
+    },
+  },
+  {
+    // What the order period, vacation and public holiday rules check (stories #8 and #12).
+    name: "011-order-periods-and-calendars",
+    async run(db) {
+      await db.query(`
+        ALTER TABLE orders
+          ADD COLUMN start_date DATE NULL,
+          ADD COLUMN end_date DATE NULL,
+          ADD COLUMN project_end_date DATE NULL
+      `);
+      for (const { orderId, startDate, endDate, projectEndDate } of ORDER_PERIODS) {
+        await db.query("UPDATE orders SET start_date = ?, end_date = ?, project_end_date = ? WHERE id = ?", [
+          startDate,
+          endDate,
+          projectEndDate,
+          orderId,
+        ]);
+      }
+      await db.query(`
+        ALTER TABLE orders
+          MODIFY start_date DATE NOT NULL,
+          MODIFY end_date DATE NOT NULL,
+          MODIFY project_end_date DATE NOT NULL
+      `);
+
+      await db.query("ALTER TABLE consultants ADD COLUMN federal_state CHAR(2) NULL");
+      for (const { consultantId, federalState } of CONSULTANT_STATES) {
+        await db.query("UPDATE consultants SET federal_state = ? WHERE id = ?", [federalState, consultantId]);
+      }
+
+      await db.query(`
+        CREATE TABLE vacations (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          consultant_id VARCHAR(64) NOT NULL,
+          start_date DATE NOT NULL,
+          end_date DATE NOT NULL,
+          FOREIGN KEY (consultant_id) REFERENCES consultants(id)
+        )
+      `);
+      await db.query("INSERT INTO vacations (consultant_id, start_date, end_date) VALUES ?", [
+        VACATIONS.map(({ consultantId, startDate, endDate }) => [consultantId, startDate, endDate]),
+      ]);
     },
   },
 ];

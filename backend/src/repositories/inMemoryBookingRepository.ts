@@ -1,5 +1,5 @@
 // A BookingRepository that keeps data in memory, so unit tests run without a database.
-import type { Order } from "../domain/booking.ts";
+import type { ConsultantCalendar, DateRange, Order } from "../domain/booking.ts";
 import { monthOf } from "../domain/proofOfWork.ts";
 import { createInMemoryActivityRepository, type InMemoryActivityRepository } from "./inMemoryActivityRepository.ts";
 import {
@@ -11,7 +11,14 @@ import {
 } from "./bookingRepository.ts";
 
 export type InMemoryAssignment = { consultantId: string; orderId: string };
-export type InMemoryOrder = Order & { projectLeadId?: string; supplierId?: string; supplierName?: string };
+export type InMemoryOrder = Order & Partial<DateRange> & { projectLeadId?: string; supplierId?: string; supplierName?: string };
+
+const NO_CALENDAR: ConsultantCalendar = { federalState: null, vacations: [] };
+
+// Most tests are not about the order period, so an order without one accepts any day.
+function withPeriod(order: InMemoryOrder) {
+  return { startDate: "2000-01-01", endDate: "2099-12-31", ...order };
+}
 
 function newestFirst(first: StoredBooking, second: StoredBooking) {
   return `${second.date} ${second.startTime}`.localeCompare(`${first.date} ${first.startTime}`);
@@ -21,6 +28,7 @@ export function createInMemoryBookingRepository(
   orders: InMemoryOrder[],
   assignments: InMemoryAssignment[],
   activities: InMemoryActivityRepository = createInMemoryActivityRepository(),
+  calendars: Record<string, ConsultantCalendar> = {},
 ): BookingRepository {
   const bookings: StoredBooking[] = [];
   const approvals: MonthApproval[] = [];
@@ -28,7 +36,10 @@ export function createInMemoryBookingRepository(
   // Stands in for the names of the users table.
   const LEAD_NAMES: Record<string, string> = { "lead-1": "A. Weber", "lead-2": "J. Schneider" };
 
-  const findOrder = async (orderId: string) => orders.find((order) => order.id === orderId) ?? null;
+  const findOrder = async (orderId: string) => {
+    const order = orders.find(({ id }) => id === orderId);
+    return order ? withPeriod(order) : null;
+  };
   const sumBookedHours = async (orderId: string) =>
     bookings.filter((booking) => booking.orderId === orderId).reduce((total, booking) => total + booking.hours, 0);
 
@@ -89,6 +100,7 @@ export function createInMemoryBookingRepository(
     transaction: (work) =>
       work({
         findOrderForUpdate: findOrder,
+        findConsultantCalendar: async (consultantId) => calendars[consultantId] ?? NO_CALENDAR,
         isConsultantAssigned,
         sumBookedHours,
         lockConsultant: async () => {},

@@ -1,6 +1,6 @@
 // MySQL implementation of BookingRepository. Database column names stay inside this file.
 import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
-import type { DayBooking } from "../domain/booking.ts";
+import type { ConsultantCalendar, DateRange, DayBooking } from "../domain/booking.ts";
 import type { ProofOfWorkTotals } from "../domain/proofOfWork.ts";
 import type { OrderTotals } from "../domain/purchasing.ts";
 import {
@@ -13,7 +13,9 @@ import {
 } from "./bookingRepository.ts";
 import { insertActivity } from "./mysqlActivityRepository.ts";
 
-type OrderRow = RowDataPacket & { id: string; ordered_person_days: number };
+type OrderRow = RowDataPacket & { id: string; ordered_person_days: number; startDate: string; endDate: string };
+type ConsultantStateRow = RowDataPacket & { federal_state: ConsultantCalendar["federalState"] };
+type DateRangeRow = RowDataPacket & DateRange;
 type TotalRow = RowDataPacket & { total: number };
 type OrderSummaryRow = RowDataPacket & OrderSummary;
 type DayBookingRow = RowDataPacket & DayBooking;
@@ -36,9 +38,11 @@ async function isConsultantAssigned(db: Pool | PoolConnection, consultantId: str
 }
 
 async function findOrder(db: Pool | PoolConnection, orderId: string, lock = "") {
-  const [rows] = await db.query<OrderRow[]>(`SELECT id, ordered_person_days FROM orders WHERE id = ? ${lock}`, [orderId]);
+  const [rows] = await db.query<OrderRow[]>(`SELECT id, ordered_person_days, start_date AS startDate, end_date AS endDate FROM orders WHERE id = ? ${lock}`,
+    [orderId],
+  );
   const row = rows[0];
-  return row ? { id: row.id, orderedPersonDays: row.ordered_person_days } : null;
+  return row ? { id: row.id, orderedPersonDays: row.ordered_person_days, startDate: row.startDate, endDate: row.endDate } : null;
 }
 
 async function sumBookedHours(db: Pool | PoolConnection, orderId: string) {
@@ -51,6 +55,17 @@ async function sumBookedHours(db: Pool | PoolConnection, orderId: string) {
 function createTransaction(connection: PoolConnection): BookingTransaction {
   return {
     findOrderForUpdate: (orderId) => findOrder(connection, orderId, "FOR UPDATE"),
+    findConsultantCalendar: async (consultantId) => {
+      const [consultants] = await connection.query<ConsultantStateRow[]>("SELECT federal_state FROM consultants WHERE id = ?", [consultantId]);
+      const [vacations] = await connection.query<DateRangeRow[]>(
+        "SELECT start_date AS startDate, end_date AS endDate FROM vacations WHERE consultant_id = ?",
+        [consultantId],
+      );
+      return {
+        federalState: consultants[0]?.federal_state ?? null,
+        vacations: vacations.map(({ startDate, endDate }) => ({ startDate, endDate })),
+      };
+    },
     isConsultantAssigned: (consultantId, orderId) => isConsultantAssigned(connection, consultantId, orderId),
     sumBookedHours: (orderId) => sumBookedHours(connection, orderId),
     lockConsultant: async (consultantId) => {

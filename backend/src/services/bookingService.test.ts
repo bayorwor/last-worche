@@ -128,3 +128,33 @@ describe("bookingService", () => {
     await expect(service.createBooking({ ...booking, orderId: "missing" })).rejects.toThrow(NotFoundError);
   });
 });
+
+describe("createBooking with an order period and a consultant's calendar", () => {
+  const service = createBookingService(
+    createInMemoryBookingRepository(
+      [{ id: ORDER_ID, orderedPersonDays: 140, startDate: "2026-07-01", endDate: "2026-12-31" }],
+      [{ consultantId: "consultant-1", orderId: ORDER_ID }, { consultantId: "consultant-2", orderId: ORDER_ID }],
+      undefined,
+      {
+        "consultant-1": { federalState: "BY", vacations: [{ startDate: "2026-12-21", endDate: "2026-12-24" }] },
+        "consultant-2": { federalState: "HH", vacations: [] },
+      },
+    ),
+  );
+
+  test("stores nothing for a day outside the order period", async () => {
+    await expect(service.createBooking({ ...booking, date: "2027-01-15" })).rejects.toThrow("outside the order period");
+  });
+
+  test("rejects a day of approved vacation", async () => {
+    await expect(service.createBooking({ ...booking, date: "2026-12-23" })).rejects.toThrow("approved vacation");
+  });
+
+  test("rejects a holiday of the consultant's own state", async () => {
+    await expect(service.createBooking({ ...booking, date: "2026-11-01" })).rejects.toThrow("All Saints' Day");
+  });
+
+  test("accepts that holiday for a consultant from another state", async () => {
+    await expect(service.createBooking({ ...booking, consultantId: "consultant-2", date: "2026-11-01" })).resolves.toMatchObject({ date: "2026-11-01" });
+  });
+});

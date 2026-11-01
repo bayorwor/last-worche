@@ -7,10 +7,62 @@ import {
   assertRestPeriod,
   assertWithinDailyLimit,
   calculateBudget,
+  assertInsideOrderPeriod,
+  assertNotOnPublicHoliday,
+  assertNotOnVacation,
 } from "./booking.ts";
 import { BusinessRuleError } from "./errors.ts";
 
 const order = { id: "4500012345", orderedPersonDays: 1 };
+
+describe("assertInsideOrderPeriod", () => {
+  const period = { startDate: "2026-07-01", endDate: "2026-12-31" };
+
+  test("accepts a booking inside the period", () => {
+    expect(() => assertInsideOrderPeriod(period, "2026-10-27")).not.toThrow();
+  });
+
+  test("accepts the first and the last day of the period", () => {
+    expect(() => assertInsideOrderPeriod(period, "2026-07-01")).not.toThrow();
+    expect(() => assertInsideOrderPeriod(period, "2026-12-31")).not.toThrow();
+  });
+
+  test("rejects a booking after the period", () => {
+    expect(() => assertInsideOrderPeriod(period, "2027-01-15")).toThrow("Booking rejected: outside the order period.");
+  });
+
+  test("rejects a booking before the period", () => {
+    expect(() => assertInsideOrderPeriod(period, "2026-06-30")).toThrow(BusinessRuleError);
+  });
+});
+
+describe("assertNotOnVacation", () => {
+  const vacations = [{ startDate: "2026-12-24", endDate: "2026-12-30" }];
+
+  test("accepts a day outside any vacation", () => {
+    expect(() => assertNotOnVacation(vacations, "2026-12-23")).not.toThrow();
+    expect(() => assertNotOnVacation([], "2026-12-24")).not.toThrow();
+  });
+
+  test("rejects the first and the last day of a vacation", () => {
+    expect(() => assertNotOnVacation(vacations, "2026-12-24")).toThrow("Booking rejected: consultant is on approved vacation.");
+    expect(() => assertNotOnVacation(vacations, "2026-12-30")).toThrow(BusinessRuleError);
+  });
+});
+
+describe("assertNotOnPublicHoliday", () => {
+  test("rejects a holiday of the consultant's state, and names it", () => {
+    expect(() => assertNotOnPublicHoliday("BY", "2026-11-01")).toThrow("All Saints' Day");
+  });
+
+  test("accepts the same day for a consultant from another state", () => {
+    expect(() => assertNotOnPublicHoliday("HH", "2026-11-01")).not.toThrow();
+  });
+
+  test("accepts an ordinary working day", () => {
+    expect(() => assertNotOnPublicHoliday("BY", "2026-11-03")).not.toThrow();
+  });
+});
 
 describe("free budget rule", () => {
   test("accepts a booking that uses exactly the free budget", () => {

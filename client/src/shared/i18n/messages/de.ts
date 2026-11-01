@@ -172,6 +172,9 @@ export const de = {
   'errors.descriptionRequired': 'Buchung abgelehnt: Eine Beschreibung der Tätigkeit ist erforderlich.',
   'errors.invalidDuration': 'Buchung abgelehnt: Die Dauer muss größer als null sein und zwischen Start- und Endzeit passen.',
   'errors.invalidTimes': 'Buchung abgelehnt: Die Endzeit muss nach der Startzeit liegen.',
+  'errors.ruleOrderPeriod': 'Buchung abgelehnt: außerhalb der Auftragslaufzeit ({startDate} bis {endDate}).',
+  'errors.ruleVacation': 'Buchung abgelehnt: Für diesen Tag ist genehmigter Urlaub eingetragen.',
+  'errors.rulePublicHoliday': 'Buchung abgelehnt: {holidayDe} ist ein gesetzlicher Feiertag.',
   'errors.fromServer': '{message}',
 } as const
 

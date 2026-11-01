@@ -173,5 +173,8 @@ export const en: Record<MessageKey, string> = {
   'errors.descriptionRequired': 'Booking rejected: a description of what was done is required.',
   'errors.invalidDuration': 'Booking rejected: the duration must be more than zero and fit between the start and end time.',
   'errors.invalidTimes': 'Booking rejected: the end time must be after the start time.',
+  'errors.ruleOrderPeriod': 'Booking rejected: outside the order period ({startDate} to {endDate}).',
+  'errors.ruleVacation': 'Booking rejected: consultant is on approved vacation.',
+  'errors.rulePublicHoliday': 'Booking rejected: {holidayEn} is a public holiday.',
   'errors.fromServer': '{message}',
 }

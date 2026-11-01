@@ -64,6 +64,7 @@ export type BookingTransaction = {
   saveFollowUp(request: NewFollowUpRequest): Promise<number>;
   // Locks the request, so two clicks cannot raise a budget twice.
   findFollowUpForUpdate(id: number): Promise<{ orderId: string; personDays: number; status: FollowUpStatus } | null>;
+  // Raises the order's budget, and extends its period to the project end, so the new budget can be booked.
   confirmFollowUp(id: number, confirmedByUserId: string, confirmedAtMs: number): Promise<void>;
   recordBookingCreated(booking: NewBooking, occurredAtMs: number): Promise<void>;
 };

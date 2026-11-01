@@ -10,7 +10,7 @@ How to test lastWorche on every platform. It has three steps:
 
 | Platform | How to test it | Status |
 |---|---|---|
-| macOS, Chrome | [Computer browser](#computer-browser) | **Tested** |
+| macOS, Chrome | [Computer browser](#computer-browser) | **Tested**, all 22 steps on a fresh clone, on 1 Nov 2026 |
 | macOS, Safari or Firefox | [Computer browser](#computer-browser) | Not tested yet |
 | Windows, Edge or Chrome | [Computer browser](#computer-browser), with the [Windows commands](#windows-and-linux-commands) | Not tested yet |
 | Linux, Chrome or Firefox | [Computer browser](#computer-browser), with the [Linux commands](#windows-and-linux-commands) | Not tested yet |

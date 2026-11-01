@@ -157,6 +157,7 @@ export function createInMemoryBookingRepository(
           request.status = "confirmed";
           const order = orders.find(({ id: orderId }) => orderId === request.orderId) as InMemoryOrder;
           order.orderedPersonDays += request.personDays;
+          if (order.endDate && order.projectEndDate && order.projectEndDate > order.endDate) order.endDate = order.projectEndDate;
         },
         recordBookingCreated: async ({ consultantId, orderId, date, hours }, occurredAtMs) => {
           const actorUserId = activities.findUserIdOfConsultant(consultantId);

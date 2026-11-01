@@ -5,6 +5,7 @@ import { BusinessRuleError } from "../domain/errors.ts";
 import type { User } from "../domain/user.ts";
 import { createActivityService, type ActivityService } from "../services/activityService.ts";
 import { createBookingService } from "../services/bookingService.ts";
+import { createFollowUpService } from "../services/followUpService.ts";
 import { createProofOfWorkService } from "../services/proofOfWorkService.ts";
 import { openDatabase } from "./database.ts";
 import { createMysqlActivityRepository } from "./mysqlActivityRepository.ts";
@@ -119,5 +120,31 @@ describe.skipIf(!databaseUrl)("a supplier's batch against real MySQL", () => {
 
     await expect(service.importBookings("supplier-1", [booking])).rejects.toThrow("already sent");
     expect(await bookingCount()).toBe(1);
+  });
+});
+
+describe.skipIf(!databaseUrl)("a follow-up request against real MySQL", () => {
+  let db: Pool;
+
+  beforeAll(async () => {
+    db = await openDatabase(databaseUrl as string);
+  });
+
+  afterAll(async () => {
+    await db.query("DELETE FROM follow_up_requests");
+    await db.query("UPDATE orders SET ordered_person_days = 140, end_date = '2026-12-31' WHERE id = ?", [SEED_ORDER_ID]);
+    await db.end();
+  });
+
+  test("confirming raises the budget and extends the order to the project end", async () => {
+    const repository = createMysqlBookingRepository(db);
+    const followUps = createFollowUpService(repository);
+    const { id } = await followUps.request(lead, SEED_ORDER_ID, 20, "2026-12-01");
+
+    await followUps.confirm(purchasing, id);
+
+    const [rows] = await db.query<RowDataPacket[]>("SELECT ordered_person_days AS budget, end_date AS endDate FROM orders WHERE id = ?", [SEED_ORDER_ID]);
+    expect(rows[0]).toMatchObject({ budget: 160, endDate: "2027-01-29" });
+    expect(await followUps.listAll()).toMatchObject([{ id, status: "confirmed" }]);
   });
 });

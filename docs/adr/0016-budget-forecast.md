@@ -24,7 +24,7 @@ We choose **walking through the coming days**, in [forecast.ts](../../backend/sr
 - **Warning:** when the budget runs out before the project ends, the order date is 4 weeks earlier, and the proposal is the shortfall at the project end, rounded up.
 - **Scenarios:** an extra consultant counts 8 h per working day. A scenario arrives with the request and is never stored.
 
-From the warning, a project lead can ask purchasing for that amount. Only purchasing's confirmation raises the budget, and each order has at most one open request. This keeps contracts out of the product while the decision stays with purchasing.
+From the warning, a project lead can ask purchasing for that amount. Only purchasing's confirmation raises the budget and extends the order to the project end, so the new budget can be booked. Each order has at most one open request. This keeps contracts out of the product while the decision stays with purchasing.
 
 ## Consequences
 

@@ -46,6 +46,19 @@ describe("follow-up requests", () => {
     expect(await followUps.listAll()).toMatchObject([{ status: "confirmed" }]);
   });
 
+  test("confirming also extends the order to the project end, so the new budget can be booked", async () => {
+    const orders = [{ id: ORDER_ID, orderedPersonDays: 10, projectLeadId: lead.id, startDate: "2026-07-01", endDate: "2026-12-31", projectEndDate: "2027-01-29" }];
+    const repository = createInMemoryBookingRepository(orders, [{ consultantId: "consultant-1", orderId: ORDER_ID }]);
+    const service = createFollowUpService(repository);
+    const booking = { orderId: ORDER_ID, consultantId: "consultant-1", date: "2027-01-15", startTime: "09:00", endTime: "17:00", hours: 7, description: "Work" };
+    await expect(createBookingService(repository).createBooking(booking)).rejects.toThrow("outside the order period");
+
+    await service.request(lead, ORDER_ID, 20, "2026-12-01");
+    await service.confirm(buyer, 1);
+
+    await expect(createBookingService(repository).createBooking(booking)).resolves.toMatchObject({ date: "2027-01-15" });
+  });
+
   test("rejects a second open request for the same order", async () => {
     await followUps.request(lead, ORDER_ID, 20, "2026-12-01");
 

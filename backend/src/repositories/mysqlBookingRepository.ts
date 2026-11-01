@@ -168,7 +168,8 @@ function createTransaction(connection: PoolConnection): BookingTransaction {
         `UPDATE follow_up_requests
          JOIN orders ON orders.id = follow_up_requests.order_id
          SET follow_up_requests.status = 'confirmed', follow_up_requests.confirmed_by_user_id = ?, follow_up_requests.confirmed_at_ms = ?,
-           orders.ordered_person_days = orders.ordered_person_days + follow_up_requests.person_days
+           orders.ordered_person_days = orders.ordered_person_days + follow_up_requests.person_days,
+           orders.end_date = GREATEST(orders.end_date, orders.project_end_date)
          WHERE follow_up_requests.id = ?`,
         [confirmedByUserId, confirmedAtMs, id],
       );

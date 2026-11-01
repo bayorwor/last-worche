@@ -45,6 +45,7 @@ beforeAll(() => {
     ),
     userRepository: createInMemoryUserRepository(users, roles),
     activityRepository,
+    signInLimitPerMinute: 100_000, // these tests sign in far more often than a person would
   });
   server = app.listen(0);
   baseUrl = `http://localhost:${(server.address() as AddressInfo).port}/api`;
@@ -539,5 +540,57 @@ describe("invoice check", () => {
     expect(response.headers.get("content-type")).toContain("text/csv");
     expect(await response.text()).toContain("2027-02-01");
     expect((await send("GET", path, { token: await signIn("user-purchasing") })).status).toBe(403);
+  });
+});
+
+describe("operation", () => {
+  test("the health check says the API and its database work", async () => {
+    const response = await send("GET", "/health");
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "ok", database: "ok" });
+  });
+
+  test("the API documentation is served", async () => {
+    expect(((await (await send("GET", "/openapi.json")).json()) as { openapi: string }).openapi).toStartWith("3.");
+    expect((await fetch(`${baseUrl}/docs/`)).status).toBe(200);
+  });
+
+  test("an unknown API address answers 404 in JSON", async () => {
+    const response = await send("GET", "/no-such-address");
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ error: expect.any(String) });
+  });
+
+  test("responses carry security headers", async () => {
+    expect((await send("GET", "/health")).headers.get("x-content-type-options")).toBe("nosniff");
+  });
+
+  test("a body that is too large is rejected, not a server error", async () => {
+    const response = await send("POST", "/auth/request-code", { body: { email: "x".repeat(2_000_000) } });
+
+    expect(response.status).toBe(413);
+  });
+
+  test("too many sign-in attempts are rejected", async () => {
+    const limitedApp = createApp({
+      bookingRepository: createInMemoryBookingRepository([], []),
+      userRepository: createInMemoryUserRepository([]),
+      activityRepository: createInMemoryActivityRepository(),
+      signInLimitPerMinute: 2,
+    });
+    const limitedServer = limitedApp.listen(0);
+    const url = `http://localhost:${(limitedServer.address() as AddressInfo).port}/api/auth/request-code`;
+    const attempt = () =>
+      fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "a@test.example" }) });
+
+    try {
+      expect((await attempt()).status).toBe(200);
+      expect((await attempt()).status).toBe(200);
+      expect((await attempt()).status).toBe(429);
+    } finally {
+      limitedServer.close();
+    }
   });
 });

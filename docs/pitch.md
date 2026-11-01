@@ -26,7 +26,7 @@ Start the app as in the [README](../README.md), and open <http://localhost:5173>
 | 6 | Same | Choose *Ask purchasing* | The warning becomes a request. Purchasing confirms it in step 9. |
 | 7 | Same | On the *Proofs of work* tab, approve the current month | Approval locks the month, and the file for finance is one click away. |
 | 8 | `m.krueger@consultis.example` | Enter the sentence | **Rejected:** "Proof of work already approved — contact the project lead." |
-| 9 | `k.vogel@client.example` | Show the supplier overview, then *Follow-up requests*, and confirm | Purchasing sees totals per supplier and order, and no person. Its *Recent activity* shows the approved month with no name. The server enforces this. Confirming raises the budget, and the project lead's warning clears. |
+| 9 | `k.vogel@client.example` | Show the supplier overview, then *Follow-up requests*, and confirm | Purchasing sees totals per supplier and order, and no person. Its *Recent activity* shows the approved month with no name. The server enforces this. Confirming raises the budget, and the project lead's warning clears. **On order 4500012346, confirming is rejected,** because the framework agreement it shares with another order has too little free. |
 | 10 | Any | Switch between *DE* and *EN* | The product works in both languages, down to the rejection messages. |
 
 Steps 6 and 7 raise the budget request and lock the current month for that order. Rehearse on a working day, because public holidays reject today's bookings. To run the demo again, reset the data as described in the README.
@@ -49,7 +49,8 @@ Say these before the jury asks:
 
 - **The forecast assumes a steady pace:** it cannot see a project speeding up or slowing down, and the 4-week lead time for purchasing is an assumption from the story. Purchasing's "Follow-up order needed" is still the simple 10% rule, because a forecast needs single consultants' data that purchasing may not see.
 - **The supplier interface** uses a simple key per supplier. Production needs short-lived tokens ([ADR-0017](adr/0017-supplier-interface.md)).
-- **The invoice check** compares a figure someone types in. It does not read invoice documents, and we have no finance role yet, so purchasing uses it.
+- **The invoice check** compares a figure someone types in, and stores it with its difference. It does not read invoice documents or pay anything, and we have no finance role yet, so purchasing uses it. A stored invoice cannot be corrected yet.
+- **Framework agreements** are sample data, with no screen to edit them and no contract documents.
 - **Real email sending** is built, but has not been tested against a mail server. The demo uses test mode, and with test mode on, anyone can sign in as anyone.
 - **Profile editing** covers the name only. Changing the email address, which people sign in with, is not built.
 - **Single sign-on** per customer is our production plan ([ADR-0002](adr/0002-identity-and-sign-in.md)), not part of the demo.

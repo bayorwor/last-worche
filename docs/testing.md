@@ -10,7 +10,7 @@ How to test lastWorche on every platform. It has three steps:
 
 | Platform | How to test it | Status |
 |---|---|---|
-| macOS, Chrome | [Computer browser](#computer-browser) | **Tested**, all 22 steps on a fresh clone, on 1 Nov 2026 |
+| macOS, Chrome | [Computer browser](#computer-browser) | **Tested**, steps 1 to 22 on a fresh clone on 1 Nov 2026, and steps 1 to 25 from the working branch later that day |
 | macOS, Safari or Firefox | [Computer browser](#computer-browser) | Not tested yet |
 | Windows, Edge or Chrome | [Computer browser](#computer-browser), with the [Windows commands](#windows-and-linux-commands) | Not tested yet |
 | Linux, Chrome or Firefox | [Computer browser](#computer-browser), with the [Linux commands](#windows-and-linux-commands) | Not tested yet |
@@ -214,10 +214,13 @@ Then restart the backend. To sign in: enter the email, choose *Send code*, then 
 | 16 | `a.weber@client.example` | Open the *Bookings* tab | The new name on that consultant's bookings |
 | 17 | `l.hoffmann@consultis.example` | Choose *Enter by hand*, enter an activity, then change the date to `24.12.2026`, then `25.12.2026`, then `15.01.2027`, then choose *Discard* | **Rule failed**, in turn: approved vacation, Christmas Day is a public holiday, outside the order period |
 | 18 | `a.weber@client.example` | On the *Budget* tab, look at *Forecast* | The run-out week, the pace, a chart, *Order more by week …* and the assumptions. Enter `0` under *Extra consultants*, and *Calculate*: an error, and the forecast stays. Enter `1` and `4` under *Project longer*, and *Calculate*: a second dashed line and a comparison table |
-| 19 | Same | Choose *Ask purchasing*. Then sign in as `k.vogel@client.example`, open *Follow-up requests*, and choose *Confirm*, then *Yes, raise the budget* | The request shows *Confirmed*. Back as A. Weber: ordered budget raised, and the warning gone |
+| 19 | Same | Choose *Ask purchasing*. Then sign in as `k.vogel@client.example`, open *Follow-up requests*, and on order 4500012345 choose *Confirm*, then *Yes, raise the budget* | The request shows *Confirmed*. Back as A. Weber: ordered budget raised, and the warning gone |
 | 20 | `k.vogel@client.example` | Open *Invoice check*. Choose order 4500012345 and the current month, and check `5`. Then choose a month with no approval | The difference and *Over approved hours* or *Consistent*, then **rejected:** no approved proof of work |
 | 21 | `a.weber@client.example` | On the *Proofs of work* tab, choose *Download for finance (CSV)* on the approved month | A file with that month's bookings |
 | 22 | Nobody | Open <http://localhost:3000/api/docs> | The API documentation, listing every address |
+| 23 | `k.vogel@client.example` | Open *Framework agreements* | Two agreements with total, reserved, free and booked person-days. Orders 4500012346 and 4500012347 share one, with 10 PD free. **No person's name** |
+| 24 | Same | Open *Follow-up requests*. On order 4500012346 (15 PD), choose *Confirm*, then *Yes, raise the budget*. Then choose *Decline*, then *Yes, decline* | **Rejected:** the agreement has only 10 PD free, and the request stays open. Then it shows *Declined*, and the decline appears under *Recent activity* |
+| 25 | Same | Open *Invoice check*. Choose order 4500012345 and the month approved in step 10, enter `5`, and choose *Check invoice*. Enter an invoice number, and choose *Save invoice*. Check the same month again, enter another number, and save | The invoice under *Saved invoices* with its difference, then **rejected:** an invoice for that month is already saved |
 
 ### Screen sizes
 

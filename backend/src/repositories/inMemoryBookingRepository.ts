@@ -1,6 +1,7 @@
 // A BookingRepository that keeps data in memory, so unit tests run without a database.
 import type { ConsultantCalendar, DateRange, Order } from "../domain/booking.ts";
 import type { FollowUpRequest } from "../domain/followUp.ts";
+import type { LockedFrameworkAgreement } from "../domain/frameworkAgreement.ts";
 import { monthOf } from "../domain/proofOfWork.ts";
 import { createInMemoryActivityRepository, type InMemoryActivityRepository } from "./inMemoryActivityRepository.ts";
 import {
@@ -12,7 +13,8 @@ import {
 } from "./bookingRepository.ts";
 
 export type InMemoryAssignment = { consultantId: string; orderId: string };
-export type InMemoryOrder = Order & Partial<DateRange> & { projectLeadId?: string; projectEndDate?: string; supplierId?: string; supplierName?: string };
+export type InMemoryOrder = Order &
+  Partial<DateRange> & { projectLeadId?: string; projectEndDate?: string; supplierId?: string; supplierName?: string; frameworkAgreement?: LockedFrameworkAgreement };
 
 const NO_CALENDAR: ConsultantCalendar = { federalState: null, vacations: [] };
 
@@ -95,6 +97,25 @@ export function createInMemoryBookingRepository(
           bookedHours: await sumBookedHours(order.id),
         })),
       ),
+    listFrameworkAgreementTotals: async () =>
+      Promise.all(
+        orders.flatMap((order) =>
+          order.frameworkAgreement
+            ? [
+                sumBookedHours(order.id).then((bookedHours) => ({
+                  agreementId: (order.frameworkAgreement as LockedFrameworkAgreement).id,
+                  agreementTitle: (order.frameworkAgreement as LockedFrameworkAgreement).title,
+                  totalPersonDays: (order.frameworkAgreement as LockedFrameworkAgreement).totalPersonDays,
+                  supplierName: order.supplierName ?? "Supplier",
+                  orderId: order.id,
+                  title: `Order ${order.id}`,
+                  orderedPersonDays: order.orderedPersonDays,
+                  bookedHours,
+                })),
+              ]
+            : [],
+        ),
+      ),
     listOrdersLedBy: async (userId) => orders.filter((order) => order.projectLeadId === userId).map(toSummary),
     isConsultantAssigned,
     isOrderLedBy: async (userId, orderId) => orders.some((order) => order.id === orderId && order.projectLeadId === userId),
@@ -159,6 +180,12 @@ export function createInMemoryBookingRepository(
           order.orderedPersonDays += request.personDays;
           if (order.endDate && order.projectEndDate && order.projectEndDate > order.endDate) order.endDate = order.projectEndDate;
         },
+        declineFollowUp: async (id) => {
+          (followUps.find((candidate) => candidate.id === id) as FollowUpRequest).status = "declined";
+        },
+        findFrameworkAgreementOfOrderForUpdate: async (orderId) => orders.find(({ id }) => id === orderId)?.frameworkAgreement ?? null,
+        sumOrderedPersonDaysOfAgreement: async (agreementId) =>
+          orders.filter((order) => order.frameworkAgreement?.id === agreementId).reduce((total, order) => total + order.orderedPersonDays, 0),
         recordBookingCreated: async ({ consultantId, orderId, date, hours }, occurredAtMs) => {
           const actorUserId = activities.findUserIdOfConsultant(consultantId);
           if (actorUserId) {

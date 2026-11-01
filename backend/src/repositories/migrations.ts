@@ -9,6 +9,8 @@ import {
   DEMO_PROJECT_LEAD_ID,
   DEMO_USERS,
   CONSULTANT_STATES,
+  FRAMEWORK_AGREEMENTS,
+  OVER_AGREEMENT_FOLLOW_UP,
   ORDER_PERIODS,
   ORDER_SUPPLIERS,
   VACATIONS,
@@ -356,6 +358,51 @@ export const MIGRATIONS: Migration[] = [
         ALTER TABLE activity_log MODIFY type
           ENUM('signed_in', 'profile_updated', 'booking_created', 'proof_approved', 'follow_up_requested', 'follow_up_confirmed') NOT NULL
       `);
+    },
+  },
+  {
+    // Framework agreements whose budget several orders share, and a way for purchasing to decline a follow-up request.
+    name: "013-framework-agreements",
+    async run(db) {
+      await db.query(`
+        CREATE TABLE framework_agreements (
+          id VARCHAR(32) PRIMARY KEY,
+          supplier_id VARCHAR(64) NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          total_person_days DECIMAL(8, 3) NOT NULL,
+          FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+        )
+      `);
+      await db.query("INSERT INTO framework_agreements (id, supplier_id, title, total_person_days) VALUES ?", [
+        FRAMEWORK_AGREEMENTS.map(({ id, supplierId, title, totalPersonDays }) => [id, supplierId, title, totalPersonDays]),
+      ]);
+
+      await db.query(`
+        ALTER TABLE orders
+          ADD COLUMN framework_agreement_id VARCHAR(32) NULL,
+          ADD FOREIGN KEY (framework_agreement_id) REFERENCES framework_agreements(id)
+      `);
+      for (const { id, orderIds } of FRAMEWORK_AGREEMENTS) {
+        await db.query("UPDATE orders SET framework_agreement_id = ? WHERE id IN (?)", [id, orderIds]);
+      }
+
+      await db.query(`
+        ALTER TABLE follow_up_requests
+          MODIFY status ENUM('open', 'confirmed', 'declined') NOT NULL DEFAULT 'open',
+          ADD COLUMN declined_by_user_id VARCHAR(64) NULL,
+          ADD COLUMN declined_at_ms BIGINT NULL,
+          ADD FOREIGN KEY (declined_by_user_id) REFERENCES users(id)
+      `);
+      await db.query(`
+        ALTER TABLE activity_log MODIFY type
+          ENUM('signed_in', 'profile_updated', 'booking_created', 'proof_approved', 'follow_up_requested', 'follow_up_confirmed', 'follow_up_declined') NOT NULL
+      `);
+
+      const { orderId, personDays, neededByDate, requestedAtMs } = OVER_AGREEMENT_FOLLOW_UP;
+      await db.query(
+        "INSERT INTO follow_up_requests (order_id, requested_by_user_id, person_days, needed_by_date, requested_at_ms) VALUES (?, ?, ?, ?, ?)",
+        [orderId, DEMO_PROJECT_LEAD_ID, personDays, neededByDate, requestedAtMs],
+      );
     },
   },
 ];

@@ -9,6 +9,10 @@ export function createPurchasingController(purchasingService: PurchasingService)
       res.json(await purchasingService.getSupplierOverview());
     },
 
+    async listFrameworkAgreements(_req: Request, res: Response) {
+      res.json(await purchasingService.listFrameworkAgreements());
+    },
+
     async checkInvoice(req: Request, res: Response) {
       const { orderId, month, invoicedPersonDays } = req.body as InvoiceCheckRequest;
       res.json(await purchasingService.checkInvoice(orderId, month, invoicedPersonDays));

@@ -143,9 +143,17 @@ export const openapiDocument = {
       get: operation("Project leads' requests for more budget", "Purchasing", "purchasing", { "200": ok("The requests"), "401": errors["401"], "403": errors["403"] }),
     },
     "/purchasing/follow-up-requests/{id}/confirm": {
-      post: operation("Confirm a request, which raises the order's budget", "Purchasing", "purchasing", { "200": ok("The requests"), "400": errors["400"], "401": errors["401"], "403": errors["403"], "404": errors["404"], "422": errors["422"] }, {
+      post: operation("Confirm a request, which raises the order's budget. Rejected when its framework agreement has too little free", "Purchasing", "purchasing", { "200": ok("The requests"), "400": errors["400"], "401": errors["401"], "403": errors["403"], "404": errors["404"], "422": errors["422"] }, {
         parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
       }),
+    },
+    "/purchasing/follow-up-requests/{id}/decline": {
+      post: operation("Decline a request, which leaves the budget as it is", "Purchasing", "purchasing", { "200": ok("The requests"), "400": errors["400"], "401": errors["401"], "403": errors["403"], "404": errors["404"], "422": errors["422"] }, {
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+      }),
+    },
+    "/purchasing/framework-agreements": {
+      get: operation("Framework agreements with the orders sharing each one, with no personal data", "Purchasing", "purchasing", { "200": ok("The agreements"), "401": errors["401"], "403": errors["403"] }),
     },
     "/activity": {
       get: operation("Recent activity, scoped by role", "Activity", "every role. Purchasing gets no single bookings and no other person's name", { "200": ok("The entries"), "401": errors["401"] }),

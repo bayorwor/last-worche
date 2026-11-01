@@ -8,7 +8,8 @@ export type ActivityType =
   | "booking_created"
   | "proof_approved"
   | "follow_up_requested"
-  | "follow_up_confirmed";
+  | "follow_up_confirmed"
+  | "follow_up_declined";
 
 export type NewActivity = {
   type: ActivityType;

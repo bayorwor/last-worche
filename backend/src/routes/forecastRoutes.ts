@@ -11,5 +11,6 @@ export function createForecastRoutes(controller: ReturnType<typeof createForecas
   router.post("/orders/:orderId/follow-up-requests", guards.requireRole("project_lead"), validateBody(createFollowUpSchema), controller.requestFollowUp);
   router.get("/purchasing/follow-up-requests", guards.requireRole("purchasing"), controller.listFollowUps);
   router.post("/purchasing/follow-up-requests/:id/confirm", guards.requireRole("purchasing"), controller.confirmFollowUp);
+  router.post("/purchasing/follow-up-requests/:id/decline", guards.requireRole("purchasing"), controller.declineFollowUp);
   return router;
 }

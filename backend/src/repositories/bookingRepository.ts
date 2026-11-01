@@ -3,6 +3,7 @@ import type { NewActivity } from "../domain/activity.ts";
 import type { ConsultantCalendar, DateRange, DayBooking, Order } from "../domain/booking.ts";
 import type { BookedDay } from "../domain/forecast.ts";
 import type { FollowUpRequest, FollowUpStatus } from "../domain/followUp.ts";
+import type { FrameworkAgreementOrderTotals, LockedFrameworkAgreement } from "../domain/frameworkAgreement.ts";
 import type { ProofOfWorkTotals } from "../domain/proofOfWork.ts";
 import type { OrderTotals } from "../domain/purchasing.ts";
 
@@ -66,12 +67,17 @@ export type BookingTransaction = {
   findFollowUpForUpdate(id: number): Promise<{ orderId: string; personDays: number; status: FollowUpStatus } | null>;
   // Raises the order's budget, and extends its period to the project end, so the new budget can be booked.
   confirmFollowUp(id: number, confirmedByUserId: string, confirmedAtMs: number): Promise<void>;
+  declineFollowUp(id: number, declinedByUserId: string, declinedAtMs: number): Promise<void>;
+  // Locks the agreement, so its free budget cannot change until the transaction ends. Null if the order has none.
+  findFrameworkAgreementOfOrderForUpdate(orderId: string): Promise<LockedFrameworkAgreement | null>;
+  sumOrderedPersonDaysOfAgreement(agreementId: string): Promise<number>;
   recordBookingCreated(booking: NewBooking, occurredAtMs: number): Promise<void>;
 };
 
 export type BookingRepository = {
   listOrders(): Promise<OrderSummary[]>;
   listOrderTotals(): Promise<OrderTotals[]>;
+  listFrameworkAgreementTotals(): Promise<FrameworkAgreementOrderTotals[]>;
   listProofsOfWork(orderId: string): Promise<ProofOfWorkTotals[]>;
   listAssignedOrders(consultantId: string): Promise<OrderSummary[]>;
   listOrdersLedBy(userId: string): Promise<OrderSummary[]>;

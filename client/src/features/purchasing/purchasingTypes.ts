@@ -52,3 +52,14 @@ export type FrameworkAgreement = {
   usedPersonDays: number
   orders: { orderId: string; title: string; orderedPersonDays: number; usedPersonDays: number }[]
 }
+
+// Counts only: the server sends no person, day or hour for the radar to purchasing.
+export type SupplierRadarCounts = {
+  supplierName: string
+  frequentLongDays: number
+  weekendWork: number
+  paceJumps: number
+  justUnderLimit: number
+}
+
+export type SupplierRadar = { evaluatedOn: string; suppliers: SupplierRadarCounts[] }

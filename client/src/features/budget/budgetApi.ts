@@ -1,6 +1,6 @@
 import { apiClient } from '../../shared/api/apiClient.ts'
 import type { OrderSummary } from '../../shared/api/orderSummary.ts'
-import type { ForecastScenario, OrderBooking, OrderBudget, OrderForecast, ProofOfWork } from './budgetTypes.ts'
+import type { ForecastScenario, OrderBooking, OrderBudget, OrderForecast, OrderRadar, ProofOfWork } from './budgetTypes.ts'
 
 export async function requestOrders(): Promise<OrderSummary[]> {
   const { data } = await apiClient.get<OrderSummary[]>('/orders')
@@ -38,5 +38,10 @@ export async function requestFollowUpOrder(orderId: string, personDays: number, 
 
 export async function requestProofCsv(orderId: string, month: string): Promise<Blob> {
   const { data } = await apiClient.get<Blob>(`/orders/${encodeURIComponent(orderId)}/proofs-of-work/${month}/export.csv`, { responseType: 'blob' })
+  return data
+}
+
+export async function requestOrderRadar(orderId: string): Promise<OrderRadar> {
+  const { data } = await apiClient.get<OrderRadar>(`/orders/${encodeURIComponent(orderId)}/radar`)
   return data
 }

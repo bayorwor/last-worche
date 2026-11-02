@@ -59,3 +59,16 @@ export type ForecastScenario = {
   extraFromDate?: string
   projectEndShiftWeeks?: number
 }
+
+// One unusual pattern from the radar. It is a reason to take a second look, not a rejected booking.
+export type RadarFlagKind = 'frequent-long-days' | 'weekend-work' | 'pace-jump' | 'just-under-limit'
+
+export type RadarFlag = {
+  kind: RadarFlagKind
+  consultantId: string
+  consultantName: string
+  days: string[]
+  details: Partial<Record<'count' | 'recentHours' | 'usualWeeklyHours' | 'hours' | 'freeHoursBefore', number>>
+}
+
+export type OrderRadar = { evaluatedOn: string; flags: RadarFlag[] }

@@ -32,7 +32,7 @@ export type ForecastInput = {
   shutdowns: DateRange[];
 };
 
-function isWeekend(date: string) {
+export function isWeekend(date: string) {
   const day = new Date(`${date}T00:00:00Z`).getUTCDay();
   return day === 0 || day === 6;
 }

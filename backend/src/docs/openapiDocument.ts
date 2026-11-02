@@ -42,6 +42,7 @@ export const openapiDocument = {
     { name: "Orders and budget" },
     { name: "Proof of work" },
     { name: "Forecast and follow-up" },
+    { name: "Radar" },
     { name: "Purchasing" },
     { name: "Activity" },
     { name: "Interface" },
@@ -130,6 +131,14 @@ export const openapiDocument = {
         parameters: [orderIdParameter],
         requestBody: body({ type: "object", required: ["personDays", "neededByDate"], properties: { personDays: { type: "number" }, neededByDate: { type: "string", format: "date" } } }),
       }),
+    },
+    "/orders/{orderId}/radar": {
+      get: operation("Unusual booking patterns of the order, with the consultant and the days", "Radar", "the order's project lead", { "200": ok("The flags"), "401": errors["401"], "403": errors["403"], "404": errors["404"] }, {
+        parameters: [orderIdParameter],
+      }),
+    },
+    "/purchasing/radar": {
+      get: operation("How many unusual patterns of each kind per supplier, with no person or day", "Radar", "purchasing", { "200": ok("The counts"), "401": errors["401"], "403": errors["403"] }),
     },
     "/purchasing/supplier-overview": {
       get: operation("Totals per supplier and order, with no personal data", "Purchasing", "purchasing", { "200": ok("The totals"), "401": errors["401"], "403": errors["403"] }),

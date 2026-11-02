@@ -193,6 +193,8 @@ describe("every route except sign-in needs a session", () => {
     ["GET", "/consultants/consultant-1/bookings"],
     ["GET", "/purchasing/supplier-overview"],
     ["GET", "/purchasing/framework-agreements"],
+    ["GET", `/orders/${ORDER_ID}/radar`],
+    ["GET", "/purchasing/radar"],
     ["GET", "/purchasing/invoices"],
     ["POST", "/purchasing/invoices"],
     ["POST", "/purchasing/follow-up-requests/1/decline"],
@@ -248,6 +250,25 @@ describe("role checks", () => {
     expect(body).not.toContain("Hoffmann");
     expect(body).not.toContain("consultant");
     expect(body).not.toContain("2026-08-03");
+  });
+
+  test("purchasing is refused the order radar, which lists people and days, and gets counts per supplier instead", async () => {
+    const token = await signIn("user-purchasing");
+
+    expect((await send("GET", `/orders/${ORDER_ID}/radar`, { token })).status).toBe(403);
+    const response = await send("GET", "/purchasing/radar", { token });
+    const body = (await response.json()) as { suppliers: object[] };
+
+    expect(response.status).toBe(200);
+    expect(Object.keys(body.suppliers[0] as object).sort()).toEqual(["frequentLongDays", "justUnderLimit", "paceJumps", "supplierName", "weekendWork"]);
+  });
+
+  test("only the order's project lead may read its radar, and only purchasing the supplier radar", async () => {
+    expect((await send("GET", `/orders/${ORDER_ID}/radar`, { token: await signIn("user-project-lead") })).status).toBe(200);
+    expect((await send("GET", `/orders/${ORDER_ID}/radar`, { token: await signIn("user-other-lead") })).status).toBe(403);
+    for (const user of ["user-consultant", "user-project-lead"]) {
+      expect((await send("GET", "/purchasing/radar", { token: await signIn(user) })).status).toBe(403);
+    }
   });
 
   test("only purchasing may read the supplier overview", async () => {

@@ -1,6 +1,7 @@
 // What the services need from storage. Services depend on these types, not on MySQL.
 import type { NewActivity } from "../domain/activity.ts";
 import type { ConsultantCalendar, DateRange, DayBooking, Order } from "../domain/booking.ts";
+import type { RadarBooking } from "../domain/bookingRadar.ts";
 import type { BookedDay } from "../domain/forecast.ts";
 import type { FollowUpRequest, FollowUpStatus } from "../domain/followUp.ts";
 import type { FrameworkAgreementOrderTotals, LockedFrameworkAgreement } from "../domain/frameworkAgreement.ts";
@@ -97,6 +98,8 @@ export type BookingRepository = {
   findOrder(orderId: string): Promise<Order | null>;
   findProjectEndDate(orderId: string): Promise<string | null>;
   listBookedDays(orderId: string): Promise<BookedDay[]>;
+  // Every booking of the order in the order it was stored, with the consultant's name, for the radar.
+  listRadarBookings(orderId: string): Promise<RadarBooking[]>;
   findConsultantCalendars(consultantIds: string[]): Promise<Record<string, ConsultantCalendar>>;
   listShutdowns(): Promise<DateRange[]>;
   listFollowUps(): Promise<FollowUpRequest[]>;

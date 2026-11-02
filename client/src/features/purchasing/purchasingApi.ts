@@ -1,5 +1,5 @@
 import { apiClient } from '../../shared/api/apiClient.ts'
-import type { FollowUpRequest, FrameworkAgreement, InvoiceCheckResult, StoredInvoice, SupplierOverview } from './purchasingTypes.ts'
+import type { FollowUpRequest, FrameworkAgreement, InvoiceCheckResult, StoredInvoice, SupplierOverview, SupplierRadar } from './purchasingTypes.ts'
 
 export type NewInvoice = { orderId: string; month: string; invoiceNumber: string; invoicedPersonDays: number }
 
@@ -40,5 +40,10 @@ export async function requestInvoiceSave(invoice: NewInvoice): Promise<StoredInv
 
 export async function requestInvoiceCheck(orderId: string, month: string, invoicedPersonDays: number): Promise<InvoiceCheckResult> {
   const { data } = await apiClient.post<InvoiceCheckResult>('/purchasing/invoice-check', { orderId, month, invoicedPersonDays })
+  return data
+}
+
+export async function requestSupplierRadar(): Promise<SupplierRadar> {
+  const { data } = await apiClient.get<SupplierRadar>('/purchasing/radar')
   return data
 }

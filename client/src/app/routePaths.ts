@@ -7,11 +7,13 @@ export const ROUTE_PATHS = {
   projectLead: '/project-lead',
   projectLeadBookings: '/project-lead/bookings',
   projectLeadProofs: '/project-lead/proofs-of-work',
+  projectLeadRadar: '/project-lead/radar',
   purchasing: '/purchasing',
   purchasingOrders: '/purchasing/orders',
   purchasingFollowUps: '/purchasing/follow-up-requests',
   purchasingInvoiceCheck: '/purchasing/invoice-check',
   purchasingFrameworkAgreements: '/purchasing/framework-agreements',
+  purchasingRadar: '/purchasing/radar',
 } as const
 
 export const ROLE_HOME_PATHS: Record<UserRole, string> = {

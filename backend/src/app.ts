@@ -13,6 +13,7 @@ import { createBookingController } from "./controllers/bookingController.ts";
 import { createForecastController } from "./controllers/forecastController.ts";
 import { createProofOfWorkController } from "./controllers/proofOfWorkController.ts";
 import { createPurchasingController } from "./controllers/purchasingController.ts";
+import { createRadarController } from "./controllers/radarController.ts";
 import { openapiDocument } from "./docs/openapiDocument.ts";
 import { createAuthGuards } from "./middlewares/authentication.ts";
 import { errorHandler } from "./middlewares/errorHandler.ts";
@@ -27,6 +28,7 @@ import { createIntegrationRoutes } from "./routes/integrationRoutes.ts";
 import { createForecastRoutes } from "./routes/forecastRoutes.ts";
 import { createProofOfWorkRoutes } from "./routes/proofOfWorkRoutes.ts";
 import { createPurchasingRoutes } from "./routes/purchasingRoutes.ts";
+import { createRadarRoutes } from "./routes/radarRoutes.ts";
 import { createActivityService } from "./services/activityService.ts";
 import { createAuthService } from "./services/authService.ts";
 import { sendEmail } from "./services/emailService.ts";
@@ -34,6 +36,7 @@ import { createFollowUpService } from "./services/followUpService.ts";
 import { createForecastService } from "./services/forecastService.ts";
 import { createProofOfWorkService } from "./services/proofOfWorkService.ts";
 import { createPurchasingService } from "./services/purchasingService.ts";
+import { createRadarService } from "./services/radarService.ts";
 import { createBookingService } from "./services/bookingService.ts";
 
 type AppDependencies = {
@@ -80,6 +83,7 @@ export function createApp({ bookingRepository, userRepository, activityRepositor
   app.use("/api", createBookingRoutes(createBookingController(bookingService), guards));
   app.use("/api", createProofOfWorkRoutes(createProofOfWorkController(createProofOfWorkService(bookingRepository)), guards));
   app.use("/api", createForecastRoutes(createForecastController(createForecastService(bookingRepository), createFollowUpService(bookingRepository)), guards));
+  app.use("/api", createRadarRoutes(createRadarController(createRadarService(bookingRepository)), guards));
   app.use("/api/integrations", createIntegrationRoutes(bookingService, env.SUPPLIER_API_KEYS));
   app.use("/api/ai", createAiRoutes(createAiController(bookingService), guards));
   app.use("/api/activity", createActivityRoutes(createActivityController(createActivityService(activityRepository)), guards));

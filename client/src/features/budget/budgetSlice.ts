@@ -7,11 +7,12 @@ import {
   requestOrderBookings,
   requestOrderBudget,
   requestOrderForecast,
+  requestOrderRadar,
   requestOrders,
   requestProofApproval,
   requestProofsOfWork,
 } from './budgetApi.ts'
-import type { ForecastScenario, OrderBooking, OrderBudget, OrderForecast, ProofOfWork } from './budgetTypes.ts'
+import type { ForecastScenario, OrderBooking, OrderBudget, OrderForecast, OrderRadar, ProofOfWork } from './budgetTypes.ts'
 
 type BudgetState = {
   orders: OrderSummary[]
@@ -20,6 +21,7 @@ type BudgetState = {
   bookingsByOrderId: Record<string, OrderBooking[]>
   proofsByOrderId: Record<string, ProofOfWork[]>
   forecastsByOrderId: Record<string, OrderForecast>
+  radarsByOrderId: Record<string, OrderRadar>
   forecastStatus: RequestStatus
   forecastError: ApiError | null
   followUpStatus: RequestStatus
@@ -34,6 +36,7 @@ const initialState: BudgetState = {
   bookingsByOrderId: {},
   proofsByOrderId: {},
   forecastsByOrderId: {},
+  radarsByOrderId: {},
   forecastStatus: 'idle',
   forecastError: null,
   followUpStatus: 'idle',
@@ -120,6 +123,17 @@ export const requestFollowUp = createAsyncThunk<void, { orderId: string; personD
   },
 )
 
+export const fetchOrderRadar = createAsyncThunk<OrderRadar, string, { rejectValue: ApiError }>(
+  'budget/fetchOrderRadar',
+  async (orderId, { rejectWithValue }) => {
+    try {
+      return await requestOrderRadar(orderId)
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
 // Everything the project lead's tabs show about one order.
 export const loadOrder = createAsyncThunk<void, string>('budget/loadOrder', async (orderId, { dispatch }) => {
   await Promise.all([
@@ -127,6 +141,7 @@ export const loadOrder = createAsyncThunk<void, string>('budget/loadOrder', asyn
     dispatch(fetchOrderBookings(orderId)),
     dispatch(fetchProofsOfWork(orderId)),
     dispatch(fetchOrderForecast({ orderId })),
+    dispatch(fetchOrderRadar(orderId)),
   ])
 })
 
@@ -152,6 +167,12 @@ const budgetSlice = createSlice({
         state.bookingsByOrderId[action.meta.arg] = action.payload
       })
       .addCase(fetchOrderBookings.rejected, (state, action) => {
+        state.error = action.payload ?? FALLBACK_API_ERROR
+      })
+      .addCase(fetchOrderRadar.fulfilled, (state, action) => {
+        state.radarsByOrderId[action.meta.arg] = action.payload
+      })
+      .addCase(fetchOrderRadar.rejected, (state, action) => {
         state.error = action.payload ?? FALLBACK_API_ERROR
       })
       .addCase(fetchProofsOfWork.fulfilled, (state, action) => {

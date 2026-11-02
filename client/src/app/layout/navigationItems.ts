@@ -17,6 +17,7 @@ export const ROLE_NAVIGATION: Record<UserRole, NavigationItem[]> = {
     { path: ROUTE_PATHS.projectLead, labelKey: 'navigation.budget' },
     { path: ROUTE_PATHS.projectLeadBookings, labelKey: 'navigation.orderBookings' },
     { path: ROUTE_PATHS.projectLeadProofs, labelKey: 'navigation.proofsOfWork' },
+    { path: ROUTE_PATHS.projectLeadRadar, labelKey: 'navigation.radar' },
   ],
   purchasing: [
     { path: ROUTE_PATHS.purchasing, labelKey: 'navigation.suppliers' },
@@ -24,5 +25,6 @@ export const ROLE_NAVIGATION: Record<UserRole, NavigationItem[]> = {
     { path: ROUTE_PATHS.purchasingFrameworkAgreements, labelKey: 'navigation.frameworkAgreements' },
     { path: ROUTE_PATHS.purchasingFollowUps, labelKey: 'navigation.followUps' },
     { path: ROUTE_PATHS.purchasingInvoiceCheck, labelKey: 'navigation.invoiceCheck' },
+    { path: ROUTE_PATHS.purchasingRadar, labelKey: 'navigation.radar' },
   ],
 }

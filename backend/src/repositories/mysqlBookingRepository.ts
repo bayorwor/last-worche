@@ -1,6 +1,7 @@
 // MySQL implementation of BookingRepository. Database column names stay inside this file.
 import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import type { ConsultantCalendar, DateRange, DayBooking } from "../domain/booking.ts";
+import type { RadarBooking } from "../domain/bookingRadar.ts";
 import type { BookedDay } from "../domain/forecast.ts";
 import type { FollowUpRequest } from "../domain/followUp.ts";
 import type { FrameworkAgreementOrderTotals, LockedFrameworkAgreement } from "../domain/frameworkAgreement.ts";
@@ -29,6 +30,7 @@ type OrderTotalsRow = RowDataPacket & OrderTotals;
 type ProofOfWorkRow = RowDataPacket & ProofOfWorkTotals;
 type CountRow = RowDataPacket & { total: number };
 type BookedDayRow = RowDataPacket & BookedDay;
+type RadarBookingRow = RowDataPacket & RadarBooking;
 type SupplierIdRow = RowDataPacket & { supplier_id: string };
 type FollowUpRow = RowDataPacket & FollowUpRequest;
 type ConsultantCalendarRow = RowDataPacket & { id: string; federal_state: ConsultantCalendar["federalState"] };
@@ -343,6 +345,15 @@ export function createMysqlBookingRepository(db: Pool): BookingRepository {
         [orderId],
       );
       return rows.map(({ consultantId, date, hours }) => ({ consultantId, date, hours: Number(hours) }));
+    },
+    listRadarBookings: async (orderId) => {
+      const [rows] = await db.query<RadarBookingRow[]>(
+        `SELECT bookings.id, bookings.consultant_id AS consultantId, consultants.name AS consultantName, bookings.date, bookings.hours
+         FROM bookings JOIN consultants ON consultants.id = bookings.consultant_id
+         WHERE bookings.order_id = ? ORDER BY bookings.id`,
+        [orderId],
+      );
+      return rows.map((row) => ({ ...row, hours: Number(row.hours) }));
     },
     findConsultantCalendars: async (consultantIds) => {
       if (consultantIds.length === 0) return {};

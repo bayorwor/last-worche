@@ -23,7 +23,7 @@ None of these is forgotten. Each has a trigger that would move it forward.
 | Single sign-on per customer identity provider | Every customer brings a different one, and the demo cannot require one | The first real customer names their provider ([ADR-0002](adr/0002-identity-and-sign-in.md)) |
 | OAuth 2.0 client credentials for the supplier interface | A key per supplier is simple to set up, while production needs short-lived tokens | Going live with the first real supplier integration ([ADR-0017](adr/0017-supplier-interface.md)) |
 | Sick-leave rules, like the vacation rules | Vacation days are stored, but sick days need a source we don't have yet | A data source for sick days, or the supplier entering them like vacation |
-| Budget warnings by email | The email service exists ([ADR-0008](adr/0008-email-with-nodemailer.md)) but has not been tested against a real server | First item of Sprint Two |
+| Budget warnings by email the moment they appear | A weekly digest for project leads who opted in is built ([ADR-0019](adr/0019-weekly-digest-job.md)), but email has not been tested against a real server | A successful test with a real mail server |
 | Changing the sign-in email address | It needs a confirmation code sent to the new address, and nothing sends one yet | The profile work after Sprint One |
 | Deleting old activity-log entries | Retention for the log is not decided, and nothing deletes it yet | The client's retention policy ([ADR-0015](adr/0015-activity-log.md)) |
 | Dates and editing for framework agreements | Agreements are sample data, because purchasing's real contract data is not available in the demo ([ADR-0018](adr/0018-framework-agreements-and-invoices.md)) | Real contract structures from purchasing |

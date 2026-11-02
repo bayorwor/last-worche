@@ -11,6 +11,7 @@ export const ROUTE_PATHS = {
   purchasingOrders: '/purchasing/orders',
   purchasingFollowUps: '/purchasing/follow-up-requests',
   purchasingInvoiceCheck: '/purchasing/invoice-check',
+  purchasingFrameworkAgreements: '/purchasing/framework-agreements',
 } as const
 
 export const ROLE_HOME_PATHS: Record<UserRole, string> = {

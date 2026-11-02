@@ -3,6 +3,8 @@ import type { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from "mysql
 import type { ConsultantCalendar, DateRange, DayBooking } from "../domain/booking.ts";
 import type { BookedDay } from "../domain/forecast.ts";
 import type { FollowUpRequest } from "../domain/followUp.ts";
+import type { FrameworkAgreementOrderTotals, LockedFrameworkAgreement } from "../domain/frameworkAgreement.ts";
+import type { StoredInvoice } from "../domain/invoiceCheck.ts";
 import type { ProofOfWorkTotals } from "../domain/proofOfWork.ts";
 import type { OrderTotals } from "../domain/purchasing.ts";
 import {
@@ -32,6 +34,9 @@ type FollowUpRow = RowDataPacket & FollowUpRequest;
 type ConsultantCalendarRow = RowDataPacket & { id: string; federal_state: ConsultantCalendar["federalState"] };
 type ConsultantVacationRow = RowDataPacket & DateRange & { consultant_id: string };
 type ProjectEndRow = RowDataPacket & { projectEndDate: string };
+type FrameworkAgreementTotalsRow = RowDataPacket & FrameworkAgreementOrderTotals;
+type LockedFrameworkAgreementRow = RowDataPacket & LockedFrameworkAgreement;
+type InvoiceRow = RowDataPacket & StoredInvoice;
 type FollowUpLockRow = RowDataPacket & { orderId: string; personDays: number; status: FollowUpRequest["status"] };
 
 const FOLLOW_UP_COLUMNS = `follow_up_requests.id, follow_up_requests.order_id AS orderId, orders.title AS orderTitle,
@@ -174,6 +179,41 @@ function createTransaction(connection: PoolConnection): BookingTransaction {
         [confirmedByUserId, confirmedAtMs, id],
       );
     },
+    declineFollowUp: async (id, declinedByUserId, declinedAtMs) => {
+      await connection.query(
+        "UPDATE follow_up_requests SET status = 'declined', declined_by_user_id = ?, declined_at_ms = ? WHERE id = ?",
+        [declinedByUserId, declinedAtMs, id],
+      );
+    },
+    findFrameworkAgreementOfOrderForUpdate: async (orderId) => {
+      const [rows] = await connection.query<LockedFrameworkAgreementRow[]>(
+        `SELECT framework_agreements.id, framework_agreements.title, framework_agreements.total_person_days AS totalPersonDays
+         FROM orders JOIN framework_agreements ON framework_agreements.id = orders.framework_agreement_id
+         WHERE orders.id = ? FOR UPDATE`,
+        [orderId],
+      );
+      const row = rows[0];
+      return row ? { id: row.id, title: row.title, totalPersonDays: row.totalPersonDays } : null;
+    },
+    sumOrderedPersonDaysOfAgreement: async (agreementId) => {
+      const [rows] = await connection.query<TotalRow[]>(
+        "SELECT COALESCE(SUM(ordered_person_days), 0) AS total FROM orders WHERE framework_agreement_id = ?",
+        [agreementId],
+      );
+      return rows[0]?.total ?? 0;
+    },
+    hasInvoice: async (orderId, month) => {
+      const [rows] = await connection.query<RowDataPacket[]>("SELECT 1 FROM invoices WHERE order_id = ? AND month = ?", [orderId, month]);
+      return rows.length > 0;
+    },
+    saveInvoice: async ({ orderId, month, invoiceNumber, invoicedPersonDays, approvedPersonDays, recordedByUserId, recordedAtMs }) => {
+      const [result] = await connection.query<ResultSetHeader>(
+        `INSERT INTO invoices (order_id, month, invoice_number, invoiced_person_days, approved_person_days, recorded_by_user_id, recorded_at_ms)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [orderId, month, invoiceNumber, invoicedPersonDays, approvedPersonDays, recordedByUserId, recordedAtMs],
+      );
+      return result.insertId;
+    },
     recordBookingCreated: async ({ consultantId, orderId, date, hours }, occurredAtMs) => {
       await connection.query(
         `INSERT INTO activity_log (type, actor_user_id, occurred_at_ms, order_id, period, hours)
@@ -199,6 +239,31 @@ export function createMysqlBookingRepository(db: Pool): BookingRepository {
          LEFT JOIN bookings ON bookings.order_id = orders.id
          GROUP BY orders.id, orders.title, orders.ordered_person_days, suppliers.id, suppliers.name
          ORDER BY suppliers.name, orders.id`,
+      );
+      return rows.map((row) => ({ ...row }));
+    },
+    listFrameworkAgreementTotals: async () => {
+      const [rows] = await db.query<FrameworkAgreementTotalsRow[]>(
+        `SELECT framework_agreements.id AS agreementId, framework_agreements.title AS agreementTitle,
+           framework_agreements.total_person_days AS totalPersonDays, suppliers.name AS supplierName,
+           orders.id AS orderId, orders.title, orders.ordered_person_days AS orderedPersonDays,
+           COALESCE(SUM(bookings.hours), 0) AS bookedHours
+         FROM framework_agreements
+         JOIN suppliers ON suppliers.id = framework_agreements.supplier_id
+         JOIN orders ON orders.framework_agreement_id = framework_agreements.id
+         LEFT JOIN bookings ON bookings.order_id = orders.id
+         GROUP BY framework_agreements.id, framework_agreements.title, framework_agreements.total_person_days, suppliers.name,
+           orders.id, orders.title, orders.ordered_person_days
+         ORDER BY suppliers.name, framework_agreements.id, orders.id`,
+      );
+      return rows.map((row) => ({ ...row }));
+    },
+    listInvoices: async () => {
+      const [rows] = await db.query<InvoiceRow[]>(
+        `SELECT invoices.id, invoices.order_id AS orderId, orders.title AS orderTitle, invoices.month, invoices.invoice_number AS invoiceNumber,
+           invoices.invoiced_person_days AS invoicedPersonDays, invoices.approved_person_days AS approvedPersonDays, invoices.recorded_at_ms AS recordedAtMs
+         FROM invoices JOIN orders ON orders.id = invoices.order_id
+         ORDER BY invoices.recorded_at_ms DESC, invoices.id DESC`,
       );
       return rows.map((row) => ({ ...row }));
     },

@@ -8,7 +8,9 @@ export type ActivityType =
   | "booking_created"
   | "proof_approved"
   | "follow_up_requested"
-  | "follow_up_confirmed";
+  | "follow_up_confirmed"
+  | "follow_up_declined"
+  | "invoice_recorded";
 
 export type NewActivity = {
   type: ActivityType;
@@ -16,7 +18,7 @@ export type NewActivity = {
   occurredAtMs: number;
   orderId: string | null;
   period: string | null; // the booked day (YYYY-MM-DD), the approved month (YYYY-MM) or the day a follow-up is needed by
-  hours: number | null; // booked hours, or the person-days of a follow-up order
+  hours: number | null; // booked hours, or the person-days of a follow-up order or an invoice
 };
 
 export type Activity = NewActivity & {

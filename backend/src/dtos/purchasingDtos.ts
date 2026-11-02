@@ -8,4 +8,9 @@ export const invoiceCheckSchema = z.object({
   invoicedPersonDays: z.number().nonnegative().max(100_000),
 });
 
+export const recordInvoiceSchema = invoiceCheckSchema.extend({
+  invoiceNumber: z.string().trim().min(1).max(64),
+});
+
+export type RecordInvoiceBody = z.infer<typeof recordInvoiceSchema>;
 export type InvoiceCheckRequest = z.infer<typeof invoiceCheckSchema>;

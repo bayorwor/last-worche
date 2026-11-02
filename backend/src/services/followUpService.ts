@@ -1,7 +1,8 @@
-// A project lead asks purchasing for more budget, and purchasing confirms it. Each step is one transaction
-// with its activity entry, and confirming raises the order's budget.
+// A project lead asks purchasing for more budget, and purchasing confirms or declines it. Each step is one
+// transaction with its activity entry, and confirming raises the order's budget if its framework agreement allows it.
 import { ForbiddenError, NotFoundError } from "../domain/errors.ts";
 import { assertFollowUpIsOpen, assertNoOpenFollowUp } from "../domain/followUp.ts";
+import { assertFitsFrameworkAgreement } from "../domain/frameworkAgreement.ts";
 import type { User } from "../domain/user.ts";
 import type { BookingRepository } from "../repositories/bookingRepository.ts";
 
@@ -43,12 +44,38 @@ export function createFollowUpService(repository: BookingRepository, now: () => 
         if (!request) throw new NotFoundError(`Follow-up request ${id} does not exist.`);
         assertFollowUpIsOpen(request.status);
 
+        // Locked before the sum, so two confirmations on orders of one agreement cannot both use the same free budget.
+        const agreement = await transaction.findFrameworkAgreementOfOrderForUpdate(request.orderId);
+        if (agreement) {
+          assertFitsFrameworkAgreement(agreement, await transaction.sumOrderedPersonDaysOfAgreement(agreement.id), request.personDays);
+        }
+
         const confirmedAtMs = now();
         await transaction.confirmFollowUp(id, user.id, confirmedAtMs);
         await transaction.recordActivity({
           type: "follow_up_confirmed",
           actorUserId: user.id,
           occurredAtMs: confirmedAtMs,
+          orderId: request.orderId,
+          period: null,
+          hours: request.personDays,
+        });
+      });
+    },
+
+    // Without this, a request its framework agreement cannot cover would stay open and block any new one.
+    decline(user: User, id: number) {
+      return repository.transaction(async (transaction) => {
+        const request = await transaction.findFollowUpForUpdate(id);
+        if (!request) throw new NotFoundError(`Follow-up request ${id} does not exist.`);
+        assertFollowUpIsOpen(request.status);
+
+        const declinedAtMs = now();
+        await transaction.declineFollowUp(id, user.id, declinedAtMs);
+        await transaction.recordActivity({
+          type: "follow_up_declined",
+          actorUserId: user.id,
+          occurredAtMs: declinedAtMs,
           orderId: request.orderId,
           period: null,
           hours: request.personDays,

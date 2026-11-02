@@ -9,6 +9,12 @@ type ActivityFormatters = {
   formatPersonDays: (personDays: number) => string
 }
 
+const FOLLOW_UP_KEYS: Record<'follow_up_requested' | 'follow_up_confirmed' | 'follow_up_declined', { own: MessageKey; other: MessageKey; anonymous: MessageKey }> = {
+  follow_up_requested: { own: 'activity.ownFollowUpRequest', other: 'activity.otherFollowUpRequest', anonymous: 'activity.anonymousFollowUpRequest' },
+  follow_up_confirmed: { own: 'activity.ownFollowUpConfirm', other: 'activity.otherFollowUpConfirm', anonymous: 'activity.anonymousFollowUpConfirm' },
+  follow_up_declined: { own: 'activity.ownFollowUpDecline', other: 'activity.otherFollowUpDecline', anonymous: 'activity.anonymousFollowUpDecline' },
+}
+
 // Chooses the sentence for an entry. An entry with no name stays anonymous, because the server hid the name on purpose.
 export function activityMessage(activity: Activity, formatters: ActivityFormatters): { key: MessageKey; values: MessageValues } {
   const orderId = activity.orderId ?? ''
@@ -26,16 +32,17 @@ export function activityMessage(activity: Activity, formatters: ActivityFormatte
     return { key: activity.isOwn ? 'activity.ownBooking' : 'activity.otherBooking', values }
   }
 
-  if (activity.type === 'follow_up_requested' || activity.type === 'follow_up_confirmed') {
+  if (activity.type === 'follow_up_requested' || activity.type === 'follow_up_confirmed' || activity.type === 'follow_up_declined') {
     const values = { name, orderId, personDays: formatters.formatPersonDays(activity.hours ?? 0) }
-    const isRequest = activity.type === 'follow_up_requested'
+    const keys = FOLLOW_UP_KEYS[activity.type]
     if (activity.isOwn) {
-      return { key: isRequest ? 'activity.ownFollowUpRequest' : 'activity.ownFollowUpConfirm', values }
+      return { key: keys.own, values }
     }
-    if (activity.actorName) {
-      return { key: isRequest ? 'activity.otherFollowUpRequest' : 'activity.otherFollowUpConfirm', values }
-    }
-    return { key: isRequest ? 'activity.anonymousFollowUpRequest' : 'activity.anonymousFollowUpConfirm', values }
+    return { key: activity.actorName ? keys.other : keys.anonymous, values }
+  }
+  if (activity.type === 'invoice_recorded') {
+    const values = { name, orderId, month: formatters.formatMonth(period), personDays: formatters.formatPersonDays(activity.hours ?? 0) }
+    return { key: activity.isOwn ? 'activity.ownInvoice' : 'activity.otherInvoice', values }
   }
 
   const values = { name, orderId, month: formatters.formatMonth(period) }

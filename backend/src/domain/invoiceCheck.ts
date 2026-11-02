@@ -10,6 +10,25 @@ export type InvoiceCheckResult = {
   differencePersonDays: number;
 };
 
+// A stored invoice. Its month is approved and locked, so the approved amount can no longer change.
+export type StoredInvoice = {
+  id: number;
+  orderId: string;
+  orderTitle: string;
+  month: string; // YYYY-MM
+  invoiceNumber: string;
+  invoicedPersonDays: number;
+  approvedPersonDays: number;
+  recordedAtMs: number;
+};
+
+// One invoice per order and month, so one month of work cannot be recorded for payment twice.
+export function assertInvoiceNotRecorded(alreadyRecorded: boolean, orderId: string, month: string) {
+  if (alreadyRecorded) {
+    throw new BusinessRuleError("invoice-already-recorded", `An invoice for order ${orderId}, ${month} is already recorded.`, { orderId, month });
+  }
+}
+
 export function assertProofApprovedForInvoice(approvedPersonDays: number | null, orderId: string, month: string) {
   if (approvedPersonDays === null) {
     throw new BusinessRuleError(

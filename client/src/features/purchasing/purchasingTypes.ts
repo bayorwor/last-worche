@@ -23,7 +23,7 @@ export type FollowUpRequest = {
   orderTitle: string
   personDays: number
   neededByDate: string
-  status: 'open' | 'confirmed'
+  status: 'open' | 'confirmed' | 'declined'
 }
 
 export type InvoiceCheckResult = {
@@ -31,4 +31,24 @@ export type InvoiceCheckResult = {
   approvedPersonDays: number
   invoicedPersonDays: number
   differencePersonDays: number
+}
+
+export type StoredInvoice = InvoiceCheckResult & {
+  id: number
+  orderId: string
+  orderTitle: string
+  month: string
+  invoiceNumber: string
+  recordedAtMs: number
+}
+
+export type FrameworkAgreement = {
+  id: string
+  title: string
+  supplierName: string
+  totalPersonDays: number
+  orderedPersonDays: number
+  freePersonDays: number
+  usedPersonDays: number
+  orders: { orderId: string; title: string; orderedPersonDays: number; usedPersonDays: number }[]
 }

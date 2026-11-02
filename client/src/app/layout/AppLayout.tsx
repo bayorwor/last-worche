@@ -10,6 +10,7 @@ import { useTranslation } from '../../shared/i18n/languageContext.ts'
 import type { MessageKey } from '../../shared/i18n/messages/de.ts'
 import { useAppSelector } from '../storeHooks.ts'
 import { AppHeader } from './AppHeader.tsx'
+import { RECENT_ACTIVITY_ID } from './layoutTargets.ts'
 import { RoleSidebar } from './RoleSidebar.tsx'
 
 const COLUMN_CLASSES = 'lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_20rem]'
@@ -45,7 +46,10 @@ export function AppLayout() {
             className="grid min-w-0 content-start gap-6 focus-visible:-outline-offset-2 lg:col-start-2 xl:sticky xl:top-6 xl:col-start-3 xl:row-start-1 xl:max-h-[calc(100dvh-5.5rem)] xl:self-start xl:overflow-y-auto"
           >
             <ProfilePanel user={user} />
-            <RecentActivityPanel scopeKey={ACTIVITY_SCOPE_KEYS[user.role]} />
+            {/* Focused by the profile menu, which scrolls it into view. */}
+            <div id={RECENT_ACTIVITY_ID} tabIndex={-1} className="min-w-0 scroll-mt-6 focus:outline-2 focus:outline-offset-2 focus:outline-ink">
+              <RecentActivityPanel scopeKey={ACTIVITY_SCOPE_KEYS[user.role]} />
+            </div>
           </aside>
         )}
       </div>

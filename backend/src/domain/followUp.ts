@@ -2,7 +2,7 @@
 // from the forecast's warning to a higher budget, without the product managing contracts.
 import { BusinessRuleError } from "./errors.ts";
 
-export type FollowUpStatus = "open" | "confirmed";
+export type FollowUpStatus = "open" | "confirmed" | "declined";
 
 export type FollowUpRequest = {
   id: number;
@@ -21,7 +21,10 @@ export function assertNoOpenFollowUp(hasOpenRequest: boolean, orderId: string) {
 }
 
 export function assertFollowUpIsOpen(status: FollowUpStatus) {
-  if (status !== "open") {
+  if (status === "confirmed") {
     throw new BusinessRuleError("follow-up-confirmed", "This follow-up request is already confirmed.");
+  }
+  if (status === "declined") {
+    throw new BusinessRuleError("follow-up-declined", "This follow-up request is already declined.");
   }
 }

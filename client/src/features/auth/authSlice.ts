@@ -29,6 +29,8 @@ type AuthState = {
   error: ApiError | null
   profileStatus: RequestStatus
   profileError: ApiError | null
+  // Here and not in the profile panel, because the profile menu in the header opens it too.
+  isEditingProfile: boolean
 }
 
 const initialState: AuthState = {
@@ -43,6 +45,7 @@ const initialState: AuthState = {
   error: null,
   profileStatus: 'idle',
   profileError: null,
+  isEditingProfile: false,
 }
 
 export const fetchRoles = createAsyncThunk<Role[], void>('auth/fetchRoles', () => requestRoles())
@@ -104,9 +107,15 @@ const authSlice = createSlice({
       state.testCode = null
       state.error = null
     },
-    profileEditChanged(state) {
+    profileEditStarted(state) {
       state.profileStatus = 'idle'
       state.profileError = null
+      state.isEditingProfile = true
+    },
+    profileEditCancelled(state) {
+      state.profileStatus = 'idle'
+      state.profileError = null
+      state.isEditingProfile = false
     },
     signedOut(state) {
       state.sessionStatus = 'signedOut'
@@ -118,6 +127,7 @@ const authSlice = createSlice({
       state.error = null
       state.profileStatus = 'idle'
       state.profileError = null
+      state.isEditingProfile = false
     },
   },
   extraReducers: (builder) => {
@@ -163,6 +173,7 @@ const authSlice = createSlice({
       .addCase(saveProfile.fulfilled, (state, action) => {
         state.profileStatus = 'succeeded'
         state.user = action.payload
+        state.isEditingProfile = false
       })
       .addCase(saveProfile.rejected, (state, action) => {
         state.profileStatus = 'failed'
@@ -179,5 +190,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { codeEntryLeft, profileEditChanged, signedOut } = authSlice.actions
+export const { codeEntryLeft, profileEditCancelled, profileEditStarted, signedOut } = authSlice.actions
 export const authReducer = authSlice.reducer

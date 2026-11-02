@@ -23,6 +23,20 @@ const approval: Activity = {
 const booking: Activity = { ...approval, type: 'booking_created', actorName: 'L. Hoffmann', period: '2026-10-27', hours: 7 }
 
 describe('activityMessage', () => {
+  test('a declined follow-up names the person, or stays anonymous when the server hid the name', () => {
+    const declined: Activity = { ...approval, type: 'follow_up_declined', period: null, hours: 15 }
+
+    expect(activityMessage(declined, formatters).key).toBe('activity.otherFollowUpDecline')
+    expect(activityMessage({ ...declined, actorName: null }, formatters).key).toBe('activity.anonymousFollowUpDecline')
+    expect(activityMessage({ ...declined, isOwn: true }, formatters).key).toBe('activity.ownFollowUpDecline')
+  })
+
+  test('a saved invoice shows its month and amount', () => {
+    const invoice: Activity = { ...approval, type: 'invoice_recorded', isOwn: true, hours: 5 }
+
+    expect(activityMessage(invoice, formatters)).toMatchObject({ key: 'activity.ownInvoice', values: { month: '2026-10', personDays: '5 PD' } })
+  })
+
   test("names who approved a month when the server sends a name", () => {
     expect(activityMessage(approval, formatters).key).toBe('activity.otherApproval')
   })

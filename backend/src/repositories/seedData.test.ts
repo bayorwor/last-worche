@@ -4,9 +4,13 @@ import {
   ASSIGNMENTS,
   buildDemoBookings,
   CONSULTANTS,
+  FRAMEWORK_AGREEMENTS,
   NEAR_LIMIT_ORDER_ID,
+  ORDER_SUPPLIERS,
   ORDERS,
+  OVER_AGREEMENT_FOLLOW_UP,
   ROLES,
+  SECOND_LEAD_ORDER,
   SEED_ORDER_ID,
   TEST_USERS,
 } from "./seedData.ts";
@@ -64,5 +68,30 @@ describe("test users", () => {
     const signedInConsultants = TEST_USERS.map((user) => user.consultantId);
 
     expect(CONSULTANTS.every((consultant) => signedInConsultants.includes(consultant.id))).toBe(true);
+  });
+});
+
+describe("framework agreement seed", () => {
+  const budgetOf = (orderId: string) => [...ORDERS, SECOND_LEAD_ORDER].find(({ id }) => id === orderId)?.orderedPersonDays ?? 0;
+
+  test("each agreement only holds orders of its own supplier", () => {
+    for (const { supplierId, orderIds } of FRAMEWORK_AGREEMENTS) {
+      for (const orderId of orderIds) {
+        expect(ORDER_SUPPLIERS.find((order) => order.orderId === orderId)?.supplierId).toBe(supplierId);
+      }
+    }
+  });
+
+  test("the orders fit inside their agreement", () => {
+    for (const { totalPersonDays, orderIds } of FRAMEWORK_AGREEMENTS) {
+      expect(orderIds.reduce((total, orderId) => total + budgetOf(orderId), 0)).toBeLessThanOrEqual(totalPersonDays);
+    }
+  });
+
+  test("the sample request is more than its agreement has free, to show the rejection", () => {
+    const agreement = FRAMEWORK_AGREEMENTS.find(({ orderIds }) => orderIds.includes(OVER_AGREEMENT_FOLLOW_UP.orderId));
+    const reserved = agreement?.orderIds.reduce((total, orderId) => total + budgetOf(orderId), 0) ?? 0;
+
+    expect(OVER_AGREEMENT_FOLLOW_UP.personDays).toBeGreaterThan((agreement?.totalPersonDays ?? 0) - reserved);
   });
 });

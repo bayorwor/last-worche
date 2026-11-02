@@ -6,6 +6,7 @@ import { SessionLayout } from './layout/SessionLayout.tsx'
 import {
   ConsultantBookingPage,
   FollowUpRequestsPage,
+  FrameworkAgreementsPage,
   InvoiceCheckPage,
   OrderBookingsPage,
   OrderBudgetPage,
@@ -65,6 +66,7 @@ export const appRouter = createBrowserRouter([
                     children: [
                       { index: true, element: <SupplierTotalsPage /> },
                       { path: ROUTE_PATHS.purchasingOrders, element: <OrderTotalsPage /> },
+                      { path: ROUTE_PATHS.purchasingFrameworkAgreements, element: <FrameworkAgreementsPage /> },
                       { path: ROUTE_PATHS.purchasingFollowUps, element: <FollowUpRequestsPage /> },
                       { path: ROUTE_PATHS.purchasingInvoiceCheck, element: <InvoiceCheckPage /> },
                     ],

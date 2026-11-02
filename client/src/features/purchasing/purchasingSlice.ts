@@ -10,9 +10,10 @@ import {
   requestInvoices,
   requestInvoiceSave,
   requestSupplierOverview,
+  requestSupplierRadar,
   type NewInvoice,
 } from './purchasingApi.ts'
-import type { FollowUpRequest, FrameworkAgreement, InvoiceCheckResult, StoredInvoice, SupplierOverview } from './purchasingTypes.ts'
+import type { FollowUpRequest, FrameworkAgreement, InvoiceCheckResult, StoredInvoice, SupplierOverview, SupplierRadar } from './purchasingTypes.ts'
 
 type PurchasingState = {
   suppliers: SupplierOverview[]
@@ -22,6 +23,7 @@ type PurchasingState = {
   followUpStatus: RequestStatus
   followUpError: ApiError | null
   frameworkAgreements: FrameworkAgreement[]
+  supplierRadar: SupplierRadar | null
   invoices: StoredInvoice[]
   invoiceResult: InvoiceCheckResult | null
   invoiceStatus: RequestStatus
@@ -37,6 +39,7 @@ const initialState: PurchasingState = {
   followUpStatus: 'idle',
   followUpError: null,
   frameworkAgreements: [],
+  supplierRadar: null,
   invoices: [],
   invoiceResult: null,
   invoiceStatus: 'idle',
@@ -95,6 +98,17 @@ export const fetchFrameworkAgreements = createAsyncThunk<FrameworkAgreement[], v
   async (_, { rejectWithValue }) => {
     try {
       return await requestFrameworkAgreements()
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
+export const fetchSupplierRadar = createAsyncThunk<SupplierRadar, void, { rejectValue: ApiError }>(
+  'purchasing/fetchSupplierRadar',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await requestSupplierRadar()
     } catch (error) {
       return rejectWithValue(getApiError(error))
     }
@@ -162,6 +176,12 @@ const purchasingSlice = createSlice({
         state.frameworkAgreements = action.payload
       })
       .addCase(fetchFrameworkAgreements.rejected, (state, action) => {
+        state.error = action.payload ?? FALLBACK_API_ERROR
+      })
+      .addCase(fetchSupplierRadar.fulfilled, (state, action) => {
+        state.supplierRadar = action.payload
+      })
+      .addCase(fetchSupplierRadar.rejected, (state, action) => {
         state.error = action.payload ?? FALLBACK_API_ERROR
       })
       .addCase(fetchInvoices.fulfilled, (state, action) => {

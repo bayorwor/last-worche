@@ -67,6 +67,10 @@ export function createInMemoryBookingRepository(
       bookings
         .filter((booking) => booking.orderId === orderId)
         .map(({ consultantId, date, hours }) => ({ consultantId, date, hours })),
+    listRadarBookings: async (orderId) =>
+      bookings
+        .filter((booking) => booking.orderId === orderId)
+        .map(({ id, consultantId, date, hours }) => ({ id, consultantId, consultantName: consultantId, date, hours })),
     findConsultantCalendars: async (consultantIds) =>
       Object.fromEntries(consultantIds.map((id) => [id, calendars[id] ?? NO_CALENDAR])),
     listShutdowns: async () => [],

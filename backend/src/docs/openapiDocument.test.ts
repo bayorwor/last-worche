@@ -16,6 +16,7 @@ const MOUNT_PATHS: Record<string, string> = {
   "integrationRoutes.ts": "/integrations",
   "proofOfWorkRoutes.ts": "",
   "purchasingRoutes.ts": "/purchasing",
+  "radarRoutes.ts": "",
 };
 
 function routesInCode() {

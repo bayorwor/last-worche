@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "bun --hot server.ts",
     "start": "bun server.ts",
+    "digest": "bun sendWeeklyDigest.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },

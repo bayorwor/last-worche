@@ -6,6 +6,8 @@ import type { Language } from '../../shared/i18n/languages.ts'
 import {
   requestCodeVerification,
   requestCurrentUser,
+  requestDigestSubscription,
+  requestDigestSubscriptionChange,
   requestProfileUpdate,
   requestRoles,
   requestSignInCode,
@@ -31,6 +33,10 @@ type AuthState = {
   profileError: ApiError | null
   // Here and not in the profile panel, because the profile menu in the header opens it too.
   isEditingProfile: boolean
+  // Null until the server answered, so the switch never shows a guess.
+  digestSubscribed: boolean | null
+  digestStatus: RequestStatus
+  digestError: ApiError | null
 }
 
 const initialState: AuthState = {
@@ -46,6 +52,9 @@ const initialState: AuthState = {
   profileStatus: 'idle',
   profileError: null,
   isEditingProfile: false,
+  digestSubscribed: null,
+  digestStatus: 'idle',
+  digestError: null,
 }
 
 export const fetchRoles = createAsyncThunk<Role[], void>('auth/fetchRoles', () => requestRoles())
@@ -98,6 +107,28 @@ export const saveProfile = createAsyncThunk<SessionUser, string, { rejectValue: 
   },
 )
 
+export const fetchDigestSubscription = createAsyncThunk<boolean, void, { rejectValue: ApiError }>(
+  'auth/fetchDigestSubscription',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await requestDigestSubscription()
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
+export const saveDigestSubscription = createAsyncThunk<boolean, boolean, { rejectValue: ApiError }>(
+  'auth/saveDigestSubscription',
+  async (subscribed, { rejectWithValue }) => {
+    try {
+      return await requestDigestSubscriptionChange(subscribed)
+    } catch (error) {
+      return rejectWithValue(getApiError(error))
+    }
+  },
+)
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -128,10 +159,31 @@ const authSlice = createSlice({
       state.profileStatus = 'idle'
       state.profileError = null
       state.isEditingProfile = false
+      state.digestSubscribed = null
+      state.digestStatus = 'idle'
+      state.digestError = null
     },
   },
   extraReducers: (builder) => {
     builder
+      .addCase(fetchDigestSubscription.fulfilled, (state, action) => {
+        state.digestSubscribed = action.payload
+      })
+      .addCase(fetchDigestSubscription.rejected, (state, action) => {
+        state.digestError = action.payload ?? FALLBACK_API_ERROR
+      })
+      .addCase(saveDigestSubscription.pending, (state) => {
+        state.digestStatus = 'loading'
+        state.digestError = null
+      })
+      .addCase(saveDigestSubscription.fulfilled, (state, action) => {
+        state.digestStatus = 'succeeded'
+        state.digestSubscribed = action.payload
+      })
+      .addCase(saveDigestSubscription.rejected, (state, action) => {
+        state.digestStatus = 'failed'
+        state.digestError = action.payload ?? FALLBACK_API_ERROR
+      })
       .addCase(fetchRoles.fulfilled, (state, action) => {
         state.roles = action.payload
       })

@@ -56,6 +56,10 @@ export const de = {
   'profile.saving': 'Wird gespeichert …',
   'profile.cancel': 'Abbrechen',
   'profile.saved': 'Profil gespeichert.',
+  'profile.digestLabel': 'Wochenbericht per E-Mail',
+  'profile.digestHint': 'Jeden Montag für jeden Ihrer Aufträge mit Buchungen in der Vorwoche: Budget, Tempo und Warnungen. Aus, bis Sie ihn einschalten.',
+  'profile.digestOn': 'Wochenbericht eingeschaltet.',
+  'profile.digestOff': 'Wochenbericht ausgeschaltet.',
 
   'activity.panelTitle': 'Letzte Aktivitäten',
   'activity.scopeConsultant': 'Nur Ihre eigenen Aktivitäten',

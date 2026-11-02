@@ -31,3 +31,14 @@ export async function requestCurrentUser(): Promise<SessionUser> {
   const { data } = await apiClient.get<SessionUser>('/auth/me')
   return data
 }
+
+// The weekly email digest is off until a project lead turns it on here.
+export async function requestDigestSubscription(): Promise<boolean> {
+  const { data } = await apiClient.get<{ subscribed: boolean }>('/digest/subscription')
+  return data.subscribed
+}
+
+export async function requestDigestSubscriptionChange(subscribed: boolean): Promise<boolean> {
+  const { data } = await apiClient.put<{ subscribed: boolean }>('/digest/subscription', { subscribed })
+  return data.subscribed
+}

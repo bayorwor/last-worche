@@ -4,6 +4,7 @@ import { createApp } from "./src/app.ts";
 import { openDatabase } from "./src/repositories/database.ts";
 import { createMysqlActivityRepository } from "./src/repositories/mysqlActivityRepository.ts";
 import { createMysqlBookingRepository } from "./src/repositories/mysqlBookingRepository.ts";
+import { createMysqlDigestRepository } from "./src/repositories/mysqlDigestRepository.ts";
 import { createMysqlUserRepository } from "./src/repositories/mysqlUserRepository.ts";
 
 const db = await openDatabase(env.DATABASE_URL);
@@ -12,6 +13,7 @@ const app = createApp({
   bookingRepository: createMysqlBookingRepository(db),
   userRepository: createMysqlUserRepository(db),
   activityRepository: createMysqlActivityRepository(db),
+  digestRepository: createMysqlDigestRepository(db),
 });
 
 const server = app.listen(env.PORT, () => {

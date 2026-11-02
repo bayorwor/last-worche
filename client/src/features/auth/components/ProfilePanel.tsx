@@ -9,6 +9,7 @@ import { useTranslation } from '../../../shared/i18n/languageContext.ts'
 import { profileEditCancelled, profileEditStarted, saveProfile } from '../authSlice.ts'
 import type { SessionUser } from '../authTypes.ts'
 import { useRoleText } from '../useRoleText.ts'
+import { DigestSubscriptionSwitch } from './DigestSubscriptionSwitch.tsx'
 
 export function ProfilePanel({ user }: { user: SessionUser }) {
   const dispatch = useAppDispatch()
@@ -86,6 +87,7 @@ export function ProfilePanel({ user }: { user: SessionUser }) {
           <dd>{roleText(user.role).name}</dd>
         </div>
       </dl>
+      {user.role === 'project_lead' && <DigestSubscriptionSwitch />}
       {profileError && (
         <StatusMessage tone="error" className="mt-4">
           {t(profileError.key, profileError.values)}

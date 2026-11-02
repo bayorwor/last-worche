@@ -57,6 +57,10 @@ export const en: Record<MessageKey, string> = {
   'profile.saving': 'Saving …',
   'profile.cancel': 'Cancel',
   'profile.saved': 'Profile saved.',
+  'profile.digestLabel': 'Weekly email digest',
+  'profile.digestHint': 'Every Monday, for each of your orders booked on in the week before: budget, pace and warnings. Off until you turn it on.',
+  'profile.digestOn': 'Weekly digest turned on.',
+  'profile.digestOff': 'Weekly digest turned off.',
 
   'activity.panelTitle': 'Recent activity',
   'activity.scopeConsultant': 'Only your own activity',

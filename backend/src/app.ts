@@ -10,6 +10,7 @@ import { createActivityController } from "./controllers/activityController.ts";
 import { createAiController } from "./controllers/aiController.ts";
 import { createAuthController } from "./controllers/authController.ts";
 import { createBookingController } from "./controllers/bookingController.ts";
+import { createDigestController } from "./controllers/digestController.ts";
 import { createForecastController } from "./controllers/forecastController.ts";
 import { createProofOfWorkController } from "./controllers/proofOfWorkController.ts";
 import { createPurchasingController } from "./controllers/purchasingController.ts";
@@ -19,11 +20,13 @@ import { createAuthGuards } from "./middlewares/authentication.ts";
 import { errorHandler } from "./middlewares/errorHandler.ts";
 import type { ActivityRepository } from "./repositories/activityRepository.ts";
 import type { BookingRepository } from "./repositories/bookingRepository.ts";
+import type { DigestRepository } from "./repositories/digestRepository.ts";
 import type { UserRepository } from "./repositories/userRepository.ts";
 import { createActivityRoutes } from "./routes/activityRoutes.ts";
 import { createAiRoutes } from "./routes/aiRoutes.ts";
 import { createAuthRoutes } from "./routes/authRoutes.ts";
 import { createBookingRoutes } from "./routes/bookingRoutes.ts";
+import { createDigestRoutes } from "./routes/digestRoutes.ts";
 import { createIntegrationRoutes } from "./routes/integrationRoutes.ts";
 import { createForecastRoutes } from "./routes/forecastRoutes.ts";
 import { createProofOfWorkRoutes } from "./routes/proofOfWorkRoutes.ts";
@@ -31,6 +34,7 @@ import { createPurchasingRoutes } from "./routes/purchasingRoutes.ts";
 import { createRadarRoutes } from "./routes/radarRoutes.ts";
 import { createActivityService } from "./services/activityService.ts";
 import { createAuthService } from "./services/authService.ts";
+import { createDigestService } from "./services/digestService.ts";
 import { sendEmail } from "./services/emailService.ts";
 import { createFollowUpService } from "./services/followUpService.ts";
 import { createForecastService } from "./services/forecastService.ts";
@@ -43,10 +47,11 @@ type AppDependencies = {
   bookingRepository: BookingRepository;
   userRepository: UserRepository;
   activityRepository: ActivityRepository;
+  digestRepository: DigestRepository;
   signInLimitPerMinute?: number;
 };
 
-export function createApp({ bookingRepository, userRepository, activityRepository, signInLimitPerMinute = env.SIGN_IN_LIMIT_PER_MINUTE }: AppDependencies) {
+export function createApp({ bookingRepository, userRepository, activityRepository, digestRepository, signInLimitPerMinute = env.SIGN_IN_LIMIT_PER_MINUTE }: AppDependencies) {
   const bookingService = createBookingService(bookingRepository);
   const authService = createAuthService(userRepository, {
     sessionSecret: env.JWT_SECRET,
@@ -87,6 +92,15 @@ export function createApp({ bookingRepository, userRepository, activityRepositor
   app.use("/api/integrations", createIntegrationRoutes(bookingService, env.SUPPLIER_API_KEYS));
   app.use("/api/ai", createAiRoutes(createAiController(bookingService), guards));
   app.use("/api/activity", createActivityRoutes(createActivityController(createActivityService(activityRepository)), guards));
+  app.use(
+    "/api/digest",
+    createDigestRoutes(
+      createDigestController(
+        createDigestService({ digests: digestRepository, bookings: bookingRepository, forecasts: createForecastService(bookingRepository), sendEmail }),
+      ),
+      guards,
+    ),
+  );
   app.use("/api/purchasing", createPurchasingRoutes(createPurchasingController(createPurchasingService(bookingRepository)), guards));
 
   // An unknown API address answers in JSON too, not with the framework's HTML page.

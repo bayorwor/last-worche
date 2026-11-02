@@ -12,6 +12,7 @@ const MOUNT_PATHS: Record<string, string> = {
   "aiRoutes.ts": "/ai",
   "authRoutes.ts": "/auth",
   "bookingRoutes.ts": "",
+  "digestRoutes.ts": "/digest",
   "forecastRoutes.ts": "",
   "integrationRoutes.ts": "/integrations",
   "proofOfWorkRoutes.ts": "",

@@ -43,6 +43,7 @@ export const openapiDocument = {
     { name: "Proof of work" },
     { name: "Forecast and follow-up" },
     { name: "Radar" },
+    { name: "Weekly digest" },
     { name: "Purchasing" },
     { name: "Activity" },
     { name: "Interface" },
@@ -130,6 +131,12 @@ export const openapiDocument = {
       post: operation("Ask purchasing for more budget", "Forecast and follow-up", "the order's project lead", { "201": ok("The request"), "400": errors["400"], "401": errors["401"], "403": errors["403"], "404": errors["404"], "422": errors["422"] }, {
         parameters: [orderIdParameter],
         requestBody: body({ type: "object", required: ["personDays", "neededByDate"], properties: { personDays: { type: "number" }, neededByDate: { type: "string", format: "date" } } }),
+      }),
+    },
+    "/digest/subscription": {
+      get: operation("Whether the weekly email digest is turned on for me", "Weekly digest", "project leads, for themselves", { "200": ok("subscribed: true or false"), "401": errors["401"], "403": errors["403"] }),
+      put: operation("Turn the weekly email digest on or off for me. Nobody is subscribed unless they send subscribed: true", "Weekly digest", "project leads, for themselves", { "200": ok("subscribed: true or false"), "400": errors["400"], "401": errors["401"], "403": errors["403"] }, {
+        requestBody: body({ type: "object", required: ["subscribed"], properties: { subscribed: { type: "boolean" } } }),
       }),
     },
     "/orders/{orderId}/radar": {

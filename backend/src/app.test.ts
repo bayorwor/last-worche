@@ -6,6 +6,7 @@ import { createApp } from "./app.ts";
 import type { Role } from "./domain/user.ts";
 import { createInMemoryActivityRepository } from "./repositories/inMemoryActivityRepository.ts";
 import { createInMemoryBookingRepository } from "./repositories/inMemoryBookingRepository.ts";
+import { createInMemoryDigestRepository } from "./repositories/inMemoryDigestRepository.ts";
 import { createInMemoryUserRepository } from "./repositories/inMemoryUserRepository.ts";
 
 const ORDER_ID = "4500012345";
@@ -45,6 +46,7 @@ beforeAll(() => {
     ),
     userRepository: createInMemoryUserRepository(users, roles),
     activityRepository,
+    digestRepository: createInMemoryDigestRepository(users),
     signInLimitPerMinute: 100_000, // these tests sign in far more often than a person would
   });
   server = app.listen(0);
@@ -195,6 +197,8 @@ describe("every route except sign-in needs a session", () => {
     ["GET", "/purchasing/framework-agreements"],
     ["GET", `/orders/${ORDER_ID}/radar`],
     ["GET", "/purchasing/radar"],
+    ["GET", "/digest/subscription"],
+    ["PUT", "/digest/subscription"],
     ["GET", "/purchasing/invoices"],
     ["POST", "/purchasing/invoices"],
     ["POST", "/purchasing/follow-up-requests/1/decline"],
@@ -269,6 +273,22 @@ describe("role checks", () => {
     for (const user of ["user-consultant", "user-project-lead"]) {
       expect((await send("GET", "/purchasing/radar", { token: await signIn(user) })).status).toBe(403);
     }
+  });
+
+  test("a project lead turns the weekly digest on only with an explicit true, and nobody else may", async () => {
+    const token = await signIn("user-project-lead");
+
+    expect(await (await send("GET", "/digest/subscription", { token })).json()).toEqual({ subscribed: false });
+    expect((await send("PUT", "/digest/subscription", { token, body: {} })).status).toBe(400);
+    expect((await send("PUT", "/digest/subscription", { token, body: { subscribed: "yes" } })).status).toBe(400);
+    expect(await (await send("GET", "/digest/subscription", { token })).json()).toEqual({ subscribed: false });
+
+    expect(await (await send("PUT", "/digest/subscription", { token, body: { subscribed: true } })).json()).toEqual({ subscribed: true });
+    expect(await (await send("GET", "/digest/subscription", { token: await signIn("user-other-lead") })).json()).toEqual({ subscribed: false });
+    for (const user of ["user-consultant", "user-purchasing"]) {
+      expect((await send("PUT", "/digest/subscription", { token: await signIn(user), body: { subscribed: true } })).status).toBe(403);
+    }
+    await send("PUT", "/digest/subscription", { token, body: { subscribed: false } });
   });
 
   test("only purchasing may read the supplier overview", async () => {
@@ -632,6 +652,7 @@ describe("operation", () => {
       bookingRepository: createInMemoryBookingRepository([], []),
       userRepository: createInMemoryUserRepository([]),
       activityRepository: createInMemoryActivityRepository(),
+      digestRepository: createInMemoryDigestRepository(),
       signInLimitPerMinute: 2,
     });
     const limitedServer = limitedApp.listen(0);

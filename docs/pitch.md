@@ -24,7 +24,7 @@ Start the app as in the [README](../README.md), and open <http://localhost:5173>
 | 4 | `a.weber@client.example` | Open the *Budget* tab of order 4500012345 | Used went from 84 to 84.875 PD at once, not on next month's invoice. **The forecast says when the budget runs out, and to order more in time.** |
 | 5 | Same | Enter `1` extra consultant, and *Calculate* | A what-if on the chart, and nothing stored. |
 | 6 | Same | Choose *Ask purchasing* | The warning becomes a request. Purchasing confirms it in step 9. |
-| 7 | Same | On the *Proofs of work* tab, approve the current month | Approval locks the month, and the file for finance is one click away. |
+| 7 | Same | On the *Proofs of work* tab, choose *Approve proof of work* on the current month, then *Yes, approve* | Approval locks the month, and the file for finance is one click away. |
 | 8 | `m.krueger@consultis.example` | Enter the sentence | **Rejected:** "Proof of work already approved — contact the project lead." |
 | 9 | `k.vogel@client.example` | Show the supplier overview, then *Follow-up requests*, and confirm | Purchasing sees totals per supplier and order, and no person. Its *Recent activity* shows the approved month with no name. The server enforces this. Confirming raises the budget, and the project lead's warning clears. **On order 4500012346, confirming is rejected,** because the framework agreement it shares with another order has too little free. |
 | 10 | Any | Switch between *DE* and *EN* | The product works in both languages, down to the rejection messages. |

@@ -430,4 +430,29 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    // The weekly email digest (issue #64). Only a project lead who turned it on has a row, so nobody is
+    // subscribed by default. A sent digest is noted per order and week, so the job never sends one twice.
+    name: "015-weekly-digest",
+    async run(db) {
+      await db.query(`
+        CREATE TABLE digest_subscriptions (
+          user_id VARCHAR(64) PRIMARY KEY,
+          subscribed_at_ms BIGINT NOT NULL,
+          FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+      `);
+      await db.query(`
+        CREATE TABLE digest_deliveries (
+          user_id VARCHAR(64) NOT NULL,
+          order_id VARCHAR(32) NOT NULL,
+          iso_week CHAR(8) NOT NULL,
+          sent_at_ms BIGINT NOT NULL,
+          PRIMARY KEY (user_id, order_id, iso_week),
+          FOREIGN KEY (user_id) REFERENCES users(id),
+          FOREIGN KEY (order_id) REFERENCES orders(id)
+        )
+      `);
+    },
+  },
 ];

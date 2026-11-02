@@ -10,7 +10,8 @@ export type Email = {
 
 export async function sendEmail(email: Email): Promise<void> {
   if (env.MAIL_MOCK) {
-    console.log(`[MAIL_MOCK] To: ${email.to} | Subject: ${email.subject}`);
+    // The text too, so the weekly digest can be read in the log without a mail server.
+    console.log(`[MAIL_MOCK] To: ${email.to} | Subject: ${email.subject}\n${email.text}`);
     return;
   }
   await getMailTransporter().sendMail({ from: env.MAIL_FROM, ...email });

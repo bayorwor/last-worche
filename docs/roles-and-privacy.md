@@ -24,11 +24,12 @@
 | See per-person daily hours | ✔ (own) | ✔ (their orders) | Σ only |
 | Approve proof of work | – | ✔ | – |
 | Ask for a follow-up order | – | ✔ (orders they lead) | – |
-| Confirm a follow-up order, which raises the budget | – | – | ✔ |
+| Confirm or decline a follow-up order. Confirming raises the budget | – | – | ✔ |
+| See framework agreements with their orders | – | – | ✔ (totals only) |
 | See the budget forecast | – | ✔ (orders they lead) | – |
-| Check an invoice against an approved month | – | – | ✔ (totals only) |
+| Check and store an invoice against an approved month | – | – | ✔ (totals only) |
 | Download an approved month for finance | – | ✔ (orders they lead) | – |
-| See recent activity | ✔ (own) | ✔ (own, and their orders) | Own, and approved months and follow-up requests per order, with no names |
+| See recent activity | ✔ (own) | ✔ (own, and their orders) | Own, and approved months and follow-up requests per order, with no names. Stored invoices appear for the person who stored them and for the order's project lead |
 | Change own name | ✔ | ✔ | ✔ |
 | See consultant name and supplier | ✔ (own) | ✔ | Σ (supplier level only) |
 
@@ -57,4 +58,4 @@ All permission checks run **server-side**, in the domain/API layer, before any w
 - Row-level restriction: a consultant's query scope is limited to their own bookings; a project lead's to the orders they lead. There is no endpoint that returns single bookings to purchasing — aggregates only.
 - Writes pass the rule engine in the same server-side validation step as the permission check, so a manipulated client cannot bypass either.
 
-Status: **built for the demo.** The role and consultant come from the signed session of the email code sign-in ([ADR-0014](adr/0014-email-code-sign-in.md)), each route in [bookingRoutes.ts](../backend/src/routes/bookingRoutes.ts) names its allowed roles, row-level scope is in [bookingService.ts](../backend/src/services/bookingService.ts), and [app.test.ts](../backend/src/app.test.ts) tests the rejections over real HTTP requests. With the default `MAIL_MOCK=true`, the sign-in screen shows the code, so these checks show the design but do not protect real data until real email is on. Purchasing reads only [totals per order and supplier](../backend/src/domain/purchasing.ts). Recent activity takes the user from the session, and [activity.ts](../backend/src/domain/activity.ts) removes other people's names for purchasing. A person can only change their own name: email, role and any other field in the request are ignored. A forecast is built from single consultants' data, so only the order's project lead receives it. The invoice check compares totals of an approved month, so it reveals no person to purchasing. A supplier's key only reaches that supplier's consultants and orders ([ADR-0017](adr/0017-supplier-interface.md)).
+Status: **built for the demo.** The role and consultant come from the signed session of the email code sign-in ([ADR-0014](adr/0014-email-code-sign-in.md)), each route in [bookingRoutes.ts](../backend/src/routes/bookingRoutes.ts) names its allowed roles, row-level scope is in [bookingService.ts](../backend/src/services/bookingService.ts), and [app.test.ts](../backend/src/app.test.ts) tests the rejections over real HTTP requests. With the default `MAIL_MOCK=true`, the sign-in screen shows the code, so these checks show the design but do not protect real data until real email is on. Purchasing reads only [totals per order and supplier](../backend/src/domain/purchasing.ts). Recent activity takes the user from the session, and [activity.ts](../backend/src/domain/activity.ts) removes other people's names for purchasing. A person can only change their own name: email, role and any other field in the request are ignored. A forecast is built from single consultants' data, so only the order's project lead receives it. The invoice check compares totals of an approved month, so it reveals no person to purchasing, and a stored invoice holds no consultant. [frameworkAgreement.ts](../backend/src/domain/frameworkAgreement.ts) returns totals per agreement and order only. A supplier's key only reaches that supplier's consultants and orders ([ADR-0017](adr/0017-supplier-interface.md)).

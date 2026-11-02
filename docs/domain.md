@@ -22,7 +22,7 @@
 
 ## Entity relationship diagram
 
-Entities we **build now** are marked `(now)`, entities of the **next expansion stage** `(later)`.
+Entities we **build now** are marked `(now)`. Nothing is planned as `(later)` at the moment.
 
 ```mermaid
 erDiagram
@@ -33,16 +33,17 @@ erDiagram
     ORDER ||--o{ BOOKING : "has (now)"
     CONSULTANT ||--o{ BOOKING : "books (now)"
     ORDER ||--o{ PROOF_OF_WORK : "is summarised in (now)"
-    SUPPLIER ||--o{ FRAMEWORK_AGREEMENT : "works under (later)"
+    SUPPLIER ||--o{ FRAMEWORK_AGREEMENT : "works under (now)"
+    FRAMEWORK_AGREEMENT ||--o{ ORDER : "is shared by (now)"
     ORDER ||--o{ FOLLOW_UP_REQUEST : "is extended by (now)"
-    ORDER ||--o{ INVOICE : "is billed by (later)"
+    ORDER ||--o{ INVOICE : "is billed by (now)"
     CONSULTANT ||--o{ VACATION : "has approved (now)"
     USER ||--o{ ACTIVITY_ENTRY : "causes (now)"
 ```
 
 ## Implementation status
 
-`(now)` marks what the current stage is meant to contain, and all of it is now stored: **orders, bookings, suppliers, consultants, accounting objects and assignments**, in [migrations.ts](../backend/src/repositories/migrations.ts). A booking reaches its accounting object through its order. **Proofs of work** are stored as one row per approved month, with their totals added up from the bookings. **Users** and **roles** are stored as well: users sign in with a code sent to their email ([ADR-0014](adr/0014-email-code-sign-in.md)), and each order names its project lead. **Vacations**, **company shutdowns**, **follow-up requests** and the **activity log** are stored too. Orders have a period and a project end, and consultants a federal state. Public holidays are calculated in [publicHolidays.ts](../backend/src/domain/publicHolidays.ts), not stored.
+`(now)` marks what the current stage is meant to contain, and all of it is now stored: **orders, bookings, suppliers, consultants, accounting objects and assignments**, in [migrations.ts](../backend/src/repositories/migrations.ts). A booking reaches its accounting object through its order. **Proofs of work** are stored as one row per approved month, with their totals added up from the bookings. **Users** and **roles** are stored as well: users sign in with a code sent to their email ([ADR-0014](adr/0014-email-code-sign-in.md)), and each order names its project lead. **Vacations**, **company shutdowns**, **follow-up requests**, **framework agreements**, **invoices** and the **activity log** are stored too. Orders have a period and a project end, and consultants a federal state. Public holidays are calculated in [publicHolidays.ts](../backend/src/domain/publicHolidays.ts), not stored.
 
 ## Notes
 
@@ -51,4 +52,6 @@ erDiagram
 - **Assignment**: consultants are assigned to orders (n:m); the server rejects bookings for orders the consultant is not assigned to (story #15).
 - **Immutability**: approving a proof of work makes all contained bookings immutable (story #11); the server rejects changes to approved bookings.
 - **Vacations and public holidays** reject implausible bookings per consultant and federal state (story #8).
+- **Framework agreement**: an order's budget reserves part of the agreement's total. Confirming a follow-up is rejected when the agreement has too little free ([ADR-0018](adr/0018-framework-agreements-and-invoices.md)). An agreement may have several orders, and an order may have no agreement.
+- **Invoice**: one per order and month, only for an approved month, with the approved amount saved next to it. Nothing is paid or written in lastWorche.
 - **Forecast**: walks through the coming days per consultant, at their recent pace, skipping vacations, public holidays and shutdowns; drives the early warning for follow-up orders ([ADR-0016](adr/0016-budget-forecast.md), stories #10, #14, #34).

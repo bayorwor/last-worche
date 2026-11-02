@@ -98,6 +98,15 @@ export const ORDER_SUPPLIERS = [
   { orderId: SECOND_LEAD_ORDER_ID, supplierId: "supplier-2" },
 ];
 
+// Long-term contracts whose total budget several orders share. Nordlicht's two orders reserve 50 of its 60 PD.
+export const FRAMEWORK_AGREEMENTS = [
+  { id: "RV-2026-001", supplierId: "supplier-1", title: "IT consulting 2026", totalPersonDays: 200, orderIds: [SEED_ORDER_ID] },
+  { id: "RV-2026-002", supplierId: "supplier-2", title: "Reporting and portals 2026", totalPersonDays: 60, orderIds: [NEAR_LIMIT_ORDER_ID, SECOND_LEAD_ORDER_ID] },
+];
+
+// More than Nordlicht's agreement has free, to show purchasing's confirmation being rejected.
+export const OVER_AGREEMENT_FOLLOW_UP = { orderId: NEAR_LIMIT_ORDER_ID, personDays: 15, neededByDate: "2026-12-01", requestedAtMs: Date.UTC(2026, 9, 26, 9) };
+
 // One working week, right after this consultant's bookings on the near-limit order.
 export const SECOND_LEAD_ORDER_DAYS = ["2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18"];
 

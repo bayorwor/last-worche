@@ -38,8 +38,8 @@ The **project lead** on the client side — the role whose daily work we improve
 
 ## What we leave out on purpose
 
-- Invoice creation and payment processing — we stop at the approved proof of work.
-- Framework agreement and contract management — purchasing gets an aggregated overview only.
+- Writing invoices and payment processing — we check and store what a supplier invoices, and stop there ([ADR-0018](adr/0018-framework-agreements-and-invoices.md)).
+- Contract management: documents, terms and renewals — a framework agreement is tracked only as a budget that several orders share.
 - Full SSO/IdP integration — seeded test users sign in with a code by email instead (decisions in [ADR-0002](adr/0002-identity-and-sign-in.md) and [ADR-0014](adr/0014-email-code-sign-in.md)).
 - Native mobile apps — responsive web is enough.
 - Reporting/BI beyond the per-order forecast.

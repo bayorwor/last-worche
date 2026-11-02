@@ -6,7 +6,7 @@ import { Button } from '../../../shared/components/Button.tsx'
 import { Panel } from '../../../shared/components/Panel.tsx'
 import { StatusMessage } from '../../../shared/components/StatusMessage.tsx'
 import { useTranslation } from '../../../shared/i18n/languageContext.ts'
-import { profileEditChanged, saveProfile } from '../authSlice.ts'
+import { profileEditCancelled, profileEditStarted, saveProfile } from '../authSlice.ts'
 import type { SessionUser } from '../authTypes.ts'
 import { useRoleText } from '../useRoleText.ts'
 
@@ -14,24 +14,18 @@ export function ProfilePanel({ user }: { user: SessionUser }) {
   const dispatch = useAppDispatch()
   const { t } = useTranslation()
   const roleText = useRoleText()
-  const { profileStatus, profileError } = useAppSelector((state) => state.auth)
+  const { profileStatus, profileError, isEditingProfile: isEditing } = useAppSelector((state) => state.auth)
   const [draftName, setDraftName] = useState<string | null>(null)
-  const isEditing = draftName !== null
   const isSaving = profileStatus === 'loading'
 
-  function startEditing() {
-    dispatch(profileEditChanged())
-    setDraftName(user.name)
-  }
-
   function stopEditing() {
-    dispatch(profileEditChanged())
+    dispatch(profileEditCancelled())
     setDraftName(null)
   }
 
   async function save(event: FormEvent) {
     event.preventDefault()
-    const result = await dispatch(saveProfile(draftName ?? ''))
+    const result = await dispatch(saveProfile(draftName ?? user.name))
     if (saveProfile.fulfilled.match(result)) {
       setDraftName(null)
     }
@@ -42,7 +36,7 @@ export function ProfilePanel({ user }: { user: SessionUser }) {
       title={t('profile.panelTitle')}
       aside={
         !isEditing && (
-          <Button variant="ghost" onClick={startEditing}>
+          <Button variant="ghost" onClick={() => dispatch(profileEditStarted())}>
             {t('profile.edit')}
           </Button>
         )
@@ -55,12 +49,13 @@ export function ProfilePanel({ user }: { user: SessionUser }) {
           </label>
           <input
             id="profile-name"
+            autoFocus
             name="name"
             autoComplete="name"
             required
             minLength={2}
             maxLength={100}
-            value={draftName}
+            value={draftName ?? user.name}
             onChange={(event) => setDraftName(event.target.value)}
             className="mt-2 min-h-11 w-full border border-ink bg-paper px-3.5 py-3 text-base"
           />

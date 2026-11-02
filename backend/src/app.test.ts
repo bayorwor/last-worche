@@ -192,6 +192,10 @@ describe("every route except sign-in needs a session", () => {
     ["GET", `/orders/${ORDER_ID}/bookings`],
     ["GET", "/consultants/consultant-1/bookings"],
     ["GET", "/purchasing/supplier-overview"],
+    ["GET", "/purchasing/framework-agreements"],
+    ["GET", "/purchasing/invoices"],
+    ["POST", "/purchasing/invoices"],
+    ["POST", "/purchasing/follow-up-requests/1/decline"],
     ["GET", `/orders/${ORDER_ID}/proofs-of-work`],
     ["POST", `/orders/${ORDER_ID}/proofs-of-work/2026-10/approve`],
     ["POST", "/bookings"],
@@ -470,6 +474,35 @@ describe("forecast and follow-up requests", () => {
     expect((await send("POST", `/purchasing/follow-up-requests/${id}/confirm`, { token: leadToken })).status).toBe(403);
     expect((await send("POST", `/purchasing/follow-up-requests/${id}/confirm`, { token: buyerToken })).status).toBe(200);
     expect(await (await send("GET", `/orders/${OTHER_ORDER_ID}/budget`, { token: buyerToken })).json()).toMatchObject({ orderedPersonDays: 25 });
+  });
+
+  test("purchasing declines a lead's request, and only purchasing may", async () => {
+    const leadToken = await signIn("user-other-lead");
+    const buyerToken = await signIn("user-purchasing");
+    const created = await send("POST", `/orders/${OTHER_ORDER_ID}/follow-up-requests`, { token: leadToken, body: { personDays: 5, neededByDate: "2026-12-01" } });
+    const { id } = (await created.json()) as { id: number };
+
+    expect((await send("POST", `/purchasing/follow-up-requests/${id}/decline`, { token: leadToken })).status).toBe(403);
+    expect((await send("POST", `/purchasing/follow-up-requests/${id}/decline`, { token: buyerToken })).status).toBe(200);
+    expect((await send("POST", `/purchasing/follow-up-requests/${id}/confirm`, { token: buyerToken })).status).toBe(422);
+  });
+
+  test("only purchasing may read or store invoices, and invalid input is rejected", async () => {
+    const buyerToken = await signIn("user-purchasing");
+    const leadToken = await signIn("user-other-lead");
+
+    expect((await send("GET", "/purchasing/invoices", { token: buyerToken })).status).toBe(200);
+    expect((await send("GET", "/purchasing/invoices", { token: leadToken })).status).toBe(403);
+    expect((await send("POST", "/purchasing/invoices", { token: leadToken, body: {} })).status).toBe(403);
+    expect((await send("POST", "/purchasing/invoices", { token: buyerToken, body: { orderId: ORDER_ID, month: "2026-10", invoiceNumber: " ", invoicedPersonDays: 1 } })).status).toBe(400);
+  });
+
+  test("framework agreements are for purchasing only", async () => {
+    const response = await send("GET", "/purchasing/framework-agreements", { token: await signIn("user-purchasing") });
+
+    expect(response.status).toBe(200);
+    expect((await send("GET", "/purchasing/framework-agreements", { token: await signIn("user-other-lead") })).status).toBe(403);
+    expect((await send("GET", "/purchasing/framework-agreements", { token: await signIn("user-consultant") })).status).toBe(403);
   });
 
   test("purchasing's activity shows that request with no name", async () => {

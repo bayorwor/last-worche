@@ -25,5 +25,10 @@ export function createForecastController(forecastService: ForecastService, follo
       await followUpService.confirm(currentUser(req), followUpIdSchema.parse(req.params.id));
       res.json(await followUpService.listAll());
     },
+
+    async declineFollowUp(req: Request<{ id: string }>, res: Response) {
+      await followUpService.decline(currentUser(req), followUpIdSchema.parse(req.params.id));
+      res.json(await followUpService.listAll());
+    },
   };
 }

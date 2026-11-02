@@ -128,6 +128,7 @@ describe.skipIf(!databaseUrl)("a follow-up request against real MySQL", () => {
 
   beforeAll(async () => {
     db = await openDatabase(databaseUrl as string);
+    await db.query("DELETE FROM follow_up_requests");
   });
 
   afterAll(async () => {

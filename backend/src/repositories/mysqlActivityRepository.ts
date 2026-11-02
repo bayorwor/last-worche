@@ -35,6 +35,6 @@ export function createMysqlActivityRepository(db: Pool): ActivityRepository {
         userId,
         userId,
       ]),
-    listForPurchasing: (userId) => list("activity_log.actor_user_id = ? OR activity_log.type IN ('proof_approved', 'follow_up_requested', 'follow_up_confirmed')", [userId]),
+    listForPurchasing: (userId) => list("activity_log.actor_user_id = ? OR activity_log.type IN ('proof_approved', 'follow_up_requested', 'follow_up_confirmed', 'follow_up_declined')", [userId]),
   };
 }

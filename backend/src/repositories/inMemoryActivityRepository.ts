@@ -31,7 +31,7 @@ export function createInMemoryActivityRepository(users: User[] = [], orders: Led
           entry.actorUserId === userId || orders.some((order) => order.id === entry.orderId && order.projectLeadId === userId),
       ),
     listForPurchasing: async (userId) =>
-      newestFirst((entry) => entry.actorUserId === userId || ["proof_approved", "follow_up_requested", "follow_up_confirmed"].includes(entry.type)),
+      newestFirst((entry) => entry.actorUserId === userId || ["proof_approved", "follow_up_requested", "follow_up_confirmed", "follow_up_declined"].includes(entry.type)),
     findUserIdOfConsultant: (consultantId) => users.find((user) => user.consultantId === consultantId)?.id ?? null,
   };
 }

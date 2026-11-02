@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { BusinessRuleError } from "./errors.ts";
-import { assertProofApprovedForInvoice, checkInvoice } from "./invoiceCheck.ts";
+import { assertInvoiceNotRecorded, assertProofApprovedForInvoice, checkInvoice } from "./invoiceCheck.ts";
 
 describe("checkInvoice", () => {
   test("flags an invoice above the approved hours, with the difference", () => {
@@ -28,5 +28,15 @@ describe("assertProofApprovedForInvoice", () => {
   test("rejects a month with no approved proof of work", () => {
     expect(() => assertProofApprovedForInvoice(null, "4500012345", "2026-10")).toThrow(BusinessRuleError);
     expect(() => assertProofApprovedForInvoice(null, "4500012345", "2026-10")).toThrow("ask the project lead to approve it first");
+  });
+});
+
+describe("assertInvoiceNotRecorded", () => {
+  test("accepts the first invoice of a month", () => {
+    expect(() => assertInvoiceNotRecorded(false, "4500012345", "2026-10")).not.toThrow();
+  });
+
+  test("rejects a second invoice for the same order and month", () => {
+    expect(() => assertInvoiceNotRecorded(true, "4500012345", "2026-10")).toThrow("already recorded");
   });
 });

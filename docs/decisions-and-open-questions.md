@@ -26,10 +26,11 @@ None of these is forgotten. Each has a trigger that would move it forward.
 | Budget warnings by email | The email service exists ([ADR-0008](adr/0008-email-with-nodemailer.md)) but has not been tested against a real server | First item of Sprint Two |
 | Changing the sign-in email address | It needs a confirmation code sent to the new address, and nothing sends one yet | The profile work after Sprint One |
 | Deleting old activity-log entries | Retention for the log is not decided, and nothing deletes it yet | The client's retention policy ([ADR-0015](adr/0015-activity-log.md)) |
-| Framework agreements shared by several orders | Purchasing's real contract data is not available in the demo | Real contract structures from purchasing |
+| Dates and editing for framework agreements | Agreements are sample data, because purchasing's real contract data is not available in the demo ([ADR-0018](adr/0018-framework-agreements-and-invoices.md)) | Real contract structures from purchasing |
+| Correcting a stored invoice | One invoice per order and month catches a double invoice, but a credit note does not fit yet ([ADR-0018](adr/0018-framework-agreements-and-invoices.md)) | How finance really handles corrections |
 | Containers for deployment | Declined for the demo, because the jury runs the product from the README without Docker ([ADR-0011](adr/0011-mysql-without-docker.md)) | A customer requiring containerised deployment |
 | Whether to keep the iOS and Android app projects | The [product vision](product-vision.md#what-we-leave-out-on-purpose) rules out native apps, yet the client includes Capacitor projects that wrap the same web client | A team decision, to be recorded as an ADR |
 
 ## Left out on purpose
 
-These are not open: invoice payment, contract management, and reporting beyond the forecast. The reasons are in the [product vision](product-vision.md#what-we-leave-out-on-purpose).
+These are not open: payment, writing invoices, contract documents and renewals, and reporting beyond the forecast. The reasons are in the [product vision](product-vision.md#what-we-leave-out-on-purpose).

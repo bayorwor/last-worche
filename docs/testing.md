@@ -10,7 +10,7 @@ How to test lastWorche on every platform. It has three steps:
 
 | Platform | How to test it | Status |
 |---|---|---|
-| macOS, Chrome | [Computer browser](#computer-browser) | **Tested**, steps 1 to 22 on a fresh clone on 1 Nov 2026, and steps 1 to 26 from the working branch later that day |
+| macOS, Chrome | [Computer browser](#computer-browser) | **Tested**, steps 1 to 22 on a fresh clone on 1 Nov 2026, and steps 1 to 26 from the working branch later that day. On 2 Nov 2026, a fresh clone of `main` passed the README's setup, test command and demo users, and all 10 steps of the [pitch demo](pitch.md#live-demo) |
 | macOS, Safari or Firefox | [Computer browser](#computer-browser) | Not tested yet |
 | Windows, Edge or Chrome | [Computer browser](#computer-browser), with the [Windows commands](#windows-and-linux-commands) | Not tested yet |
 | Linux, Chrome or Firefox | [Computer browser](#computer-browser), with the [Linux commands](#windows-and-linux-commands) | Not tested yet |
